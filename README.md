@@ -1,7 +1,17 @@
 # Custom concave split keyboard
 
+![Ou Kanji](image/ou.png)
+
 This is code for my custom keyboard.
 
+# Dependencies
+
+For the firmware:
+* [Adafruit SSD1306](https://github.com/adafruit/Adafruit_SSD1306)
+
+For generating the 3D models:
+* [Python](https://www.python.org/)
+* [OpenSCAD](https://openscad.org/)
 
 # Inspiration
 
