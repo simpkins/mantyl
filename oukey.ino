@@ -1,19 +1,13 @@
+// Copyright (c) 2022, Adam Simpkins
+#include "App.h"
+
 #include <memory>
 
-namespace ocb {
-class App {
-public:
-  void setup() {}
-
-  void loop() {}
-};
-
-static std::unique_ptr<App> app;
-} // namespace ocb
+static std::unique_ptr<ocb::App> app;
 
 void setup() {
-  ocb::app = std::make_unique<ocb::App>();
-  ocb::app->setup();
+  app = std::make_unique<ocb::App>();
+  app->setup();
 }
 
-void loop() { ocb::app->loop(); }
+void loop() { app->loop(); }
