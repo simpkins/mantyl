@@ -25,6 +25,11 @@ class Shape:
         self.children = children or []
         self._comment: Optional[str] = comment
 
+    def to_str(self) -> str:
+        lines = self.gen()
+        lines.append("")
+        return "\n".join(lines)
+
     def gen(self) -> List[str]:
         result: List[str] = []
         if self._comment:

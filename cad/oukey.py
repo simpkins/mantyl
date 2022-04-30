@@ -1620,9 +1620,12 @@ def model_right(
     return Shape.union(parts)
 
 
+def sx509_holder() -> Shape:
+    return Shape.cube(10, 10, 10)
+
+
 def write_shape(shape: Shape, path: Path) -> None:
-    lines = "\n".join(shape.gen())
-    path.write_text(lines)
+    path.write_text(shape.to_str())
 
 
 def main() -> None:
@@ -1643,6 +1646,8 @@ def main() -> None:
         ),
         out_dir / "right.scad",
     )
+
+    write_shape(sx509_holder(), out_dir / "sx509_holder.scad")
 
 
 if __name__ == "__main__":
