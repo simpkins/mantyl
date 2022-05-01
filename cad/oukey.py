@@ -1620,8 +1620,89 @@ def model_right(
     return Shape.union(parts)
 
 
+def oled_display() -> Shape:
+    pcb_thickness = 1.57
+    display_thickness = 1.63
+    display_z = pcb_thickness + (display_thickness / 2)
+
+    pcb_w = 33
+    pcb_h = 21.65
+    display_w = 30
+    display_h = 11.5
+
+    base = Shape.cube(pcb_w, pcb_h, pcb_thickness).translate(
+        pcb_w / 2, pcb_h / 2, pcb_thickness / 2
+    )
+    display = Shape.cube(display_w, display_h, display_thickness).translate(
+        (pcb_w / 2) - 1, pcb_h / 2, display_z
+    )
+    cable_w = 4.35
+    cable_thickness = pcb_thickness + display_thickness
+    cable = Shape.cube(cable_w, 8.5, cable_thickness).translate(
+        pcb_w - (cable_w / 2) + 1.75, pcb_h / 2, cable_thickness / 2
+    )
+
+    stemma_w = 4.3
+    stemma_h = 6.1
+    stemma_z = 3.0
+    stemma_conn = Shape.cube(stemma_w, stemma_h, stemma_z).translate(
+        stemma_w / 2, pcb_h / 2, -stemma_z / 2.0
+    )
+
+    standoff = Shape.cylinder(h=2, r=2.5 / 2, fn=30).translate(0, 0, 0.98)
+    main = Shape.union([base, display, cable, stemma_conn])
+    return Shape.difference(
+        main,
+        [
+            standoff.translate(2.5, 2.5, 0),
+            standoff.translate(30.5, 2.5, 0),
+            standoff.translate(30.5, 19, 0),
+            standoff.translate(2.5, 19, 0),
+        ],
+    )
+
+
+def sx509_breakout() -> Shape:
+    standoff = Shape.cylinder(h=2, r=3.302 / 2, fn=30)
+    # Note, the 2 long sides are cut in inside the stand-off holes.
+    # Only 22.87mm wide
+    base = Shape.cube(36.2, 26, 1.57)
+    return Shape.difference(
+        base,
+        [
+            standoff.translate(15.367, 10.287, 0.0),
+            standoff.translate(-15.367, 10.287, 0.0),
+            standoff.translate(-15.367, -10.287, 0.0),
+            standoff.translate(15.367, -10.287, 0.0),
+        ],
+    )
+
+
+def esp32_feather() -> Shape:
+    pcb_w = 51.2
+    pcb_d = 22.8
+    pcb_h = 1.57
+    base = Shape.cube(pcb_w, pcb_d, pcb_h).translate(
+        pcb_w * 0.5, pcb_d * 0.5, pcb_h * 0.5
+    )
+    standoff_big = Shape.cylinder(h=2, r=2.5 / 2, fn=30).translate(0, 0, 0.98)
+
+    return Shape.difference(
+        base,
+        [
+            standoff_big.translate(48.40, 2.5, 0.0),
+            standoff_big.translate(48.40, 19.0 + 1.25, 0.0),
+            #standoff.translate(-15.367, 10.287, 0.0),
+            #standoff.translate(-15.367, -10.287, 0.0),
+            #standoff.translate(15.367, -10.287, 0.0),
+        ],
+    )
+
+
 def sx509_holder() -> Shape:
-    return Shape.cube(10, 10, 10)
+    # return sx509_breakout()
+    # return oled_display()
+    return esp32_feather()
 
 
 def write_shape(shape: Shape, path: Path) -> None:
