@@ -2,6 +2,9 @@
 #pragma once
 
 #include <Adafruit_SSD1306.h>
+#include <SparkFunSX1509.h>
+
+#include <string_view>
 
 namespace ocb {
 
@@ -15,6 +18,8 @@ private:
   App(App const &) = delete;
   App &operator=(App const &) = delete;
 
+  void writeMsg(std::string_view msg);
+
   static constexpr int kSerialBaudRate = 9600;
 
   static constexpr uint8_t kScreenWidth = 128;
@@ -22,7 +27,16 @@ private:
   static constexpr int8_t kResetPin = -1;
   static constexpr uint8_t kScreenAddress = 0x3c;
 
+  static constexpr uint8_t kSX1509AddressLeft = 0x3e;
+  static constexpr uint8_t kLeftRows = 3;
+  static constexpr uint8_t kLeftCols = 2;
+  static constexpr uint16_t kKeypadSleepTimeMS = 256;
+  static constexpr uint8_t kKeypadScanTimeMS = 2;
+  static constexpr uint8_t kKeypadDebounceTimeMS = 1;
+
   Adafruit_SSD1306 display_;
+  SX1509 leftIO_;
+  uint32_t counter_{0};
 };
 
 } // namespace ocb

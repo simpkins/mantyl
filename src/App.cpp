@@ -18,9 +18,41 @@ void App::setup() {
     esp_deep_sleep_start();
   }
 
+  display_.clearDisplay();
+  display_.setTextSize(1);      // Normal 1:1 pixel scale
+  display_.setTextColor(SSD1306_WHITE); // Draw white text
+  display_.setCursor(0, 0);     // Start at top-left corner
+  display_.cp437(true);         // Use full 256 char 'Code Page 437' font
   display_.display();
+  writeMsg("init");
+
+  if (!leftIO_.begin(kSX1509AddressLeft)) {
+    writeMsg("io init failed");
+  }
+
+  writeMsg("io init success");
+  leftIO_.keypad(kLeftRows, kLeftCols, kKeypadSleepTimeMS, kKeypadScanTimeMS,
+                 kKeypadDebounceTimeMS);
 }
 
-void App::loop() {}
+void App::loop() {
+  ++counter_;
+  display_.clearDisplay();
+  display_.setCursor(0, 0);
+  display_.print(counter_);
+  display_.print(": loop\nkeys: ");
+  unsigned int keyData = leftIO_.readKeypad();
+  display_.print(keyData, HEX);
+
+  display_.display();
+  delay(50);
+}
+
+void App::writeMsg(std::string_view msg) {
+  for (char c : msg) {
+    display_.write(c);
+  }
+  display_.display();
+}
 
 } // namespace ocb
