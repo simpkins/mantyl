@@ -1621,14 +1621,15 @@ def model_right(
 
 
 def oled_display() -> Shape:
-    pcb_thickness = 1.57
-    display_thickness = 1.63
-    display_z = pcb_thickness + (display_thickness / 2)
-
     pcb_w = 33
     pcb_h = 21.65
+    pcb_thickness = 1.57
+
     display_w = 30
     display_h = 11.5
+    display_thickness = 1.63
+
+    display_z = pcb_thickness + (display_thickness / 2)
 
     base = Shape.cube(pcb_w, pcb_h, pcb_thickness).translate(
         pcb_w / 2, pcb_h / 2, pcb_thickness / 2
@@ -1692,17 +1693,137 @@ def esp32_feather() -> Shape:
         [
             standoff_big.translate(48.40, 2.5, 0.0),
             standoff_big.translate(48.40, 19.0 + 1.25, 0.0),
-            #standoff.translate(-15.367, 10.287, 0.0),
-            #standoff.translate(-15.367, -10.287, 0.0),
-            #standoff.translate(15.367, -10.287, 0.0),
+            # standoff.translate(-15.367, 10.287, 0.0),
+            # standoff.translate(-15.367, -10.287, 0.0),
+            # standoff.translate(15.367, -10.287, 0.0),
         ],
     )
 
 
+def standoff_stud(d: float) -> Shape:
+    tolerance = d * 0.1
+    r = (d / 2) - tolerance
+
+    pcb_thickness = 1.57
+    lip_r = 0.2
+    lip_h = 0.2
+
+    h = 4
+    cutout_ratio = 0.3
+
+    points = [
+        (0.0, 0.0),
+        (r, 0.0),
+        (r, pcb_thickness * 0.95),
+        (r + lip_r, pcb_thickness + lip_h),
+        (r * cutout_ratio, h),
+        (0.0, h),
+    ]
+
+    flat = Shape.polygon(points)
+    stud = flat.extrude_rotate(fn=30)
+    cutout = Shape.cube(r * cutout_ratio * 2, r * 4, h).translate(
+        0, 0, (h / 2) + (pcb_thickness / 2)
+    )
+    return Shape.difference(stud, [cutout])
+
+
+def oled_holder() -> Shape:
+    display_w = 32.5
+    display_h = 11.5
+    extra_thickness = 0.1
+    display_thickness = 1.63 + extra_thickness
+
+    pcb_w = 33
+    pcb_h = 21.65
+    pcb_thickness = 1.57
+    pcb_tolerance = 0.5
+
+    qt_cable_h = 8
+    qt_cable_cutout_w = 10
+
+    wall_thickness = 4
+    wall = (
+        Shape.cube(50, wall_thickness, 30)
+        .translate(0, wall_thickness / 2, 0)
+        .translate(-4, 0, 0)
+    )
+    display_cutout = Shape.cube(
+        display_w, display_thickness, display_h
+    ).translate(0, (display_thickness - extra_thickness) / 2, 0)
+    pcb_cutout = Shape.cube(
+        pcb_w + pcb_tolerance, wall_thickness, pcb_h + pcb_tolerance
+    ).translate(0, (wall_thickness / 2) + display_thickness - 0.1, 0)
+    qt_cable_cutout = Shape.cube(
+        qt_cable_cutout_w + extra_thickness, wall_thickness, qt_cable_h
+    ).translate(
+        -(qt_cable_cutout_w + pcb_w) / 2,
+        (wall_thickness / 2) + display_thickness - 0.1,
+        0,
+    )
+
+    header_cutout = (
+        Shape.cube(18, wall_thickness, 4)
+        .translate(0, (wall_thickness / 2) + .8, 2 + (-pcb_h / 2))
+    )
+
+    oled_cable_h = display_h
+    oled_cable_cutout_w = 2
+    oled_cable_cutout = Shape.difference(
+        Shape.cube(
+            oled_cable_cutout_w + extra_thickness,
+            wall_thickness + extra_thickness,
+            oled_cable_h,
+        ),
+        [
+            Shape.cube(10, 2, oled_cable_h + extra_thickness)
+            .translate(0, -1, 0)
+            .rotate(0, 0, 15)
+            .translate(-1, 1 + (-(2 + wall_thickness) / 2), 0)
+        ],
+    ).translate(
+        (oled_cable_cutout_w + display_w) / 2,
+        (wall_thickness + extra_thickness) / 2,
+        0,
+    )
+
+    stud = (
+        standoff_stud(d=2.5)
+        .rotate(-90, 0, 0)
+        .translate(0, display_thickness - 0.01, 0)
+    )
+    studs = [
+        stud.translate(-14.0, 0, -8.325),
+        stud.translate(14.0, 0, -8.325),
+        stud.translate(14.0, 0, 8.175),
+        stud.translate(-14.0, 0, 8.175),
+    ]
+
+    main = Shape.difference(
+        wall,
+        [
+            display_cutout,
+            pcb_cutout,
+            qt_cable_cutout,
+            oled_cable_cutout,
+            header_cutout,
+        ],
+    )
+
+    display = (
+        oled_display()
+        .rotate(90, 0, 0)
+        .highlight()
+        .translate(-pcb_w / 2, pcb_thickness + display_thickness, -pcb_h / 2)
+    )
+
+    return Shape.union([main] + studs)
+
+
 def sx509_holder() -> Shape:
-    # return sx509_breakout()
     # return oled_display()
-    return esp32_feather()
+    # return esp32_feather()
+    return sx509_breakout()
 
 
 def write_shape(shape: Shape, path: Path) -> None:
@@ -1729,6 +1850,7 @@ def main() -> None:
     )
 
     write_shape(sx509_holder(), out_dir / "sx509_holder.scad")
+    write_shape(oled_holder(), out_dir / "oled_holder.scad")
 
 
 if __name__ == "__main__":

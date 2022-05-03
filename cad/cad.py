@@ -92,10 +92,32 @@ class Shape:
         center: bool = True,
     ) -> Shape:
         return Shape(
-            f"linear_extrude (height={height}, twist={twist}, scale={scale}, "
+            f"linear_extrude(height={height}, twist={twist}, scale={scale}, "
             f"convexity={convexity}, center={self.bool_str(center)})",
             [self],
         )
+
+    def extrude_rotate(
+        self,
+        angle: float = 360.0,
+        *,
+        convexivity: Optional[int] = None,
+        fa: Optional[float] = None,
+        fs: Optional[float] = None,
+        fn: Optional[float] = None,
+    ) -> Shape:
+        args: List[str] = [f"angle={angle}"]
+        if convexivity is not None:
+            args.append(f"convexivity={convexivity}")
+        if fa is not None:
+            args.append(f"$fa={fa}")
+        if fs is not None:
+            args.append(f"$fs={fs}")
+        if fn is not None:
+            args.append(f"$fn={fn}")
+
+        args_str = ", ".join(args)
+        return Shape(f"rotate_extrude({args_str})", [self])
 
     @classmethod
     def union(cls, children: List[Shape]) -> Shape:
@@ -176,6 +198,11 @@ class Shape:
 
         args_str = ", ".join(args)
         return cls(f"sphere({args_str})")
+
+    @classmethod
+    def polygon(cls, points: List[Tuple[float, float]]) -> Shape:
+        points_str = ", ".join(f"[{x}, {y}]" for x, y in points)
+        return cls(f"polygon([{points_str}])")
 
     @classmethod
     def project(cls, children: List[Shape]) -> Shape:
