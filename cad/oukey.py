@@ -1620,6 +1620,21 @@ def model_right(
     return Shape.union(parts)
 
 
+def model_left(
+    *,
+    show_caps: bool = False,
+    show_collisions: bool = False,
+    loose_holes: bool = False,
+) -> Shape:
+    right = model_right(
+        show_caps=show_caps,
+        show_collisions=show_collisions,
+        loose_holes=loose_holes,
+    )
+    left = right.mirror(1, 0, 0)
+    return left
+
+
 def oled_display() -> Shape:
     pcb_w = 33
     pcb_h = 21.65
@@ -1728,7 +1743,9 @@ def standoff_stud(d: float) -> Shape:
     return Shape.difference(stud, [cutout])
 
 
-def oled_holder() -> Shape:
+def oled_holder_parts(
+    wall_thickness: float
+) -> Tuple[Shape, Shape]:
     display_w = 32.5
     display_h = 11.5
     extra_thickness = 0.1
@@ -1742,12 +1759,6 @@ def oled_holder() -> Shape:
     qt_cable_h = 8
     qt_cable_cutout_w = 10
 
-    wall_thickness = 4
-    wall = (
-        Shape.cube(50, wall_thickness, 30)
-        .translate(0, wall_thickness / 2, 0)
-        .translate(-4, 0, 0)
-    )
     display_cutout = Shape.cube(
         display_w, display_thickness, display_h
     ).translate(0, (display_thickness - extra_thickness) / 2, 0)
@@ -1762,9 +1773,8 @@ def oled_holder() -> Shape:
         0,
     )
 
-    header_cutout = (
-        Shape.cube(18, wall_thickness, 4)
-        .translate(0, (wall_thickness / 2) + .8, 2 + (-pcb_h / 2))
+    header_cutout = Shape.cube(18, wall_thickness, 4).translate(
+        0, (wall_thickness / 2) + 0.8, 2 + (-pcb_h / 2)
     )
 
     oled_cable_h = display_h
@@ -1792,32 +1802,45 @@ def oled_holder() -> Shape:
         .rotate(-90, 0, 0)
         .translate(0, display_thickness - 0.01, 0)
     )
-    studs = [
+    postive_parts = [
         stud.translate(-14.0, 0, -8.325),
         stud.translate(14.0, 0, -8.325),
         stud.translate(14.0, 0, 8.175),
         stud.translate(-14.0, 0, 8.175),
     ]
 
-    main = Shape.difference(
-        wall,
-        [
-            display_cutout,
-            pcb_cutout,
-            qt_cable_cutout,
-            oled_cable_cutout,
-            header_cutout,
-        ],
-    )
+    cutouts = [
+        display_cutout,
+        pcb_cutout,
+        qt_cable_cutout,
+        oled_cable_cutout,
+        header_cutout,
+    ]
 
-    display = (
-        oled_display()
-        .rotate(90, 0, 0)
-        .highlight()
-        .translate(-pcb_w / 2, pcb_thickness + display_thickness, -pcb_h / 2)
-    )
+    if False:
+        display = (
+            oled_display()
+            .rotate(90, 0, 0)
+            .highlight()
+            .translate(
+                -pcb_w / 2, pcb_thickness + display_thickness, -pcb_h / 2
+            )
+        )
+        postive_parts.append(display)
 
-    return Shape.union([main] + studs)
+    return Shape.union(cutouts), Shape.union(postive_parts)
+
+
+def oled_holder() -> Shape:
+    wall_thickness = 4
+    negative_part, postive_part = oled_holder_parts(wall_thickness)
+    wall = (
+        Shape.cube(50, wall_thickness, 30)
+        .translate(0, wall_thickness / 2, 0)
+        .translate(-4, 0, 0)
+    )
+    main = Shape.difference(wall, [negative_part])
+    return Shape.union([main, postive_part])
 
 
 def sx509_holder() -> Shape:
@@ -1847,6 +1870,14 @@ def main() -> None:
             loose_holes=args.loose_keyholes,
         ),
         out_dir / "right.scad",
+    )
+    write_shape(
+        model_left(
+            show_caps=args.show_keycaps,
+            show_collisions=args.show_collisions,
+            loose_holes=args.loose_keyholes,
+        ),
+        out_dir / "left.scad",
     )
 
     write_shape(sx509_holder(), out_dir / "sx509_holder.scad")
