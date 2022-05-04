@@ -1716,20 +1716,20 @@ def esp32_feather() -> Shape:
 
 
 def standoff_stud(d: float) -> Shape:
-    tolerance = d * 0.1
+    tolerance = d * 0.05
     r = (d / 2) - tolerance
 
     pcb_thickness = 1.57
-    lip_r = 0.2
-    lip_h = 0.2
+    lip_r = 0.4
+    lip_h = 0.4
 
     h = 4
-    cutout_ratio = 0.3
+    cutout_ratio = 0.25
 
     points = [
         (0.0, 0.0),
         (r, 0.0),
-        (r, pcb_thickness * 0.95),
+        (r, pcb_thickness * 0.85),
         (r + lip_r, pcb_thickness + lip_h),
         (r * cutout_ratio, h),
         (0.0, h),
@@ -1738,25 +1738,23 @@ def standoff_stud(d: float) -> Shape:
     flat = Shape.polygon(points)
     stud = flat.extrude_rotate(fn=30)
     cutout = Shape.cube(r * cutout_ratio * 2, r * 4, h).translate(
-        0, 0, (h / 2) + (pcb_thickness / 2)
+        0, 0, (h / 2) + (pcb_thickness * 0.25)
     )
     return Shape.difference(stud, [cutout])
 
 
-def oled_holder_parts(
-    wall_thickness: float
-) -> Tuple[Shape, Shape]:
+def oled_holder_parts(wall_thickness: float) -> Tuple[Shape, Shape]:
     display_w = 32.5
-    display_h = 11.5
+    display_h = 12.0
     extra_thickness = 0.1
-    display_thickness = 1.63 + extra_thickness
+    display_thickness = 1.53 + extra_thickness
 
     pcb_w = 33
     pcb_h = 21.65
     pcb_thickness = 1.57
     pcb_tolerance = 0.5
 
-    qt_cable_h = 8
+    qt_cable_h = 9
     qt_cable_cutout_w = 10
 
     display_cutout = Shape.cube(
@@ -1777,7 +1775,7 @@ def oled_holder_parts(
         0, (wall_thickness / 2) + 0.8, 2 + (-pcb_h / 2)
     )
 
-    oled_cable_h = display_h
+    oled_cable_h = display_h - 1.75
     oled_cable_cutout_w = 2
     oled_cable_cutout = Shape.difference(
         Shape.cube(
@@ -1794,7 +1792,14 @@ def oled_holder_parts(
     ).translate(
         (oled_cable_cutout_w + display_w) / 2,
         (wall_thickness + extra_thickness) / 2,
-        0,
+        -(1.75 / 2),
+    )
+
+    cutin_w = 1.75
+    cutin_h = 2.0
+    cutin_thickness = display_thickness - 0.1
+    cable_cutin = Shape.cube(cutin_w, cutin_thickness, cutin_h).translate(
+        (display_w - cutin_w) / 2, cutin_thickness / 2, (display_h - cutin_h) / 2.0
     )
 
     stud = (
@@ -1807,6 +1812,7 @@ def oled_holder_parts(
         stud.translate(14.0, 0, -8.325),
         stud.translate(14.0, 0, 8.175),
         stud.translate(-14.0, 0, 8.175),
+        cable_cutin,
     ]
 
     cutouts = [
