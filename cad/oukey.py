@@ -1678,7 +1678,7 @@ def oled_display() -> Shape:
     )
 
 
-def sx509_breakout() -> Shape:
+def sx1509_breakout() -> Shape:
     standoff = Shape.cylinder(h=2, r=3.302 / 2, fn=30)
     # Note, the 2 long sides are cut in inside the stand-off holes.
     # Only 22.87mm wide
@@ -1708,14 +1708,11 @@ def esp32_feather() -> Shape:
         [
             standoff_big.translate(48.40, 2.5, 0.0),
             standoff_big.translate(48.40, 19.0 + 1.25, 0.0),
-            # standoff.translate(-15.367, 10.287, 0.0),
-            # standoff.translate(-15.367, -10.287, 0.0),
-            # standoff.translate(15.367, -10.287, 0.0),
         ],
     )
 
 
-def standoff_stud(d: float) -> Shape:
+def standoff_stud(d: float, offset: float = 0.0) -> Shape:
     tolerance = d * 0.075
     r = (d / 2) - tolerance
 
@@ -1726,19 +1723,23 @@ def standoff_stud(d: float) -> Shape:
     h = 4
     cutout_ratio = 0.25
 
-    points = [
-        (0.0, 0.0),
-        (r, 0.0),
-        (r, pcb_thickness * 0.85),
-        (r + lip_r, pcb_thickness + lip_h),
-        (r * cutout_ratio, h),
-        (0.0, h),
+    points: List[float] = [(0.0, 0.0)]
+    if offset > 0.0:
+        collar_r = 0.5
+        points += [(r + collar_r, 0.0), (r + collar_r, offset)]
+
+    points += [
+        (r, offset),
+        (r, offset + (pcb_thickness * 0.85)),
+        (r + lip_r, offset + (pcb_thickness + lip_h)),
+        (r * cutout_ratio, offset + h),
+        (0.0, offset + h),
     ]
 
     flat = Shape.polygon(points)
     stud = flat.extrude_rotate(fn=30)
     cutout = Shape.cube(r * cutout_ratio * 2, r * 4, h).translate(
-        0, 0, (h / 2) + (pcb_thickness * 0.50)
+        0, 0, (h / 2) + (pcb_thickness * 0.50) + offset
     )
     return Shape.difference(stud, [cutout])
 
@@ -1779,7 +1780,9 @@ def oled_holder_parts(wall_thickness: float) -> Tuple[Shape, Shape]:
     cutin_h = 2.0
     cutin_thickness = display_thickness - 0.1
     cable_cutin = Shape.cube(cutin_w, cutin_thickness, cutin_h).translate(
-        (display_w - cutin_w) / 2, cutin_thickness / 2, (display_h - cutin_h) / 2.0
+        (display_w - cutin_w) / 2,
+        cutin_thickness / 2,
+        (display_h - cutin_h) / 2.0,
     )
 
     oled_cable_h = display_h - cutin_h
@@ -1849,10 +1852,43 @@ def oled_holder() -> Shape:
     return Shape.union([main, postive_part])
 
 
-def sx509_holder() -> Shape:
-    # return oled_display()
-    # return esp32_feather()
-    return sx509_breakout()
+def sx1509_holder_parts(wall_thickness: float) -> List[Shape]:
+    offset = 3.0
+    stud = (
+        standoff_stud(d=3.302, offset=offset)
+        .rotate(-90, 0, 0)
+        .translate(0, wall_thickness - 0.01, 0)
+    )
+
+    parts = [
+        stud.translate(15.367, 0.0, 10.287),
+        stud.translate(-15.367, 0.0, 10.287),
+        stud.translate(-15.367, 0.0, -10.287),
+        stud.translate(15.367, 0.0, -10.287),
+    ]
+
+    if True:
+        pcb_thickness = 1.57
+        sx1509 = (
+            sx1509_breakout()
+            .rotate(90, 0, 0)
+            .highlight()
+            .translate(0, (pcb_thickness / 2.0) + wall_thickness + offset, 0)
+        )
+        parts.append(sx1509)
+
+    return parts
+
+
+def sx1509_holder() -> Shape:
+    wall_thickness = 4
+    parts = sx1509_holder_parts(wall_thickness)
+
+    wall = Shape.difference(
+        Shape.cube(38, wall_thickness, 28),
+        [Shape.cube(26, wall_thickness * 1.1, 18)],
+    ).translate(0, wall_thickness / 2, 0)
+    return Shape.union([wall] + parts)
 
 
 def write_shape(shape: Shape, path: Path) -> None:
@@ -1886,7 +1922,7 @@ def main() -> None:
         out_dir / "left.scad",
     )
 
-    write_shape(sx509_holder(), out_dir / "sx509_holder.scad")
+    write_shape(sx1509_holder(), out_dir / "sx1509_holder.scad")
     write_shape(oled_holder(), out_dir / "oled_holder.scad")
 
 
