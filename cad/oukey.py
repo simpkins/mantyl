@@ -1867,7 +1867,7 @@ def sx1509_holder_parts(wall_thickness: float) -> List[Shape]:
         stud.translate(15.367, 0.0, -10.287),
     ]
 
-    if True:
+    if False:
         pcb_thickness = 1.57
         sx1509 = (
             sx1509_breakout()
@@ -1889,6 +1889,102 @@ def sx1509_holder() -> Shape:
         [Shape.cube(26, wall_thickness * 1.1, 18)],
     ).translate(0, wall_thickness / 2, 0)
     return Shape.union([wall] + parts)
+
+
+def header() -> Shape:
+    body_h = 8.6
+    main = Shape.cube(28.0, 8.5, body_h)
+    inner = Shape.cube(25.9, 6.4, body_h).translate(0.0, 0.0, 2.25)
+    edge_cutout1 = Shape.cube(4.0, 3.3, body_h).translate(
+        12.945 + 2.0, 0.0, -2.10
+    )
+    edge_cutout2 = Shape.cube(4.0, 3.3, body_h).translate(
+        -12.945 - 2.0, 0.0, -2.10
+    )
+
+    body = Shape.difference(
+        main, [inner, edge_cutout1, edge_cutout2]
+    ).translate(0.0, 0.0, body_h / 2.0)
+
+    pin_h = 11.25
+    pin_pitch = 2.54
+    pin_z = (pin_h / 2) - 4.0
+    pin = Shape.cube(0.64, 0.64, pin_h)
+    parts = [body]
+    for y in (0.5, -0.5):
+        for n in range(8):
+            p = pin.translate(pin_pitch * (n - 3.5), pin_pitch * y, pin_z)
+            parts.append(p)
+
+    return Shape.union(parts)
+
+
+def header_holder_parts(wall_thickness: float) -> Shape:
+    offset = 6.0
+
+    header_w = 28.0
+    header_d = 8.5
+    header_h = 8.6
+
+    base_w = 4.0
+    base_d = 12.0
+    nub_d = (base_d - header_d) / 2.0
+    nub_h = 6.0
+    nub_tolerance = 0.1
+
+    nub = Shape.cube(base_w, nub_d - nub_tolerance, nub_h)
+    nub_l = nub.translate(
+        0.0, nub_tolerance + (base_d - nub_d) / 2.0, offset + (nub_h / 2.0)
+    )
+    nub_r = nub.translate(
+        0.0,
+        -1.0 * (nub_tolerance + (base_d - nub_d) / 2.0),
+        offset + (nub_h / 2.0),
+    )
+
+    clip_outline = Shape.polygon([
+        (1.0, offset),
+        (2.0, offset),
+        (2.0, offset + 5.0),
+        (0.0, offset + 2.3),
+        (1.0, offset + 2.3),
+        ])
+    clip = clip_outline.extrude_linear(3.0).rotate(90.0, 0.0, 0.0)
+
+    base = Shape.union(
+        [
+            Shape.cube(base_w, base_d, offset).translate(
+                0.0, 0.0, offset / 2.0
+            ),
+            nub_l,
+            nub_r,
+            clip,
+        ]
+    )
+
+    left = base.translate((header_w - base_w) / 2.0, 0.0, 0.0)
+    right = left.mirror(1.0, 0.0, 0.0)
+
+    parts = [left, right]
+
+    if False:
+        parts.append(header().translate(0.0, 0.0, offset).highlight())
+
+    return (
+        Shape.union(parts)
+        .rotate(-90, 0, 0)
+        .translate(0.0, wall_thickness - 0.1, 0.0)
+    )
+
+
+def header_holder() -> Shape:
+    wall_thickness = 4
+    holder = header_holder_parts(wall_thickness)
+
+    wall = Shape.cube(30, wall_thickness, 15).translate(
+        0, wall_thickness / 2, 0
+    )
+    return Shape.union([wall, holder])
 
 
 def write_shape(shape: Shape, path: Path) -> None:
@@ -1924,6 +2020,7 @@ def main() -> None:
 
     write_shape(sx1509_holder(), out_dir / "sx1509_holder.scad")
     write_shape(oled_holder(), out_dir / "oled_holder.scad")
+    write_shape(header_holder(), out_dir / "header_holder.scad")
 
 
 if __name__ == "__main__":
