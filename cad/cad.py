@@ -55,8 +55,11 @@ class Shape:
     def comment(self, comment: str) -> Shape:
         return Shape(value=self.value, children=self.children, comment=comment)
 
-    def highlight(self) -> Shape:
-        return Shape("#", children=[self])
+    def highlight(self, highlight: bool = True) -> Shape:
+        if highlight:
+            return Shape("#", children=[self])
+        else:
+            return self
 
     def grey(self) -> Shape:
         return Shape("%", children=[self])

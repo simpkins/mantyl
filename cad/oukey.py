@@ -38,11 +38,37 @@ class WallPost:
     """
 
     def __init__(
-        self, post: Shape, near_corner: Point, far_corner: Point
+        self,
+        post: Shape,
+        near_corner: Point,
+        far_corner: Point,
+        highlight: bool = False,
     ) -> None:
         self.post = post
         self.near = near_corner
         self.far = far_corner
+        self.highlight = highlight
+
+
+class ThumbWallPost:
+    """
+    WallPost contains point information about a single vertical portion of the
+    outer thumb section walls.
+
+    This is similar to WallPost, but the thumb walls do not have separate near
+    & far corners.  They drop straight to the ground instead of having a taper
+    from the near to far corner.
+    """
+
+    def __init__(
+        self,
+        post: Shape,
+        corner: Point,
+        highlight: bool = False,
+    ) -> None:
+        self.post = post
+        self.corner = corner
+        self.highlight = highlight
 
 
 class MyKeyboard:
@@ -535,7 +561,6 @@ class MyKeyboard:
             for row in range(3):
                 shapes.append(self.thumb_pos(shape, col, row))
 
-        shapes.append(self.thumb_pos(shape, 3, 0))
         return shapes
 
     def thumb_orientation(self, shape: Shape) -> Shape:
@@ -577,12 +602,14 @@ class MyKeyboard:
         )
 
         # vertical line between columns 2 and extra
-        result += tri_strip(
-            self.thumb_pos(corner_tr(), 2, 2),
-            self.thumb_pos(corner_tl(), 3, 0),
-            self.thumb_pos(corner_br(), 2, 2),
-            self.thumb_pos(corner_bl(), 3, 0),
-        )
+        if False:
+            result += tri_strip(
+                self.thumb_pos(corner_tr(), 2, 2),
+                self.thumb_pos(corner_tl(), 3, 0),
+                self.thumb_pos(corner_br(), 2, 2),
+                self.thumb_pos(corner_bl(), 3, 0),
+                highlight=True,
+            )
 
         # horizontal connectors between rows 0 and 1
         result += tri_strip(
@@ -625,17 +652,20 @@ class MyKeyboard:
         )
 
         # extra perimeter around thumb area
-        result += tri_strip(
-            self.thumb_pos(corner_tl(), 3, 0),
-            self.thumb_pos(corner_tr(), 2, 2),
-            self.thumb_pos(corner_tr(), 3, 0),
-            self.thumb_pos(corner_br(), 2, 1),
-        )
-        result += tri_strip(
-            self.thumb_pos(corner_bl(), 3, 0),
-            self.thumb_pos(corner_br(), 2, 2),
-            self.thumb_pos(corner_bl(), 2, 2),
-        )
+        if False:
+            result += tri_strip(
+                self.thumb_pos(corner_tl(), 3, 0),
+                self.thumb_pos(corner_tr(), 2, 2),
+                self.thumb_pos(corner_tr(), 3, 0),
+                self.thumb_pos(corner_br(), 2, 1),
+                highlight=True,
+            )
+            result += tri_strip(
+                self.thumb_pos(corner_bl(), 3, 0),
+                self.thumb_pos(corner_br(), 2, 2),
+                self.thumb_pos(corner_bl(), 2, 2),
+                highlight=True,
+            )
         result += tri_strip(
             self.thumb_pos(corner_br(), 1, 2),
             self.thumb_pos(corner_bl(), 2, 2),
@@ -677,9 +707,11 @@ class MyKeyboard:
             self.thumb_pos(corner_tr(x=3), 2, 1, true_pos=True),
             self.thumb_pos(corner_br(), 2, 1, true_pos=True),
             self.thumb_pos(corner_br(x=3, y=2), 2, 1, true_pos=True),
-            self.thumb_pos(corner_tr(), 3, 0, true_pos=True),
-            self.thumb_pos(corner_tr(x=3, y=2), 3, 0, true_pos=True),
-            self.thumb_pos(corner_br(), 3, 0, true_pos=True),
+            self.thumb_pos(corner_br(x=3, y=2), 2, 1, true_pos=True),
+            # self.thumb_pos(corner_tr(), 3, 0, true_pos=True),
+            # self.thumb_pos(corner_tr(x=3, y=2), 3, 0, true_pos=True),
+            # self.thumb_pos(corner_br(), 3, 0, true_pos=True),
+            highlight=True,
         )
 
         # Connecting wall between the thumb and main keys
@@ -699,7 +731,9 @@ class MyKeyboard:
                     self.place_key(corner_br().translate(0, 0, -6), 1, 5),
                     self.place_key(corner_br(y=-1).translate(0, 0, -6), 1, 5),
                 ]
-            ),
+            )
+        ]
+        ignore = [
             Shape.hull(
                 [
                     self.thumb_pos(corner_tr(x=3, y=2), 3, 0, true_pos=True),
@@ -762,6 +796,8 @@ class MyKeyboard:
                     self.place_key(corner_br(y=-1).translate(0, 0, -6), 1, 5),
                 ]
             ),
+        ]
+        result += [
             Shape.hull(
                 [
                     self.thumb_pos(
@@ -972,15 +1008,15 @@ class MyKeyboard:
         tf2 = self.place_key(tf, column, row)
         return tf2.translate(0, 5, 0)
 
-    def wall_segment(
-        self,
-        side1_post: Shape,
-        side1_near_corner: Point,
-        side1_far_corner: Point,
-        side2_post: Shape,
-        side2_near_corner: Point,
-        side2_far_corner: Point,
-    ) -> List[Shape]:
+
+    def wall_segments(self, posts: List[WallPost]) -> List[Shape]:
+        result: List[Shape] = []
+        for idx in range(1, len(posts)):
+            result += self.wall_segment(posts[idx - 1], posts[idx])
+
+        return result
+
+    def wall_segment(self, post1: WallPost, post2: WallPost) -> List[Shape]:
         corner = Shape.sphere(self.wall_radius, fn=30)
         ground_corner = Shape.sphere(self.wall_radius, fn=30).difference(
             [
@@ -992,33 +1028,33 @@ class MyKeyboard:
             ]
         )
 
-        ground1 = Point(side1_far_corner.x, side1_far_corner.y, 0)
-        ground2 = Point(side2_far_corner.x, side2_far_corner.y, 0)
+        ground1 = Point(post1.far.x, post1.far.y, 0)
+        ground2 = Point(post2.far.x, post2.far.y, 0)
         return [
             Shape.hull(
                 [
-                    side1_post,
-                    side2_post,
-                    corner.ptranslate(side1_near_corner),
-                    corner.ptranslate(side2_near_corner),
+                    post1.post,
+                    post2.post,
+                    corner.ptranslate(post1.near),
+                    corner.ptranslate(post2.near),
                 ]
-            ),
+            ).highlight(post1.highlight or post2.highlight),
             Shape.hull(
                 [
-                    corner.ptranslate(side1_near_corner),
-                    corner.ptranslate(side2_near_corner),
-                    corner.ptranslate(side1_far_corner),
-                    corner.ptranslate(side2_far_corner),
+                    corner.ptranslate(post1.near),
+                    corner.ptranslate(post2.near),
+                    corner.ptranslate(post1.far),
+                    corner.ptranslate(post2.far),
                 ]
-            ),
+            ).highlight(post1.highlight or post2.highlight),
             Shape.hull(
                 [
-                    corner.ptranslate(side1_far_corner),
-                    corner.ptranslate(side2_far_corner),
+                    corner.ptranslate(post1.far),
+                    corner.ptranslate(post2.far),
                     ground_corner.ptranslate(ground1),
                     ground_corner.ptranslate(ground2),
                 ]
-            ),
+            ).highlight(post1.highlight or post2.highlight),
         ]
 
     def wall_post(
@@ -1028,13 +1064,17 @@ class MyKeyboard:
         key_post: Shape,
         corner_transform: Transform,
         far_offset: Point,
+        highlight: bool = False,
     ) -> WallPost:
         near = self.place_key(corner_transform, column, row).point()
         far = near.ptranslate(far_offset)
         post = self.place_key(key_post, column, row)
-        return WallPost(post, near, far)
+        return WallPost(post, near, far, highlight=highlight)
 
-    def wall_left(self) -> Tuple[List[WallPost], float]:
+    def wall_left(self) -> List[WallPost]:
+        straight_lower_wall = True
+        straight_upper_wall = False
+
         # Top left key hole corner
         left_tl = Transform().translate(
             -mount_width / 2 - self.wall_radius,
@@ -1057,9 +1097,10 @@ class MyKeyboard:
             self.wall_post(-1, 2, corner_tl(), left_tl, Point(-3.0, 3.0, 0.0)),
         ]
 
-        lower_x = min(post.far.x for post in lower_posts)
-        for post in lower_posts:
-            post.far.x = lower_x
+        if straight_lower_wall:
+            lower_x = min(post.far.x for post in lower_posts)
+            for post in lower_posts:
+                post.far.x = lower_x
 
         top_tl = Transform().translate(
             -mount_width / 2,
@@ -1082,11 +1123,21 @@ class MyKeyboard:
             self.wall_post(0, 0, corner_bl(), left_bl, Point(-3.0, 0.0, 0.0)),
             self.wall_post(0, 0, corner_tl(), left_tl, Point(-3.0, 0.0, 0.0)),
         ]
-        # upper_x = min(post.far.x for post in upper_posts)
-        # for post in upper_posts:
-        #    post.far.x = upper_x
 
-        return (lower_posts + horiz_posts + upper_posts), lower_x
+        if straight_upper_wall:
+            upper_x = min(post.far.x for post in upper_posts)
+            for post in upper_posts:
+                post.far.x = upper_x
+
+        # The concave corner between the horizontal wall and upper wall needs
+        # a little tweaking.  Make sure these two posts do not intersect into
+        # the other wall.
+        if horiz_posts[-1].far.x > upper_posts[0].far.x:
+            horiz_posts[-1].far.x = upper_posts[0].far.x
+        if upper_posts[0].far.y < horiz_posts[-1].far.y:
+            upper_posts[0].far.y = horiz_posts[-1].far.y
+
+        return lower_posts + horiz_posts + upper_posts
 
     def wall_back(self) -> List[WallPost]:
         # Top left key hole corner
@@ -1177,7 +1228,7 @@ class MyKeyboard:
         last_row = 5
         front_wall_offset = Point(0.0, -1.0, 0.0)
         posts: List[WallPost] = []
-        for column in (5, 4, 3):
+        for column in (5, 4, 3, 2, 1):
             posts.append(
                 self.wall_post(
                     column, last_row, corner_br(), front_br, front_wall_offset
@@ -1189,23 +1240,24 @@ class MyKeyboard:
                 )
             )
 
-        # On column 2, we move the bottom left end inwards a little bit, so
-        # it does not stick out past the key hole
-        posts.append(
-            self.wall_post(
-                2, last_row, corner_br(), front_br, front_wall_offset
+        if False:
+            # On column 2, we move the bottom left end inwards a little bit, so
+            # it does not stick out past the key hole
+            posts.append(
+                self.wall_post(
+                    2, last_row, corner_br(), front_br, front_wall_offset
+                )
             )
-        )
-        front_bl2 = Transform().translate(
-            -mount_width / 2 + self.wall_radius,
-            -mount_height / 2 - self.wall_radius,
-            plate_thickness - self.wall_radius,
-        )
-        posts.append(
-            self.wall_post(
-                2, last_row, corner_bl(), front_bl2, front_wall_offset
+            front_bl2 = Transform().translate(
+                -mount_width / 2 + self.wall_radius,
+                -mount_height / 2 - self.wall_radius,
+                plate_thickness - self.wall_radius,
             )
-        )
+            posts.append(
+                self.wall_post(
+                    2, last_row, corner_bl(), front_bl2, front_wall_offset
+                )
+            )
 
         min_y = min(post.far.y for post in posts)
         for post in posts:
@@ -1214,8 +1266,6 @@ class MyKeyboard:
         return posts, min_y
 
     def wall_thumb(self) -> List[Shape]:
-        result: List[Shape] = []
-
         # Left side wall
         posts: List[Shape] = []
         top_points: List[Point] = []
@@ -1260,22 +1310,40 @@ class MyKeyboard:
         top_points.append(bl_corner)
         ground_points.append(Point(bl_corner.x, bl_corner.y, 0))
 
-        # bottom-left corner of thumb (3, 0) position
-        posts.append(self.thumb_pos(corner_bl(), 3, 0, true_pos=True))
-        bl_corner = self.thumb_pos(bottom_left, 3, 0, true_pos=True).point()
-        top_points.append(bl_corner)
-        ground_points.append(Point(bl_corner.x, bl_corner.y, 0))
+        if False:
+            # bottom-left corner of thumb (3, 0) position
+            posts.append(self.thumb_pos(corner_bl(), 3, 0, true_pos=True))
+            bl_corner = self.thumb_pos(
+                bottom_left, 3, 0, true_pos=True
+            ).point()
+            top_points.append(bl_corner)
+            ground_points.append(Point(bl_corner.x, bl_corner.y, 0))
 
-        # bottom-right corner of thumb (3, 0) position
-        bottom_right = Transform().translate(
-            mount_width / 2 + self.wall_radius,
-            -mount_height / 2 - self.wall_radius,
-            plate_thickness - self.wall_radius,
-        )
-        posts.append(self.thumb_pos(corner_br(), 3, 0, true_pos=True))
-        br_corner = self.thumb_pos(bottom_right, 3, 0, true_pos=True).point()
-        top_points.append(br_corner)
-        ground_points.append(Point(br_corner.x, br_corner.y, 0))
+            # bottom-right corner of thumb (3, 0) position
+            bottom_right = Transform().translate(
+                mount_width / 2 + self.wall_radius,
+                -mount_height / 2 - self.wall_radius,
+                plate_thickness - self.wall_radius,
+            )
+            posts.append(self.thumb_pos(corner_br(), 3, 0, true_pos=True))
+            br_corner = self.thumb_pos(
+                bottom_right, 3, 0, true_pos=True
+            ).point()
+            top_points.append(br_corner)
+            ground_points.append(Point(br_corner.x, br_corner.y, 0))
+        else:
+            # bottom-right corner of thumb (2, 2) position
+            bottom_right = Transform().translate(
+                mount_width / 2 + self.wall_radius,
+                -mount_height / 2 - self.wall_radius,
+                plate_thickness - self.wall_radius,
+            )
+            posts.append(self.thumb_pos(corner_br(), 2, 2, true_pos=True))
+            br_corner = self.thumb_pos(
+                bottom_right, 2, 2, true_pos=True
+            ).point()
+            top_points.append(br_corner)
+            ground_points.append(Point(br_corner.x, br_corner.y, 0))
 
         corner = Shape.sphere(self.wall_radius, fn=30)
         ground_corner = Shape.sphere(self.wall_radius, fn=30).difference(
@@ -1287,6 +1355,8 @@ class MyKeyboard:
                 ).translate(0, 0, -self.wall_radius)
             ]
         )
+
+        result: List[Shape] = []
         for idx in range(1, len(posts)):
             result.append(
                 Shape.hull(
@@ -1308,8 +1378,6 @@ class MyKeyboard:
                     ]
                 )
             )
-
-        # Bottom wall
 
         return result
 
@@ -1412,6 +1480,11 @@ class MyKeyboard:
         ]
 
         return result
+
+    def wall_thumb_gap1_v2(self, front_wall_post: WallPost) -> List[Shape]:
+        return [
+            Shape.sphere(5, fn=30).ptranslate(front_wall_post.near).highlight()
+        ]
 
     def wall_thumb_gap1(self, front_wall_post: WallPost) -> List[Shape]:
         corner = Shape.sphere(self.wall_radius, fn=30)
@@ -1558,7 +1631,7 @@ class MyKeyboard:
         return result
 
     def walls(self) -> List[Shape]:
-        left_wall_posts, left_wall_x = self.wall_left()
+        left_wall_posts = self.wall_left()
         front_wall_posts, front_wall_y = self.wall_front()
         posts = (
             left_wall_posts
@@ -1567,22 +1640,15 @@ class MyKeyboard:
             + front_wall_posts
         )
 
-        result: List[Shape] = []
-        for idx in range(1, len(posts)):
-            result += self.wall_segment(
-                posts[idx - 1].post,
-                posts[idx - 1].near,
-                posts[idx - 1].far,
-                posts[idx].post,
-                posts[idx].near,
-                posts[idx].far,
-            )
+        result = self.wall_segments(posts)
 
+        left_wall_x = left_wall_posts[0].far.x
         return (
             result
             + self.wall_thumb()
             + self.wall_thumb_gap0(left_wall_x)
-            + self.wall_thumb_gap1(front_wall_posts[-1])
+            # + self.wall_thumb_gap1(front_wall_posts[-1])
+            + self.wall_thumb_gap1_v2(front_wall_posts[-1])
         )
 
 
@@ -1599,7 +1665,7 @@ def model_right(
         kbd.key_holes()
         + kbd.connectors()
         + kbd.thumb_area()
-        + kbd.thumb_connect_wall()
+        # + kbd.thumb_connect_wall()
         # + kbd.wrist_rest()
         + kbd.walls()
     )
@@ -1609,14 +1675,6 @@ def model_right(
     if show_collisions:
         parts.append(kbd.key_collisions().highlight())
 
-    # OLED display mock-up
-    if False:
-        parts.append(
-            Shape.cube(46.3, 11.5, 1.45)
-            .highlight()
-            .rotate(90, 0, -53)
-            .translate(-110, -85, 20)
-        )
     return Shape.union(parts)
 
 
@@ -1942,13 +2000,15 @@ def header_holder_parts(wall_thickness: float) -> Shape:
         offset + (nub_h / 2.0),
     )
 
-    clip_outline = Shape.polygon([
-        (1.0, offset),
-        (2.0, offset),
-        (2.0, offset + 5.0),
-        (0.0, offset + 2.3),
-        (1.0, offset + 2.3),
-        ])
+    clip_outline = Shape.polygon(
+        [
+            (1.0, offset),
+            (2.0, offset),
+            (2.0, offset + 5.0),
+            (0.0, offset + 2.3),
+            (1.0, offset + 2.3),
+        ]
+    )
     clip = clip_outline.extrude_linear(3.0).rotate(90.0, 0.0, 0.0)
 
     base = Shape.union(
