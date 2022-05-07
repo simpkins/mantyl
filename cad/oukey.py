@@ -61,10 +61,7 @@ class ThumbWallPost:
     """
 
     def __init__(
-        self,
-        post: Shape,
-        corner: Point,
-        highlight: bool = False,
+        self, post: Shape, corner: Point, highlight: bool = False
     ) -> None:
         self.post = post
         self.corner = corner
@@ -1008,7 +1005,6 @@ class MyKeyboard:
         tf2 = self.place_key(tf, column, row)
         return tf2.translate(0, 5, 0)
 
-
     def wall_segments(self, posts: List[WallPost]) -> List[Shape]:
         result: List[Shape] = []
         for idx in range(1, len(posts)):
@@ -1265,86 +1261,7 @@ class MyKeyboard:
 
         return posts, min_y
 
-    def wall_thumb(self) -> List[Shape]:
-        # Left side wall
-        posts: List[Shape] = []
-        top_points: List[Point] = []
-        ground_points: List[Point] = []
-
-        # top-right corner of thumb (1, 0) position
-        top_right = Transform().translate(
-            mount_width / 2 + self.wall_radius,
-            mount_height / 2 + self.wall_radius + 2.0,
-            plate_thickness - self.wall_radius,
-        )
-        posts.append(self.thumb_pos(corner_tr(), 1, 0, true_pos=True))
-        tr_corner = self.thumb_pos(top_right, 1, 0, true_pos=True).point()
-        top_points.append(tr_corner)
-        ground_points.append(Point(tr_corner.x, tr_corner.y, 0))
-
-        # top-left corner of thumb (0, 0) position
-        top_left = Transform().translate(
-            -mount_width / 2 - self.wall_radius,
-            mount_height / 2 + self.wall_radius,
-            plate_thickness - self.wall_radius,
-        )
-        posts.append(self.thumb_pos(corner_tl(), 0, 0, true_pos=True))
-        tl_corner = self.thumb_pos(top_left, 0, 0, true_pos=True).point()
-        top_points.append(tl_corner)
-        ground_points.append(Point(tl_corner.x, tl_corner.y, 0))
-
-        # bottom-left corner of thumb (0, 2) position
-        bottom_left = Transform().translate(
-            -mount_width / 2 - self.wall_radius,
-            -mount_height / 2 - self.wall_radius,
-            plate_thickness - self.wall_radius,
-        )
-        posts.append(self.thumb_pos(corner_bl(), 0, 2, true_pos=True))
-        bl_corner = self.thumb_pos(bottom_left, 0, 2, true_pos=True).point()
-        top_points.append(bl_corner)
-        ground_points.append(Point(bl_corner.x, bl_corner.y, 0))
-
-        # bottom-left corner of thumb (2, 2) position
-        posts.append(self.thumb_pos(corner_bl(), 2, 2, true_pos=True))
-        bl_corner = self.thumb_pos(bottom_left, 2, 2, true_pos=True).point()
-        top_points.append(bl_corner)
-        ground_points.append(Point(bl_corner.x, bl_corner.y, 0))
-
-        if False:
-            # bottom-left corner of thumb (3, 0) position
-            posts.append(self.thumb_pos(corner_bl(), 3, 0, true_pos=True))
-            bl_corner = self.thumb_pos(
-                bottom_left, 3, 0, true_pos=True
-            ).point()
-            top_points.append(bl_corner)
-            ground_points.append(Point(bl_corner.x, bl_corner.y, 0))
-
-            # bottom-right corner of thumb (3, 0) position
-            bottom_right = Transform().translate(
-                mount_width / 2 + self.wall_radius,
-                -mount_height / 2 - self.wall_radius,
-                plate_thickness - self.wall_radius,
-            )
-            posts.append(self.thumb_pos(corner_br(), 3, 0, true_pos=True))
-            br_corner = self.thumb_pos(
-                bottom_right, 3, 0, true_pos=True
-            ).point()
-            top_points.append(br_corner)
-            ground_points.append(Point(br_corner.x, br_corner.y, 0))
-        else:
-            # bottom-right corner of thumb (2, 2) position
-            bottom_right = Transform().translate(
-                mount_width / 2 + self.wall_radius,
-                -mount_height / 2 - self.wall_radius,
-                plate_thickness - self.wall_radius,
-            )
-            posts.append(self.thumb_pos(corner_br(), 2, 2, true_pos=True))
-            br_corner = self.thumb_pos(
-                bottom_right, 2, 2, true_pos=True
-            ).point()
-            top_points.append(br_corner)
-            ground_points.append(Point(br_corner.x, br_corner.y, 0))
-
+    def thumb_wall_segments(self, posts: List[ThumbWallPost]) -> List[Shape]:
         corner = Shape.sphere(self.wall_radius, fn=30)
         ground_corner = Shape.sphere(self.wall_radius, fn=30).difference(
             [
@@ -1358,28 +1275,74 @@ class MyKeyboard:
 
         result: List[Shape] = []
         for idx in range(1, len(posts)):
+            post1 = posts[idx - 1]
+            post2 = posts[idx]
+            ground1 = Point(post1.corner.x, post1.corner.y, 0)
+            ground2 = Point(post2.corner.x, post2.corner.y, 0)
             result.append(
                 Shape.hull(
                     [
-                        corner.ptranslate(top_points[idx - 1]),
-                        ground_corner.ptranslate(ground_points[idx - 1]),
-                        corner.ptranslate(top_points[idx]),
-                        ground_corner.ptranslate(ground_points[idx]),
+                        corner.ptranslate(post1.corner),
+                        ground_corner.ptranslate(ground1),
+                        corner.ptranslate(post2.corner),
+                        ground_corner.ptranslate(ground2),
                     ]
                 )
             )
             result.append(
                 Shape.hull(
                     [
-                        posts[idx - 1],
-                        posts[idx],
-                        corner.ptranslate(top_points[idx - 1]),
-                        corner.ptranslate(top_points[idx]),
+                        post1.post,
+                        post2.post,
+                        corner.ptranslate(post1.corner),
+                        corner.ptranslate(post2.corner),
                     ]
                 )
             )
 
         return result
+
+    def wall_thumb(self) -> List[Shape]:
+        posts: List[ThumbWallPost] = []
+
+        def add_post(
+            col: int, row: int, post: Shape, transform: Transform
+        ) -> None:
+            posts.append(
+                ThumbWallPost(
+                    self.thumb_pos(post, col, row, true_pos=True),
+                    self.thumb_pos(transform, col, row, true_pos=True).point(),
+                )
+            )
+
+        top_left = Transform().translate(
+            -mount_width / 2 - self.wall_radius,
+            mount_height / 2 + self.wall_radius,
+            plate_thickness - self.wall_radius,
+        )
+        top_right = Transform().translate(
+            mount_width / 2 + self.wall_radius,
+            mount_height / 2 + self.wall_radius + 2.0,
+            plate_thickness - self.wall_radius,
+        )
+        bottom_left = Transform().translate(
+            -mount_width / 2 - self.wall_radius,
+            -mount_height / 2 - self.wall_radius,
+            plate_thickness - self.wall_radius,
+        )
+        bottom_right = Transform().translate(
+            mount_width / 2 + self.wall_radius,
+            -mount_height / 2 - self.wall_radius,
+            plate_thickness - self.wall_radius,
+        )
+
+        add_post(2, 2, corner_br(), bottom_right)
+        add_post(2, 2, corner_bl(), bottom_left)
+        add_post(0, 2, corner_bl(), bottom_left)
+        add_post(0, 0, corner_tl(), top_left)
+        add_post(1, 0, corner_tr(), top_right)
+
+        return self.thumb_wall_segments(posts)
 
     def wall_thumb_gap0(self, left_wall_x: float) -> List[Shape]:
         corner = Shape.sphere(self.wall_radius, fn=30)
