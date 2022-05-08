@@ -1302,7 +1302,7 @@ class MyKeyboard:
 
         return result
 
-    def wall_thumb(self) -> List[Shape]:
+    def wall_thumb(self) -> List[ThumbWallPost]:
         posts: List[ThumbWallPost] = []
 
         def add_post(
@@ -1342,7 +1342,7 @@ class MyKeyboard:
         add_post(0, 0, corner_tl(), top_left)
         add_post(1, 0, corner_tr(), top_right)
 
-        return self.thumb_wall_segments(posts)
+        return posts
 
     def wall_thumb_gap0(self, left_wall_x: float) -> List[Shape]:
         corner = Shape.sphere(self.wall_radius, fn=30)
@@ -1603,15 +1603,17 @@ class MyKeyboard:
             + front_wall_posts
         )
 
+        thumb_posts = self.wall_thumb()
+
         result = self.wall_segments(posts)
+        result += self.thumb_wall_segments(thumb_posts)
 
         left_wall_x = left_wall_posts[0].far.x
         return (
             result
-            + self.wall_thumb()
-            + self.wall_thumb_gap0(left_wall_x)
+            # + self.wall_thumb_gap0(left_wall_x)
             # + self.wall_thumb_gap1(front_wall_posts[-1])
-            + self.wall_thumb_gap1_v2(front_wall_posts[-1])
+            # + self.wall_thumb_gap1_v2(front_wall_posts[-1])
         )
 
 
@@ -2010,6 +2012,20 @@ def header_holder() -> Shape:
     return Shape.union([wall, holder])
 
 
+def keycaps() -> Shape:
+    import keyboard
+
+    return Shape.union(
+        [
+            keyboard.dsa_cap().translate(-50, 0, 0),
+            keyboard.dsa_cap(1.25).translate(-25, 0, 0),
+            keyboard.dsa_cap(1.5).translate(0, 0, 0),
+            keyboard.dsa_cap(1.75).translate(25, 0, 0),
+            keyboard.dsa_cap(2.0).translate(50, 0, 0),
+        ]
+    )
+
+
 def write_shape(shape: Shape, path: Path) -> None:
     path.write_text(shape.to_str())
 
@@ -2044,6 +2060,8 @@ def main() -> None:
     write_shape(sx1509_holder(), out_dir / "sx1509_holder.scad")
     write_shape(oled_holder(), out_dir / "oled_holder.scad")
     write_shape(header_holder(), out_dir / "header_holder.scad")
+
+    write_shape(keycaps(), out_dir / "keycaps.scad")
 
 
 if __name__ == "__main__":

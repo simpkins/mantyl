@@ -24,6 +24,16 @@ mount_height = keyswitch_height + (2 * keywell_wall_width)
 def dsa_cap(include_base: bool = False) -> Shape:
     # Signature Plastics DSA keycap specs:
     # https://www.solutionsinplastic.com/wp-content/uploads/2017/05/DSAFamily.pdf
+    #
+    # Keycap dimensions:
+    # 1x1: .725" square at base (18.415mm), .5" square at top
+    #      In practice mine are closer to 18mm square at the base
+    #
+    # 1x1: 18mm x 18mm
+    # 1x1.25: 18mm x 23mm
+    # 1x1.5: 18mm x 28mm
+    # 1x1.75: 18mm x 32.5mm
+    # 1x2: 18mm x 37.5mm
 
     lower_dim = 18.415  # .725"
     upper_dim = 12.7  # 0.5"
@@ -69,12 +79,72 @@ def dsa_cap(include_base: bool = False) -> Shape:
     return cap.translate(0, 0, z_offset)
 
 
+def dsa_cap(ratio = 1.0, include_base: bool = False) -> Shape:
+    """
+    Create an approximation of a 1xN DSA keycap.
+
+    The ratio argument controls the length dimension (N).
+    DSA keycaps are commonly available in 1x1, 1.25, 1.5, 1.75, and 1x2
+
+    Signature Plastics DSA keycap specs:
+    https://www.solutionsinplastic.com/wp-content/uploads/2017/05/DSAFamily.pdf
+
+    In practice the keycaps I have have roughly the following measurements at
+    the base:
+    - 1x1: 18mm x 18mm
+    - 1x1.25: 18mm x 23mm
+    - 1x1.5: 18mm x 28mm
+    - 1x1.75: 18mm x 32.5mm
+    - 1x2: 18mm x 37.5mm
+    """
+    # The datasheet claims the height is 0.291" (7.4mm)
+    # However, for the keycaps I have the height appears to be closer
+    # to about 7.85mm.  The taper inwards only starts about 1mm up.
+    height = 7.85
+
+    lower_w = 18.415
+    lower_d = lower_w * ratio
+    # The height of the lower portion before it starts to taper in
+    lower_h = 1
+
+    upper_w = 12.7
+    upper_d = lower_d - (lower_w - upper_w)
+    # upper_h doesn't really matter, just needs to be a number less than height
+    upper_h = 1
+
+    lower = Shape.cube(lower_w, lower_d, lower_h).translate(0, 0, lower_h * .5)
+    top = Shape.cube(upper_w, upper_d, upper_h).translate(0, 0, height - (upper_h * .5))
+    main = Shape.hull([lower, top])
+    parts = [lower, top, main]
+
+    # The offset from the key plate to the bottom of the key cap,
+    # when the key switch is not pressed.
+    switch_height = 6.5
+
+    # The base is a solid cube beneath the keycap, just to indicate the amount
+    # of space that will be taken up by the edge of the cap when the key is depressed.
+    # This helps detect if there will be collisions with another key along the
+    # key's path of travel.
+    if include_base:
+        base = Shape.cube(
+            lower_w, lower_d, switch_height - 0.01
+        ).translate(0, 0, 0.01 - switch_height / 2)
+        parts.append(base)
+
+    # Translate the cap upwards to take into account the plate thickness, and
+    # the key switch offset.
+    z_offset = plate_thickness + switch_height
+    return Shape.union(parts).translate(0, 0, z_offset)
+
+
 def cherry_mx() -> Shape:
     # TODO
     pass
 
 
-def single_plate(show_cap: Optional[bool] = False, loose: bool = False) -> Shape:
+def single_plate(
+    show_cap: Optional[bool] = False, loose: bool = False
+) -> Shape:
     """
     If loose is True, print the hole a bit wider so the key switch is a little
     loose.  This helps printing prototypes that are not intended to be the
@@ -103,9 +173,9 @@ def single_plate(show_cap: Optional[bool] = False, loose: bool = False) -> Shape
     parts = [top_wall, left_wall]
 
     if not loose:
-        nub_cube = Shape.cube(wall_width, nub_width, plate_thickness).translate(
-            (wall_width + hole_width) / 2, 0, plate_thickness / 2
-        )
+        nub_cube = Shape.cube(
+            wall_width, nub_width, plate_thickness
+        ).translate((wall_width + hole_width) / 2, 0, plate_thickness / 2)
         nub_cylinder = (
             Shape.cylinder(h=nub_width, r=1, fn=30)
             .rotate(90, 0, 0)
