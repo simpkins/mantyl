@@ -513,8 +513,8 @@ class MyKeyboard:
         )
 
     def thumb_pos(
-        self, shape: Shape, col: int, row: int, true_pos: bool = False
-    ) -> Shape:
+        self, shape: ShapeOrTransform, col: int, row: int, true_pos: bool = False
+    ) -> ShapeOrTransform:
         if true_pos:
             return self.thumb_orientation(self.thumb_pos(shape, col, row))
 
@@ -541,24 +541,51 @@ class MyKeyboard:
         if key == (2, 0):
             return shape.translate(offset, offset / 2.0, 0)
         if key == (2, 1):
-            return shape.translate(offset, -offset / 2.0, 0)
+            # I plan to use a 1x1.5 key for this position
+            # The bottom end of the other rows is at -offset - (18.415 / 2)
+            # The 1.5 key is 27.6225mm in length.
+            len_1x1 = 18.415
+            len_1x1_5 = len_1x1 * 1.5
+            bottom_edge = -offset - (len_1x1 * 0.5)
+            y = bottom_edge + (len_1x1_5 * 0.5)
+            return shape.translate(offset, y, 0)
         if key == (2, 2):
-            return shape.translate(offset, offset * -1.5, 0)
-
-        # extra
-        if key == (3, 0):
-            return shape.translate(offset * 2, offset * -2.0, 0)
+            raise Exception("todo")
+            # TODO: remove this
+            larger_offset = 24
+            return shape.translate(
+                offset, (offset / 2.0) - (2 * larger_offset), 0
+            )
 
         raise Exception("unknown thumb position")
 
-    def thumb_positions(self, shape: Shape) -> List[Shape]:
+    def thumb_pos_br(
+        self, shape: ShapeOrTransform, true_pos: bool = False
+    ) -> ShapeOrTransform:
+        """Return the position of the bottom right thumb if the thumb section
+        were actually 3x3 grid.  This is used for computing the connecting mesh
+        around the thumb holes, and for the thumb wall, so that the wall is a
+        straight line at the bottom.
+        """
+        if true_pos:
+            return self.thumb_orientation(self.thumb_pos_br(shape))
+
+        offset = 19
+        return shape.translate(offset, -offset, 0)
+
+    def thumb_positions_1x1(self, shape: Shape) -> List[Shape]:
         shapes: List[Shape] = []
 
-        for col in range(3):
+        for col in (0, 1):
             for row in range(3):
                 shapes.append(self.thumb_pos(shape, col, row))
 
+        shapes.append(self.thumb_pos(shape, 2, 0))
+
         return shapes
+
+    def thumb_positions(self, shape: Shape) -> List[Shape]:
+        return self.thumb_positions_1x1(shape) + [self.thumb_pos(shape, 2, 1)]
 
     def thumb_orientation(self, shape: Shape) -> Shape:
         return shape.rotate(0, 0, 40).rotate(0, 25, 0).translate(-86, -66, 41)
@@ -582,102 +609,40 @@ class MyKeyboard:
             self.thumb_pos(corner_bl(), 1, 2),
         )
 
-        # vertical line between columns 1 and 2
+        # vertical line between columns 1 and 2,
+        # plus wrapping around the top and bottoms of column 2
         result += tri_strip(
+            self.thumb_pos(corner_tr(), 2, 0),
             self.thumb_pos(corner_tr(), 1, 0),
             self.thumb_pos(corner_tl(), 2, 0),
-            self.thumb_pos(corner_br(), 1, 0),
-            self.thumb_pos(corner_bl(), 2, 0),
-            self.thumb_pos(corner_tr(), 1, 1),
-            self.thumb_pos(corner_tl(), 2, 1),
-            self.thumb_pos(corner_br(), 1, 1),
-            self.thumb_pos(corner_bl(), 2, 1),
-            self.thumb_pos(corner_tr(), 1, 2),
-            self.thumb_pos(corner_tl(), 2, 2),
             self.thumb_pos(corner_br(), 1, 2),
-            self.thumb_pos(corner_bl(), 2, 2),
+            self.thumb_pos(corner_bl(), 2, 1),
+            self.thumb_pos_br(corner_bl()),
+            self.thumb_pos(corner_br(), 2, 1),
+            self.thumb_pos_br(corner_br()),
         )
-
-        # vertical line between columns 2 and extra
-        if False:
-            result += tri_strip(
-                self.thumb_pos(corner_tr(), 2, 2),
-                self.thumb_pos(corner_tl(), 3, 0),
-                self.thumb_pos(corner_br(), 2, 2),
-                self.thumb_pos(corner_bl(), 3, 0),
-                highlight=True,
-            )
 
         # horizontal connectors between rows 0 and 1
         result += tri_strip(
             self.thumb_pos(corner_bl(), 0, 0),
             self.thumb_pos(corner_tl(), 0, 1),
-            self.thumb_pos(corner_br(), 0, 0),
-            self.thumb_pos(corner_tr(), 0, 1),
-        )
-        result += tri_strip(
-            self.thumb_pos(corner_bl(), 1, 0),
-            self.thumb_pos(corner_tl(), 1, 1),
             self.thumb_pos(corner_br(), 1, 0),
             self.thumb_pos(corner_tr(), 1, 1),
         )
+        # horizontal connectors between rows 1 and 2
+        result += tri_strip(
+            self.thumb_pos(corner_bl(), 0, 1),
+            self.thumb_pos(corner_tl(), 0, 2),
+            self.thumb_pos(corner_br(), 1, 1),
+            self.thumb_pos(corner_tr(), 1, 2),
+        )
+        # horizontal connectors between rows 0 and 1
+        # for column 2
         result += tri_strip(
             self.thumb_pos(corner_bl(), 2, 0),
             self.thumb_pos(corner_tl(), 2, 1),
             self.thumb_pos(corner_br(), 2, 0),
             self.thumb_pos(corner_tr(), 2, 1),
-        )
-
-        # horizontal connectors between rows 1 and 2
-        result += tri_strip(
-            self.thumb_pos(corner_bl(), 0, 1),
-            self.thumb_pos(corner_tl(), 0, 2),
-            self.thumb_pos(corner_br(), 0, 1),
-            self.thumb_pos(corner_tr(), 0, 2),
-        )
-        result += tri_strip(
-            self.thumb_pos(corner_bl(), 1, 1),
-            self.thumb_pos(corner_tl(), 1, 2),
-            self.thumb_pos(corner_br(), 1, 1),
-            self.thumb_pos(corner_tr(), 1, 2),
-        )
-        result += tri_strip(
-            self.thumb_pos(corner_bl(), 2, 1),
-            self.thumb_pos(corner_tl(), 2, 2),
-            self.thumb_pos(corner_br(), 2, 1),
-            self.thumb_pos(corner_tr(), 2, 2),
-        )
-
-        # extra perimeter around thumb area
-        if False:
-            result += tri_strip(
-                self.thumb_pos(corner_tl(), 3, 0),
-                self.thumb_pos(corner_tr(), 2, 2),
-                self.thumb_pos(corner_tr(), 3, 0),
-                self.thumb_pos(corner_br(), 2, 1),
-                highlight=True,
-            )
-            result += tri_strip(
-                self.thumb_pos(corner_bl(), 3, 0),
-                self.thumb_pos(corner_br(), 2, 2),
-                self.thumb_pos(corner_bl(), 2, 2),
-                highlight=True,
-            )
-        result += tri_strip(
-            self.thumb_pos(corner_br(), 1, 2),
-            self.thumb_pos(corner_bl(), 2, 2),
-            self.thumb_pos(corner_bl(), 1, 2),
-            self.thumb_pos(corner_br(), 0, 2),
-        )
-        result += tri_strip(
-            self.thumb_pos(corner_br(), 0, 2),
-            self.thumb_pos(corner_bl(), 2, 2),
-            self.thumb_pos(corner_bl(), 0, 2),
-        )
-        result += tri_strip(
-            self.thumb_pos(corner_tr(), 2, 0),
-            self.thumb_pos(corner_tl(), 2, 0),
-            self.thumb_pos(corner_tr(), 1, 0),
         )
 
         return result
@@ -982,9 +947,9 @@ class MyKeyboard:
         return result
 
     def thumb_caps(self) -> Shape:
-        return self.thumb_orientation(
-            Shape.union(self.thumb_positions(dsa_cap()))
-        )
+        parts = self.thumb_positions_1x1(dsa_cap())
+        parts.append(self.thumb_pos(dsa_cap(ratio=1.5), 2, 1))
+        return self.thumb_orientation(Shape.union(parts))
 
     def wrist_rest(self) -> List[Shape]:
         rest = (
@@ -1336,8 +1301,12 @@ class MyKeyboard:
             plate_thickness - self.wall_radius,
         )
 
-        add_post(2, 2, corner_br(), bottom_right)
-        add_post(2, 2, corner_bl(), bottom_left)
+        posts.append(
+            ThumbWallPost(
+                self.thumb_pos_br(corner_br(), true_pos=True),
+                self.thumb_pos_br(bottom_right, true_pos=True).point(),
+            )
+        )
         add_post(0, 2, corner_bl(), bottom_left)
         add_post(0, 0, corner_tl(), top_left)
         add_post(1, 0, corner_tr(), top_right)
