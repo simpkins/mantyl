@@ -1175,12 +1175,17 @@ class MyKeyboard:
     def wall_front(self) -> Tuple[List[WallPost], float]:
         # Bottom left key hole corner
         front_bl = Transform().translate(
-            -mount_width / 2,
+            -mount_width / 2 + (self.wall_radius * 0.5),
             -mount_height / 2 - self.wall_radius,
             plate_thickness - self.wall_radius,
         )
         # Bottom right key hole corner
         front_br = Transform().translate(
+            mount_width / 2 + self.wall_radius,
+            -mount_height / 2 - self.wall_radius,
+            plate_thickness - self.wall_radius,
+        )
+        front_br_normal = Transform().translate(
             mount_width / 2,
             -mount_height / 2 - self.wall_radius,
             plate_thickness - self.wall_radius,
@@ -1189,7 +1194,17 @@ class MyKeyboard:
         last_row = 5
         front_wall_offset = Point(0.0, -1.0, 0.0)
         posts: List[WallPost] = []
-        for column in (5, 4, 3, 2, 1):
+        posts.append(
+            self.wall_post(
+                5, last_row, corner_br(), front_br_normal, front_wall_offset
+            )
+        )
+        posts.append(
+            self.wall_post(
+                5, last_row, corner_bl(), front_bl, front_wall_offset
+            )
+        )
+        for column in (4, 3, 2, 1):
             posts.append(
                 self.wall_post(
                     column, last_row, corner_br(), front_br, front_wall_offset
