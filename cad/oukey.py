@@ -2126,6 +2126,44 @@ def mag_conn_holder() -> Shape:
     return Shape.difference(wall, [negative_part])
 
 
+def micro_usb_holder_parts() -> Shape:
+    sy = 1.0
+    w = 3.85
+    h = 2.6
+    bx = 2.85
+
+    points: List[Tuple[float, float]] = [
+        (0, 0),
+        (bx, 0),
+        (w, sy),
+        (w, h - 0.4),
+        (w - 0.3, h),
+        (w - 1, h),
+        (w - 1, h + 0.2),
+        (w - 2, h + 0.2),
+        (w - 2, h),
+        (0, h),
+    ]
+    all_points = points[:] + list((-x, y) for x, y in reversed(points))
+
+    flare_l = 0.4
+    flare = Shape.polygon(all_points).translate(0.0, h * -0.5, 0.0).extrude_linear(flare_l, scale=1.2).translate(0, 0, 2.3 + (flare_l * 0.5))
+    main = Shape.polygon(all_points).extrude_linear(4.601).translate(0, -h * 0.5, 0)
+    return Shape.union([main, flare]).rotate(90.0, 0.0, 0.0).translate(0, 2.3 + flare_l - 0.01, 0)
+
+
+def micro_usb_holder() -> Shape:
+    wall_thickness = 4.0
+    negative_part = micro_usb_holder_parts()
+    wall = (
+        Shape.cube(10, wall_thickness, 5)
+        .translate(0, wall_thickness / 2, 0)
+    )
+
+    return Shape.difference(wall, [negative_part])
+
+
+
 def keycaps() -> Shape:
     import keyboard
 
@@ -2177,6 +2215,7 @@ def main() -> None:
     write_shape(idc_header_holder(), out_dir / "header_holder.scad")
     write_shape(foot(), out_dir / "foot.scad")
     write_shape(mag_conn_holder(), out_dir / "mag_conn_holder.scad")
+    write_shape(micro_usb_holder(), out_dir / "micro_usb_holder.scad")
     write_shape(keycaps(), out_dir / "keycaps.scad")
 
 
