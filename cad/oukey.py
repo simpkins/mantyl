@@ -1594,7 +1594,34 @@ class MyKeyboard:
         thumb_posts = self.wall_thumb()
 
         result = self.wall_segments(posts)
-        result += self.thumb_wall_segments(thumb_posts)
+        thumb_wall_segments = self.thumb_wall_segments(thumb_posts)
+
+        if True:
+            oled_neg, oled_pos = oled_holder_parts(self.wall_radius * 2)
+            oled_tf = self.apply_to_wall(
+                thumb_posts[2].corner,
+                thumb_posts[1].corner,
+                Transform().translate(1.75 * 0.5, 0, 25),
+            )
+
+            cable_holder_neg = mag_conn_holder_parts(self.wall_radius * 2)
+            cable_holder_tf = self.apply_to_wall(
+                thumb_posts[3].corner, thumb_posts[2].corner,
+                Transform().translate(0, 0, 7.5),
+            )
+
+            thumb_wall_segments = [
+                Shape.difference(
+                    Shape.union(thumb_wall_segments),
+                    [
+                        oled_neg.transform(oled_tf),
+                        cable_holder_neg.transform(cable_holder_tf),
+                    ],
+                ),
+                oled_pos.transform(oled_tf),
+            ]
+
+        result += thumb_wall_segments
 
         left_wall_x = left_wall_posts[0].far.x
         return (
@@ -1603,6 +1630,50 @@ class MyKeyboard:
             # + self.wall_thumb_gap1(front_wall_posts[-1])
             # + self.wall_thumb_gap1_v2(front_wall_posts[-1])
         )
+
+    def apply_to_wall(
+        self,
+        post1: Point,
+        post2: Point,
+        initial_tf: Optional[Transform] = None,
+    ) -> Transform:
+        """
+        Return a transform to apply an object to the surface of a wall.
+
+        post1 and post2 should be the left and right points of the wall.
+        This only looks at the x and y coordinates, and does not adjust up or
+        down on the z axis.
+        """
+        # Move the object forwards by half the wall thickness so its front
+        # aligns with the front of the wall (assuming its front is along the
+        # y=0 axis).
+        #
+        # Also adjust it along the x axis so that it is centered on the wall
+        # (assuming it starts centered around x = 0)
+        wall_len = math.sqrt(
+            ((post2.y - post1.y) ** 2) + ((post2.x - post1.x) ** 2)
+        )
+        if initial_tf is None:
+            initial_tf = Transform()
+        translate_tf = initial_tf.translate(
+            wall_len * 0.5, -self.wall_radius, 0.0
+        )
+
+        # Next rotate the object so it is at the same angle to the x axis
+        # as the wall.
+        angle = math.atan2(post2.y - post1.y, post2.x - post1.x)
+        angle_tf = Transform(
+            (
+                (math.cos(angle), -math.sin(angle), 0.0, 0.0),
+                (math.sin(angle), math.cos(angle), 0.0, 0.0),
+                (0.0, 0.0, 1.0, 0.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+
+        # Finally move the object from the origin so it is at the wall location
+        tf = translate_tf.transform(angle_tf).translate(post1.x, post1.y, 0)
+        return tf
 
 
 def model_right(
@@ -1622,6 +1693,7 @@ def model_right(
         # + kbd.wrist_rest()
         + kbd.walls()
     )
+
     if show_caps:
         parts.append(kbd.key_caps().grey())
         parts.append(kbd.thumb_caps().grey())
@@ -2075,7 +2147,11 @@ def mag_conn_holder_parts(wall_thickness: float) -> Shape:
     t = 0.01
 
     core_r = h * 0.5
-    core_cyl = Shape.cylinder(h=d, r=core_r, fn=fn).rotate(90.0, 0.0, 0.0).translate(0.0, -t, 0.0)
+    core_cyl = (
+        Shape.cylinder(h=d, r=core_r, fn=fn)
+        .rotate(90.0, 0.0, 0.0)
+        .translate(0.0, -t, 0.0)
+    )
     core = Shape.hull(
         [
             core_cyl.translate(core_r - (w * 0.5), d * 0.5, 0.0),
@@ -2119,9 +2195,8 @@ def mag_conn_holder_parts(wall_thickness: float) -> Shape:
 def mag_conn_holder() -> Shape:
     wall_thickness = 4.0
     negative_part = mag_conn_holder_parts(wall_thickness)
-    wall = (
-        Shape.cube(28, wall_thickness, 10)
-        .translate(0, wall_thickness / 2, 0)
+    wall = Shape.cube(28, wall_thickness, 10).translate(
+        0, wall_thickness / 2, 0
     )
     return Shape.difference(wall, [negative_part])
 
@@ -2147,21 +2222,32 @@ def micro_usb_holder_parts() -> Shape:
     all_points = points[:] + list((-x, y) for x, y in reversed(points))
 
     flare_l = 0.4
-    flare = Shape.polygon(all_points).translate(0.0, h * -0.5, 0.0).extrude_linear(flare_l, scale=1.2).translate(0, 0, 2.3 + (flare_l * 0.5))
-    main = Shape.polygon(all_points).extrude_linear(4.601).translate(0, -h * 0.5, 0)
-    return Shape.union([main, flare]).rotate(90.0, 0.0, 0.0).translate(0, 2.3 + flare_l - 0.01, 0)
+    flare = (
+        Shape.polygon(all_points)
+        .translate(0.0, h * -0.5, 0.0)
+        .extrude_linear(flare_l, scale=1.2)
+        .translate(0, 0, 2.3 + (flare_l * 0.5))
+    )
+    main = (
+        Shape.polygon(all_points)
+        .extrude_linear(4.601)
+        .translate(0, -h * 0.5, 0)
+    )
+    return (
+        Shape.union([main, flare])
+        .rotate(90.0, 0.0, 0.0)
+        .translate(0, 2.3 + flare_l - 0.01, 0)
+    )
 
 
 def micro_usb_holder() -> Shape:
     wall_thickness = 4.0
     negative_part = micro_usb_holder_parts()
-    wall = (
-        Shape.cube(10, wall_thickness, 5)
-        .translate(0, wall_thickness / 2, 0)
+    wall = Shape.cube(10, wall_thickness, 5).translate(
+        0, wall_thickness / 2, 0
     )
 
     return Shape.difference(wall, [negative_part])
-
 
 
 def keycaps() -> Shape:

@@ -304,6 +304,9 @@ class Transform:
         )
         return Point(x[0], x[1], x[2])
 
+    def transform(self, tf: Transform) -> Transform:
+        return Transform(numpy.matmul(tf._data, self._data))
+
     def translate(self, x: float, y: float, z: float) -> Transform:
         x = numpy.array(
             ((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z), (0, 0, 0, 1))
