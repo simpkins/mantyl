@@ -2076,7 +2076,11 @@ def foot() -> Shape:
     wall_thickness = 4.0
     top_r = wall_thickness * 0.5
 
-    inner_r = 6.45
+    # Actual foot dimensions are about
+    # 12.5mm in diameter (6.25mm radius)
+    # and about 3.6mm tall
+
+    inner_r = 6.5
     outer_r = inner_r + 2.0
     base_h = 2.0
     h = 15.0
@@ -2137,7 +2141,10 @@ def mag_conn_holder_parts(wall_thickness: float) -> Shape:
     d = wall_thickness * 1.1
 
     w = 20.6
-    h = 4.5
+    # If printing the holder face down, h = 4.5 is a good value.
+    # However, if printing vertically with support needed to hold up the top
+    # of the opening, then this value needs to be a little bit bigger.
+    h = 4.6
 
     flange_d = 0.90
     flange_cutout_d = wall_thickness
@@ -2162,30 +2169,29 @@ def mag_conn_holder_parts(wall_thickness: float) -> Shape:
         0.0, (flange_cutout_d * 0.5) + flange_offset, 0.0
     )
 
-    nub_h = 0.2
-    nub_w = 0.5
-    nub_d = 0.5
+    nub_h = 0.5  # how much the nub sticks out to hold the connector
+    nub_w = 0.75
+    nub_d = 0.75
     nub = (
-        Shape.polygon([(0.0, 0.0), (0.0, nub_h), (nub_d, nub_h)])
+        Shape.polygon([(0.0, 0.0), (nub_h, 0.0), (0.0, nub_d)])
         .extrude_linear(nub_w)
-        .rotate(90.0, 0.0, 90.0)
     )
-    nub_bottom = nub.mirror(0.0, 0.0, 1.0)
+    nub_bottom = nub.mirror(1.0, 0.0, 0.0)
     nub_offset_d = flange_d + flange_offset - t
     nubbed_flange = Shape.difference(
         flange,
         [
-            nub.translate(
-                (w - nub_w) * 0.5 + t, nub_offset_d, (h * 0.5) - nub_h + t
-            ),
-            nub.translate(
-                -(w - nub_w) * 0.5 - t, nub_offset_d, (h * 0.5) - nub_h + t
+            nub_bottom.translate(
+                w * 0.5 + t, nub_offset_d, ((h - nub_w) * 0.5) + t
             ),
             nub_bottom.translate(
-                -(w - nub_w) * 0.5 - t, nub_offset_d, (-h * 0.5) + nub_h - t
+                w * 0.5 + t, nub_offset_d, -((h - nub_w) * 0.5) - t
             ),
-            nub_bottom.translate(
-                (w - nub_w) * 0.5 + t, nub_offset_d, (-h * 0.5) + nub_h - t
+            nub.translate(
+                -w * 0.5 - t, nub_offset_d, ((h - nub_w) * 0.5) + t
+            ),
+            nub.translate(
+                -w * 0.5 - t, nub_offset_d, -((h - nub_w) * 0.5) - t
             ),
         ],
     )
