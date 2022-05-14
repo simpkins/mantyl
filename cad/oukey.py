@@ -1730,7 +1730,7 @@ def standoff_stud(d: float, offset: float = 0.0) -> Shape:
     h = 4
     cutout_ratio = 0.25
 
-    points: List[float] = [(0.0, 0.0)]
+    points: List[Tuple[float, float]] = [(0.0, 0.0)]
     if offset > 0.0:
         collar_r = 0.5
         points += [(r + collar_r, 0.0), (r + collar_r, offset)]
@@ -1898,7 +1898,7 @@ def sx1509_holder() -> Shape:
     return Shape.union([wall] + parts)
 
 
-def header() -> Shape:
+def idc_header() -> Shape:
     body_h = 8.6
     main = Shape.cube(28.0, 8.5, body_h)
     inner = Shape.cube(25.9, 6.4, body_h).translate(0.0, 0.0, 2.25)
@@ -1926,7 +1926,7 @@ def header() -> Shape:
     return Shape.union(parts)
 
 
-def header_holder_parts(wall_thickness: float) -> Shape:
+def idc_header_holder_parts(wall_thickness: float) -> Shape:
     offset = 6.0
 
     header_w = 28.0
@@ -1977,7 +1977,7 @@ def header_holder_parts(wall_thickness: float) -> Shape:
     parts = [left, right]
 
     if False:
-        parts.append(header().translate(0.0, 0.0, offset).highlight())
+        parts.append(idc_header().translate(0.0, 0.0, offset).highlight())
 
     return (
         Shape.union(parts)
@@ -1986,14 +1986,48 @@ def header_holder_parts(wall_thickness: float) -> Shape:
     )
 
 
-def header_holder() -> Shape:
+def idc_header_holder() -> Shape:
     wall_thickness = 4
-    holder = header_holder_parts(wall_thickness)
+    holder = idc_header_holder_parts(wall_thickness)
 
     wall = Shape.cube(30, wall_thickness, 15).translate(
         0, wall_thickness / 2, 0
     )
     return Shape.union([wall, holder])
+
+
+def foot() -> Shape:
+    wall_thickness = 4.0
+    top_r = wall_thickness * 0.5
+
+    inner_r = 6.45
+    outer_r = inner_r + 2.0
+    base_h = 2.0
+    h = 15.0
+    recess = 2.0
+    fn = 30.0
+
+    top_x = outer_r - top_r
+    top_y = 0.0
+
+    top = Shape.sphere(top_r, fn=fn).translate(top_x, top_y, h - top_r)
+
+    base_top_points: List[Tuple[float, float]] = [
+        (outer_r, recess),
+        (0.0, recess),
+        (0.0, recess + base_h),
+        (outer_r, recess + base_h),
+    ]
+    lip_points: List[Tuple[float, float]] = [
+        (outer_r, 0.0),
+        (inner_r, 0.0),
+        (inner_r, recess + 0.1),
+        (outer_r, recess + 0.1),
+    ]
+
+    base_top = Shape.polygon(base_top_points).extrude_rotate(fn=fn)
+    lip = Shape.polygon(lip_points).extrude_rotate(fn=fn)
+    return Shape.union([lip, Shape.hull([base_top, top])])
 
 
 def keycaps() -> Shape:
@@ -2041,10 +2075,11 @@ def main() -> None:
         out_dir / "left.scad",
     )
 
+    # Component debugging
     write_shape(sx1509_holder(), out_dir / "sx1509_holder.scad")
     write_shape(oled_holder(), out_dir / "oled_holder.scad")
-    write_shape(header_holder(), out_dir / "header_holder.scad")
-
+    write_shape(idc_header_holder(), out_dir / "header_holder.scad")
+    write_shape(foot(), out_dir / "foot.scad")
     write_shape(keycaps(), out_dir / "keycaps.scad")
 
 
