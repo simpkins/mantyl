@@ -513,7 +513,11 @@ class MyKeyboard:
         )
 
     def thumb_pos(
-        self, shape: ShapeOrTransform, col: int, row: int, true_pos: bool = False
+        self,
+        shape: ShapeOrTransform,
+        col: int,
+        row: int,
+        true_pos: bool = False,
     ) -> ShapeOrTransform:
         if true_pos:
             return self.thumb_orientation(self.thumb_pos(shape, col, row))
@@ -2030,6 +2034,98 @@ def foot() -> Shape:
     return Shape.union([lip, Shape.hull([base_top, top])])
 
 
+def mag_conn() -> Shape:
+    """Holder for a 5-pin magnetic connector:
+    https://www.adafruit.com/product/5413
+    """
+    w = 20.1
+    h = 4.25
+    d = 4.05
+
+    flange_d = 0.75
+    flange_offset = 2.25
+
+    fn = 30
+
+    core_r = h * 0.5
+    core_cyl = Shape.cylinder(h=d, r=core_r, fn=fn).rotate(90.0, 0.0, 0.0)
+    core = Shape.hull(
+        [
+            core_cyl.translate(core_r - (w * 0.5), d * 0.5, 0.0),
+            core_cyl.translate((w * 0.5) - core_r, d * 0.5, 0.0),
+        ]
+    )
+    flange = Shape.cube(w, flange_d, h).translate(
+        0.0, (flange_d * 0.5) + flange_offset, 0.0
+    )
+    return Shape.union([core, flange])
+
+
+def mag_conn_holder_parts(wall_thickness: float) -> Shape:
+    d = wall_thickness * 1.1
+
+    w = 20.6
+    h = 4.5
+
+    flange_d = 0.90
+    flange_cutout_d = wall_thickness
+    flange_offset = 2.25
+
+    fn = 30
+    t = 0.01
+
+    core_r = h * 0.5
+    core_cyl = Shape.cylinder(h=d, r=core_r, fn=fn).rotate(90.0, 0.0, 0.0).translate(0.0, -t, 0.0)
+    core = Shape.hull(
+        [
+            core_cyl.translate(core_r - (w * 0.5), d * 0.5, 0.0),
+            core_cyl.translate((w * 0.5) - core_r, d * 0.5, 0.0),
+        ]
+    )
+    flange = Shape.cube(w, flange_cutout_d, h).translate(
+        0.0, (flange_cutout_d * 0.5) + flange_offset, 0.0
+    )
+
+    nub_h = 0.2
+    nub_w = 0.5
+    nub_d = 0.5
+    nub = (
+        Shape.polygon([(0.0, 0.0), (0.0, nub_h), (nub_d, nub_h)])
+        .extrude_linear(nub_w)
+        .rotate(90.0, 0.0, 90.0)
+    )
+    nub_bottom = nub.mirror(0.0, 0.0, 1.0)
+    nub_offset_d = flange_d + flange_offset - t
+    nubbed_flange = Shape.difference(
+        flange,
+        [
+            nub.translate(
+                (w - nub_w) * 0.5 + t, nub_offset_d, (h * 0.5) - nub_h + t
+            ),
+            nub.translate(
+                -(w - nub_w) * 0.5 - t, nub_offset_d, (h * 0.5) - nub_h + t
+            ),
+            nub_bottom.translate(
+                -(w - nub_w) * 0.5 - t, nub_offset_d, (-h * 0.5) + nub_h - t
+            ),
+            nub_bottom.translate(
+                (w - nub_w) * 0.5 + t, nub_offset_d, (-h * 0.5) + nub_h - t
+            ),
+        ],
+    )
+    return Shape.union([core, nubbed_flange])
+
+
+def mag_conn_holder() -> Shape:
+    wall_thickness = 4.0
+    negative_part = mag_conn_holder_parts(wall_thickness)
+    wall = (
+        Shape.cube(28, wall_thickness, 10)
+        .translate(0, wall_thickness / 2, 0)
+    )
+    return Shape.difference(wall, [negative_part])
+
+
 def keycaps() -> Shape:
     import keyboard
 
@@ -2080,6 +2176,7 @@ def main() -> None:
     write_shape(oled_holder(), out_dir / "oled_holder.scad")
     write_shape(idc_header_holder(), out_dir / "header_holder.scad")
     write_shape(foot(), out_dir / "foot.scad")
+    write_shape(mag_conn_holder(), out_dir / "mag_conn_holder.scad")
     write_shape(keycaps(), out_dir / "keycaps.scad")
 
 
