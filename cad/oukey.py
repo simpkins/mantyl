@@ -1593,35 +1593,48 @@ class MyKeyboard:
 
         thumb_posts = self.wall_thumb()
 
+        # Main area walls
         result = self.wall_segments(posts)
+
+        # Thumb area walls
         thumb_wall_segments = self.thumb_wall_segments(thumb_posts)
+        negative_thumb_parts: List[Shape] = []
 
-        if True:
-            oled_neg, oled_pos = oled_holder_parts(self.wall_radius * 2)
-            oled_tf = self.apply_to_wall(
-                thumb_posts[2].corner,
-                thumb_posts[1].corner,
-                Transform().translate(1.75 * 0.5, 0, 25),
+        # OLED holder
+        holder_tf = self.apply_to_wall(
+            thumb_posts[2].corner,
+            thumb_posts[1].corner,
+            Transform().translate(1.75 * 0.5, 0, 22),
+        )
+        add_oled_holder = True
+        if add_oled_holder:
+            holder_neg, holder_pos = joint_holder_parts(
+                self.wall_radius * 2, holder_top=False
+            )
+            negative_thumb_parts.append(holder_neg.transform(holder_tf))
+        else:
+            holder_pos = sx1509_holder_part(
+                self.wall_radius * 2, holder_top=False
             )
 
-            cable_holder_neg = mag_conn_holder_parts(self.wall_radius * 2)
-            cable_holder_tf = self.apply_to_wall(
-                thumb_posts[3].corner, thumb_posts[2].corner,
-                Transform().translate(0, 0, 7.5),
+        result.append(holder_pos.transform(holder_tf))
+
+        # Add the cable connector cutout
+        cable_holder_neg = mag_conn_holder_parts(self.wall_radius * 2)
+        cable_holder_tf = self.apply_to_wall(
+            thumb_posts[3].corner,
+            thumb_posts[2].corner,
+            Transform().translate(0, 0, 7.5),
+        )
+        negative_thumb_parts.append(
+            cable_holder_neg.transform(cable_holder_tf)
+        )
+
+        result += [
+            Shape.difference(
+                Shape.union(thumb_wall_segments), negative_thumb_parts
             )
-
-            thumb_wall_segments = [
-                Shape.difference(
-                    Shape.union(thumb_wall_segments),
-                    [
-                        oled_neg.transform(oled_tf),
-                        cable_holder_neg.transform(cable_holder_tf),
-                    ],
-                ),
-                oled_pos.transform(oled_tf),
-            ]
-
-        result += thumb_wall_segments
+        ]
 
         left_wall_x = left_wall_posts[0].far.x
         return (
@@ -1935,43 +1948,98 @@ def oled_holder() -> Shape:
     return Shape.union([main, postive_part])
 
 
-def sx1509_holder_parts(wall_thickness: float) -> List[Shape]:
-    offset = 3.0
+def sx1509_holder_part(
+    wall_thickness: float, stud_offset: float = 3.0, holder_top: bool = True
+) -> Shape:
     stud = (
-        standoff_stud(d=3.302, offset=offset)
+        standoff_stud(d=3.302, offset=stud_offset)
         .rotate(-90, 0, 0)
         .translate(0, wall_thickness - 0.01, 0)
     )
 
+    bracket_d = stud_offset + 2.5
+    bracket_l = 26.0
+    bracket = (
+        Shape.polygon(
+            [
+                (0.0, 0.0),
+                (stud_offset + 1.8, 0.0),
+                (stud_offset + 1.8, 0.5),
+                (stud_offset + 2.5, 0.0),
+                (stud_offset + 2.5, -2.0),
+                (0.0, -2.0),
+            ]
+        )
+        .extrude_linear(bracket_l)
+        .rotate(90.0, 0.0, 90.0)
+        .translate(0.0, wall_thickness - 0.01, -18.4)
+    )
+
+    x = 10.287
+    y = 15.367
     parts = [
-        stud.translate(15.367, 0.0, 10.287),
-        stud.translate(-15.367, 0.0, 10.287),
-        stud.translate(-15.367, 0.0, -10.287),
-        stud.translate(15.367, 0.0, -10.287),
+        stud.translate(x, 0.0, y),
+        stud.translate(-x, 0.0, y),
+        stud.translate(-x, 0.0, -y),
+        stud.translate(x, 0.0, -y),
+        bracket,
     ]
+    if holder_top:
+        parts.append(bracket.mirror(0.0, 0.0, 1.0))
 
     if False:
         pcb_thickness = 1.57
         sx1509 = (
             sx1509_breakout()
-            .rotate(90, 0, 0)
+            .rotate(90, 90, 0)
             .highlight()
-            .translate(0, (pcb_thickness / 2.0) + wall_thickness + offset, 0)
+            .translate(
+                0, (pcb_thickness / 2.0) + wall_thickness + stud_offset, 0
+            )
         )
         parts.append(sx1509)
 
-    return parts
+    return Shape.union(parts)
 
 
 def sx1509_holder() -> Shape:
     wall_thickness = 4
-    parts = sx1509_holder_parts(wall_thickness)
+    part = sx1509_holder_part(wall_thickness)
 
     wall = Shape.difference(
-        Shape.cube(38, wall_thickness, 28),
-        [Shape.cube(26, wall_thickness * 1.1, 18)],
+        Shape.cube(28, wall_thickness, 38),
+        [Shape.cube(18, wall_thickness * 1.1, 26)],
     ).translate(0, wall_thickness / 2, 0)
-    return Shape.union([wall] + parts)
+    return Shape.union([wall, part])
+
+
+def joint_holder_parts(
+    wall_thickness: float, holder_top: bool = True
+) -> Tuple[Shape, Shape]:
+    """Return (neg_part, pos_part)"""
+    wall = (
+        Shape.cube(50, wall_thickness, 48)
+        .translate(0, wall_thickness / 2, 0)
+        .translate(-4, 0, 0)
+    )
+
+    sx1509_part = sx1509_holder_part(
+        wall_thickness, stud_offset=5.0, holder_top=holder_top
+    )
+    oled_neg_part, oled_pos_part = oled_holder_parts(wall_thickness)
+    return oled_neg_part, Shape.union([sx1509_part, oled_pos_part])
+
+
+def joint_holder() -> Shape:
+    wall_thickness = 4
+    wall = (
+        Shape.cube(50, wall_thickness, 48)
+        .translate(0, wall_thickness / 2, 0)
+        .translate(-4, 0, 0)
+    )
+
+    neg_part, pos_part = joint_holder_parts(wall_thickness)
+    return Shape.union([Shape.difference(wall, [neg_part]), pos_part])
 
 
 def idc_header() -> Shape:
@@ -2172,10 +2240,9 @@ def mag_conn_holder_parts(wall_thickness: float) -> Shape:
     nub_h = 0.5  # how much the nub sticks out to hold the connector
     nub_w = 0.75
     nub_d = 0.75
-    nub = (
-        Shape.polygon([(0.0, 0.0), (nub_h, 0.0), (0.0, nub_d)])
-        .extrude_linear(nub_w)
-    )
+    nub = Shape.polygon(
+        [(0.0, 0.0), (nub_h, 0.0), (0.0, nub_d)]
+    ).extrude_linear(nub_w)
     nub_bottom = nub.mirror(1.0, 0.0, 0.0)
     nub_offset_d = flange_d + flange_offset - t
     nubbed_flange = Shape.difference(
@@ -2187,9 +2254,7 @@ def mag_conn_holder_parts(wall_thickness: float) -> Shape:
             nub_bottom.translate(
                 w * 0.5 + t, nub_offset_d, -((h - nub_w) * 0.5) - t
             ),
-            nub.translate(
-                -w * 0.5 - t, nub_offset_d, ((h - nub_w) * 0.5) + t
-            ),
+            nub.translate(-w * 0.5 - t, nub_offset_d, ((h - nub_w) * 0.5) + t),
             nub.translate(
                 -w * 0.5 - t, nub_offset_d, -((h - nub_w) * 0.5) - t
             ),
@@ -2304,6 +2369,7 @@ def main() -> None:
     # Component debugging
     write_shape(sx1509_holder(), out_dir / "sx1509_holder.scad")
     write_shape(oled_holder(), out_dir / "oled_holder.scad")
+    write_shape(joint_holder(), out_dir / "joint_holder.scad")
     write_shape(idc_header_holder(), out_dir / "header_holder.scad")
     write_shape(foot(), out_dir / "foot.scad")
     write_shape(mag_conn_holder(), out_dir / "mag_conn_holder.scad")
