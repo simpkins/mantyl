@@ -10,7 +10,7 @@ import math
 from pathlib import Path
 from typing import List, Tuple, TypeVar
 
-from cad import Point, Shape, Transform, tri_strip
+from cad import Point, PosAndNeg, Shape, Transform, tri_strip
 from keyboard import (
     corner_tl,
     corner_tr,
@@ -96,6 +96,10 @@ class MyKeyboard:
 
         # Wall thickness = 2 * wall_radius
         self.wall_radius = 2
+
+        # Set to true to render the walls transparent grey.  This makes it a
+        # little easier to see and debug positioning of the feet.
+        self.grey_walls = False
 
     def key_indices(self) -> Generator[Tuple[int, int], None, None]:
         for column in range(self.num_columns):
@@ -1176,7 +1180,7 @@ class MyKeyboard:
 
         return posts
 
-    def wall_front(self) -> Tuple[List[WallPost], float]:
+    def wall_front(self) -> List[WallPost]:
         # Bottom left key hole corner
         front_bl = Transform().translate(
             -mount_width / 2 + (self.wall_radius * 0.5),
@@ -1243,7 +1247,7 @@ class MyKeyboard:
         for post in posts:
             post.far.y = min_y
 
-        return posts, min_y
+        return posts
 
     def thumb_wall_segments(self, posts: List[ThumbWallPost]) -> List[Shape]:
         corner = Shape.sphere(self.wall_radius, fn=30)
@@ -1286,7 +1290,7 @@ class MyKeyboard:
 
         return result
 
-    def wall_thumb(self) -> List[ThumbWallPost]:
+    def wall_thumb_posts(self) -> List[ThumbWallPost]:
         posts: List[ThumbWallPost] = []
 
         def add_post(
@@ -1581,68 +1585,108 @@ class MyKeyboard:
         ]
         return result
 
-    def walls(self) -> List[Shape]:
-        left_wall_posts = self.wall_left()
-        front_wall_posts, front_wall_y = self.wall_front()
-        posts = (
-            left_wall_posts
-            + self.wall_back()
-            + self.wall_right()
-            + front_wall_posts
-        )
-
-        thumb_posts = self.wall_thumb()
-
-        # Main area walls
-        result = self.wall_segments(posts)
+    def thumb_walls(self) -> List[Shape]:
+        thumb_posts = self.wall_thumb_posts()
 
         # Thumb area walls
-        thumb_wall_segments = self.thumb_wall_segments(thumb_posts)
-        negative_thumb_parts: List[Shape] = []
+        wall_segments = self.thumb_wall_segments(thumb_posts)
+        neg_parts: List[Shape] = []
+
+        if self.grey_walls:
+            pos_parts: List[Shape] = [Shape.union(wall_segments).grey()]
+        else:
+            pos_parts: List[Shape] = wall_segments
+        neg_parts: List[Shape] = []
 
         # OLED holder
         holder_tf = self.apply_to_wall(
             thumb_posts[2].corner,
             thumb_posts[1].corner,
-            Transform().translate(1.75 * 0.5, 0, 22),
+            Transform().translate(1.75 * 0.5, 0, 22.5),
         )
         add_oled_holder = True
         if add_oled_holder:
             holder_neg, holder_pos = joint_holder_parts(
                 self.wall_radius * 2, holder_top=False
             )
-            negative_thumb_parts.append(holder_neg.transform(holder_tf))
+            neg_parts.append(holder_neg.transform(holder_tf))
         else:
             holder_pos = sx1509_holder_part(
                 self.wall_radius * 2, holder_top=False
             )
 
-        result.append(holder_pos.transform(holder_tf))
+        pos_parts.append(holder_pos.transform(holder_tf))
 
         # Add the cable connector cutout
-        cable_holder_neg = mag_conn_holder_parts(self.wall_radius * 2)
+        cable_holder_neg = mag_conn_holder_parts(self.wall_radius * 2).translate(0, 0, 4)
         cable_holder_tf = self.apply_to_wall(
             thumb_posts[3].corner,
             thumb_posts[2].corner,
             Transform().translate(0, 0, 7.5),
         )
-        negative_thumb_parts.append(
-            cable_holder_neg.transform(cable_holder_tf)
-        )
+        neg_parts.append(cable_holder_neg.transform(cable_holder_tf))
 
-        result += [
-            Shape.difference(
-                Shape.union(thumb_wall_segments), negative_thumb_parts
-            )
-        ]
-
-        left_wall_x = left_wall_posts[0].far.x
-        return (
-            result
-            # + self.wall_thumb_gap0(left_wall_x)
-            # + self.wall_thumb_gap1(front_wall_posts[-1])
-            # + self.wall_thumb_gap1_v2(front_wall_posts[-1])
+        # Add feet
+        back_left = thumb_posts[2].corner
+        back_left_foot = foot(off_x=9, off_y=-0.5)
+        back_left_foot = back_left_foot.translate(
+            back_left.x, back_left.y, 0
         )
+        pos_parts.append(back_left_foot.pos)
+        neg_parts.append(back_left_foot.neg)
+
+        front_right = thumb_posts[0].corner
+        front_right_foot = foot(off_x=-8, off_y=2)
+        front_right_foot = front_right_foot.translate(
+            front_right.x, front_right.y, 0
+        )
+        pos_parts.append(front_right_foot.pos)
+        neg_parts.append(front_right_foot.neg)
+
+        return [Shape.difference(Shape.union(pos_parts), neg_parts)]
+
+    def main_walls(self) -> List[Shape]:
+        back_wall_posts = self.wall_back()
+        front_wall_posts = self.wall_front()
+
+        posts = (
+            self.wall_left()
+            + back_wall_posts
+            + self.wall_right()
+            + front_wall_posts
+        )
+        main_walls = self.wall_segments(posts)
+
+        if self.grey_walls:
+            pos_parts: List[Shape] = [Shape.union(main_walls).grey()]
+        else:
+            pos_parts: List[Shape] = main_walls
+        neg_parts: List[Shape] = []
+
+        # Feet
+        back_left = back_wall_posts[0].far
+        back_left_foot = foot(off_x=4.2, off_y=-6.8)
+        back_left_foot = back_left_foot.translate(back_left.x, back_left.y, 0)
+        pos_parts.append(back_left_foot.pos)
+        neg_parts.append(back_left_foot.neg)
+
+        back_right = back_wall_posts[-1].far
+        back_right_foot = foot(off_x=-5.2, off_y=-6.8)
+        back_right_foot = back_right_foot.translate(
+            back_right.x, back_right.y, 0
+        )
+        pos_parts.append(back_right_foot.pos)
+        neg_parts.append(back_right_foot.neg)
+
+        front_right = front_wall_posts[0].far
+        front_right_foot = foot(off_x=-5.2, off_y=6.8)
+        front_right_foot = front_right_foot.translate(
+            front_right.x, front_right.y, 0
+        )
+        pos_parts.append(front_right_foot.pos)
+        neg_parts.append(front_right_foot.neg)
+
+        return [Shape.difference(Shape.union(pos_parts), neg_parts)]
 
     def apply_to_wall(
         self,
@@ -1704,7 +1748,8 @@ def model_right(
         + kbd.thumb_area()
         # + kbd.thumb_connect_wall()
         # + kbd.wrist_rest()
-        + kbd.walls()
+        + kbd.thumb_walls()
+        + kbd.main_walls()
     )
 
     if show_caps:
@@ -1959,6 +2004,7 @@ def sx1509_holder_part(
 
     bracket_d = stud_offset + 2.5
     bracket_l = 26.0
+    bracket_h = 1.5
     bracket = (
         Shape.polygon(
             [
@@ -1966,8 +2012,8 @@ def sx1509_holder_part(
                 (stud_offset + 1.8, 0.0),
                 (stud_offset + 1.8, 0.5),
                 (stud_offset + 2.5, 0.0),
-                (stud_offset + 2.5, -2.0),
-                (0.0, -2.0),
+                (stud_offset + 2.5, -bracket_h),
+                (0.0, -bracket_h),
             ]
         )
         .extrude_linear(bracket_l)
@@ -2140,7 +2186,7 @@ def idc_header_holder() -> Shape:
     return Shape.union([wall, holder])
 
 
-def foot() -> Shape:
+def foot(off_x: float = 0.0, off_y: float = 0.0, h: float = 15.0) -> PosAndNeg:
     wall_thickness = 4.0
     top_r = wall_thickness * 0.5
 
@@ -2151,31 +2197,21 @@ def foot() -> Shape:
     inner_r = 6.5
     outer_r = inner_r + 2.0
     base_h = 2.0
-    h = 15.0
     recess = 2.0
     fn = 30.0
 
-    top_x = outer_r - top_r
-    top_y = 0.0
-
-    top = Shape.sphere(top_r, fn=fn).translate(top_x, top_y, h - top_r)
-
-    base_top_points: List[Tuple[float, float]] = [
-        (outer_r, recess),
-        (0.0, recess),
-        (0.0, recess + base_h),
-        (outer_r, recess + base_h),
-    ]
-    lip_points: List[Tuple[float, float]] = [
-        (outer_r, 0.0),
-        (inner_r, 0.0),
-        (inner_r, recess + 0.1),
-        (outer_r, recess + 0.1),
-    ]
-
-    base_top = Shape.polygon(base_top_points).extrude_rotate(fn=fn)
-    lip = Shape.polygon(lip_points).extrude_rotate(fn=fn)
-    return Shape.union([lip, Shape.hull([base_top, top])])
+    t = 0.01
+    bottom = Shape.cylinder(h=base_h + recess, r=outer_r, fn=fn).translate(
+        off_x, off_y, (base_h + recess) * 0.5
+    )
+    recess = Shape.cylinder(h=(recess + t), r=inner_r, fn=fn).translate(
+        off_x, off_y, (recess * 0.5) - t
+    )
+    if h > base_h:
+        top = Shape.sphere(top_r, fn=fn).translate(0, 0, h - top_r)
+        return PosAndNeg(Shape.hull([bottom, top]), recess)
+    else:
+        return PosAndNeg(bottom, recess)
 
 
 def mag_conn() -> Shape:
@@ -2371,7 +2407,6 @@ def main() -> None:
     write_shape(oled_holder(), out_dir / "oled_holder.scad")
     write_shape(joint_holder(), out_dir / "joint_holder.scad")
     write_shape(idc_header_holder(), out_dir / "header_holder.scad")
-    write_shape(foot(), out_dir / "foot.scad")
     write_shape(mag_conn_holder(), out_dir / "mag_conn_holder.scad")
     write_shape(micro_usb_holder(), out_dir / "micro_usb_holder.scad")
     write_shape(keycaps(), out_dir / "keycaps.scad")

@@ -370,3 +370,33 @@ class Transform:
                 (-math.sin(r), 0, math.cos(r)),
             ]
         )
+
+
+class PosAndNeg:
+    """
+    A helper class for tracking both a positive shape (to be unioned with
+    something else) and a negative shape (to be removed from something else).
+
+    This is mainly a convenience class to allow the same set of transformations
+    to be applied to both, but then still access them individually afterwards.
+    """
+
+    def __init__(self, pos: Shape, neg: Shape) -> None:
+        self.pos = pos
+        self.neg = neg
+
+    def mirror(self, x: float, y: float, z: float) -> Shape:
+        return PosAndNeg(self.pos.mirror(x, y, z), self.neg.mirror(x, y, z))
+
+    def translate(self, x: float, y: float, z: float) -> Shape:
+        return PosAndNeg(
+            self.pos.translate(x, y, z), self.neg.translate(x, y, z)
+        )
+
+    def ptranslate(self, point: Point) -> Shape:
+        return PosAndNeg(
+            self.pos.ptranslate(point), self.neg.ptranslate(point)
+        )
+
+    def rotate(self, x: float, y: float, z: float) -> Shape:
+        return PosAndNeg(self.pos.rotate(x, y, z), self.neg.rotate(x, y, z))
