@@ -1615,10 +1615,12 @@ class MyKeyboard:
                 self.wall_radius * 2, holder_top=False
             )
 
-        pos_parts.append(holder_pos.transform(holder_tf))
+        holder_pos = holder_pos.transform(holder_tf)
 
         # Add the cable connector cutout
-        cable_holder_neg = mag_conn_holder_parts(self.wall_radius * 2).translate(0, 0, 4)
+        cable_holder_neg = mag_conn_holder_parts(
+            self.wall_radius * 2
+        ).translate(0, 0, 4)
         cable_holder_tf = self.apply_to_wall(
             thumb_posts[3].corner,
             thumb_posts[2].corner,
@@ -1629,9 +1631,7 @@ class MyKeyboard:
         # Add feet
         back_left = thumb_posts[2].corner
         back_left_foot = foot(off_x=9, off_y=-0.5)
-        back_left_foot = back_left_foot.translate(
-            back_left.x, back_left.y, 0
-        )
+        back_left_foot = back_left_foot.translate(back_left.x, back_left.y, 0)
         pos_parts.append(back_left_foot.pos)
         neg_parts.append(back_left_foot.neg)
 
@@ -1643,7 +1643,10 @@ class MyKeyboard:
         pos_parts.append(front_right_foot.pos)
         neg_parts.append(front_right_foot.neg)
 
-        return [Shape.difference(Shape.union(pos_parts), neg_parts)]
+        return [
+            Shape.difference(Shape.union(pos_parts), neg_parts),
+            holder_pos,
+        ]
 
     def main_walls(self) -> List[Shape]:
         back_wall_posts = self.wall_back()
@@ -1887,17 +1890,17 @@ def standoff_stud(d: float, offset: float = 0.0) -> Shape:
 
 def oled_holder_parts(wall_thickness: float) -> Tuple[Shape, Shape]:
     display_w = 32.5
-    display_h = 12.0
+    display_h = 12.2
     extra_thickness = 0.1
     display_thickness = 1.53 + extra_thickness
 
     pcb_w = 33.5
-    pcb_h = 21.65
+    pcb_h = 21.8
     pcb_thickness = 1.57
     pcb_tolerance = 0.5
 
     qt_cable_h = 9
-    qt_cable_cutout_w = 10
+    qt_cable_cutout_w = 3
 
     display_cutout = Shape.cube(
         display_w, display_thickness, display_h
@@ -1917,7 +1920,7 @@ def oled_holder_parts(wall_thickness: float) -> Tuple[Shape, Shape]:
         0, (wall_thickness / 2) + 0.8, 2 + (-pcb_h / 2)
     )
 
-    cutin_w = 1.75
+    cutin_w = 2.5
     cutin_h = 2.0
     cutin_thickness = display_thickness - 0.1
     cable_cutin = Shape.cube(cutin_w, cutin_thickness, cutin_h).translate(
@@ -2196,8 +2199,8 @@ def foot(off_x: float = 0.0, off_y: float = 0.0, h: float = 15.0) -> PosAndNeg:
 
     inner_r = 6.5
     outer_r = inner_r + 2.0
-    base_h = 2.0
-    recess = 2.0
+    base_h = 1.25
+    recess = 2.75
     fn = 30.0
 
     t = 0.01
@@ -2248,7 +2251,7 @@ def mag_conn_holder_parts(wall_thickness: float) -> Shape:
     # If printing the holder face down, h = 4.5 is a good value.
     # However, if printing vertically with support needed to hold up the top
     # of the opening, then this value needs to be a little bit bigger.
-    h = 4.6
+    h = 4.8
 
     flange_d = 0.90
     flange_cutout_d = wall_thickness
@@ -2277,7 +2280,7 @@ def mag_conn_holder_parts(wall_thickness: float) -> Shape:
     nub_w = 0.75
     nub_d = 0.75
     nub = Shape.polygon(
-        [(0.0, 0.0), (nub_h, 0.0), (0.0, nub_d)]
+        [(0.0, 0.0), (nub_h, 0.0), (nub_h * 0.5, nub_d), (0.0, nub_d)]
     ).extrude_linear(nub_w)
     nub_bottom = nub.mirror(1.0, 0.0, 0.0)
     nub_offset_d = flange_d + flange_offset - t
