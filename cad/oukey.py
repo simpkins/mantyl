@@ -2317,6 +2317,13 @@ def micro_usb_holder_parts() -> Shape:
     h = 2.6
     bx = 2.85
 
+    vertical_mount = True
+    if vertical_mount:
+        # When printing vertically, we need to add a little extra tolerance
+        # in the height
+        sy += 0.1
+        h += 0.3
+
     points: List[Tuple[float, float]] = [
         (0, 0),
         (bx, 0),
@@ -2353,7 +2360,7 @@ def micro_usb_holder_parts() -> Shape:
 def micro_usb_holder() -> Shape:
     wall_thickness = 4.0
     negative_part = micro_usb_holder_parts()
-    wall = Shape.cube(10, wall_thickness, 5).translate(
+    wall = Shape.cube(12, wall_thickness, 8).translate(
         0, wall_thickness / 2, 0
     )
 
