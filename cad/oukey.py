@@ -670,31 +670,126 @@ class MyKeyboard:
     def thumb_connect_wall(self) -> List[Shape]:
         result: List[Shape] = []
 
-        # Some extra horizontal perimeter on the upper and right
-        # boundary of the thumb area
-        offset = 4
-        result += tri_strip(
-            self.thumb_pos(corner_tr(), 1, 0, true_pos=True),
-            self.thumb_pos(corner_tr(x=offset, y=offset), 1, 0, true_pos=True),
-            self.thumb_pos(corner_tr(), 2, 0, true_pos=True),
-            self.thumb_pos(corner_tr(x=offset, y=offset), 2, 0, true_pos=True),
-            self.thumb_pos_br(corner_br(), true_pos=True),
-            self.thumb_pos_br(corner_br(x=offset, y=-offset), true_pos=True),
-            highlight=True,
-        )
+        upper_wall_height = 5
 
         corner, ground_corner = self.wall_corners()
-        result += [
-            Shape.hull(
-                [
-                    corner.ptranslate(self.thumb_posts[-1].corner),
-                    corner.ptranslate(self.left_wall_posts[0].far),
-                    ground_corner.ptranslate(self.thumb_posts[-1].ground()),
-                    ground_corner.ptranslate(self.left_wall_posts[0].ground()),
-                ]
-            )
+        small_r = self.wall_radius * 0.5
+        small_corner = Shape.sphere(small_r, fn=30)
+
+        left_bl = small_corner.translate(
+            -mount_width / 2 - (small_r * 0.5),
+            -mount_height / 2 - (small_r * 0.5),
+            plate_thickness - small_r,
+        )
+        left_br = small_corner.translate(
+            mount_width / 2 - small_r,
+            -mount_height / 2 - small_r,
+            plate_thickness - small_r,
+        )
+        left_bl_low = left_bl.translate(0, 0, -upper_wall_height)
+        left_br_low = left_br.translate(0, 0, -upper_wall_height)
+        corners: List[Shape] = [
+            self.place_key(left_bl.translate(-2, 0, 0), -1, 4),
+            self.place_key(left_br, -1, 4),
+            self.place_key(left_bl, 0, 4),
+            self.place_key(left_bl, 1, 5),
+        ]
+        low_corners: List[Shape] = [
+            self.place_key(left_bl_low.translate(-2, 0, 0), -1, 4),
+            self.place_key(left_br_low, -1, 4),
+            self.place_key(left_bl_low, 0, 4),
+            self.place_key(left_bl_low, 1, 5),
         ]
 
+        right_tr = small_corner.translate(
+            mount_width / 2 + (small_r * 0.5) + 4,
+            mount_height / 2 + (small_r * 0.5) + 4,
+            plate_thickness - small_r,
+        )
+        right_br = small_corner.translate(
+            mount_width / 2 + (small_r * 0.5) + 8,
+            -mount_height / 2 - (small_r * 0.5) + 8,
+            plate_thickness - small_r,
+        )
+        thumb_corners: List[Shape] = [
+            corner.ptranslate(self.thumb_posts[-1].corner),
+            self.thumb_pos(right_tr, 2, 0, true_pos=True),
+            self.thumb_pos_br(right_br, true_pos=True),
+            corner.ptranslate(self.thumb_posts[0].corner),
+        ]
+
+        # Gap between upper key holes and the connecting wall
+        result += tri_strip(
+            self.place_key(corner_tl(), -1, 4),
+            corner.ptranslate(self.left_wall_posts[0].near),
+            self.place_key(corner_bl(), -1, 4),
+            corners[0],
+            self.place_key(corner_br(), -1, 4),
+            corners[1],
+            self.place_key(corner_bl(), 0, 4),
+            corners[2],
+            self.place_key(corner_bl(), 1, 5),
+            corners[3],
+            self.place_key(corner_br(), 1, 5),
+            corner.ptranslate(self.front_wall_posts[-1].far),
+        )
+        # Strip from top corners to top-lower corners
+        result += tri_strip(
+            corner.ptranslate(self.left_wall_posts[0].near),
+            corner.ptranslate(self.left_wall_posts[0].far),
+            corners[0],
+            low_corners[0],
+            corners[1],
+            low_corners[1],
+            corners[2],
+            low_corners[2],
+            corners[3],
+            low_corners[3],
+            corner.ptranslate(self.front_wall_posts[-1].far),
+        )
+        # Strip from top-lower corners to thumb corners
+        result += tri_strip(
+            corner.ptranslate(self.left_wall_posts[0].far),
+            thumb_corners[0],
+            low_corners[0],
+            thumb_corners[1],
+            low_corners[1],
+        )
+        result += tri_strip(
+            low_corners[1],
+            thumb_corners[1],
+            low_corners[2],
+            thumb_corners[2],
+            low_corners[3],
+            thumb_corners[3],
+            corner.ptranslate(self.front_wall_posts[-1].far),
+        )
+
+        # Connecting wall at top of thumb section
+        result += tri_strip(
+            ground_corner.ptranslate(self.thumb_posts[-1].ground()),
+            ground_corner.ptranslate(self.left_wall_posts[0].ground()),
+            thumb_corners[0],
+            corner.ptranslate(self.left_wall_posts[0].far),
+        )
+        # Connecting wall at bottom-right of thumb section
+        result += tri_strip(
+            ground_corner.ptranslate(self.thumb_posts[0].ground()),
+            ground_corner.ptranslate(self.front_wall_posts[-1].ground()),
+            thumb_corners[-1],
+            corner.ptranslate(self.front_wall_posts[-1].far),
+        )
+
+        # Horizontal perimeter between the thumb keys and the connecting wall
+        result += tri_strip(
+            self.thumb_pos(corner_tr(), 1, 0, true_pos=True),
+            thumb_corners[0],
+            self.thumb_pos(corner_tr(), 2, 0, true_pos=True),
+            thumb_corners[1],
+            self.thumb_pos_br(corner_br(), true_pos=True),
+            thumb_corners[2],
+            thumb_corners[3],
+        )
         return result
 
     def thumb_caps(self) -> Shape:
@@ -971,24 +1066,9 @@ class MyKeyboard:
                 )
             )
 
-        if False:
-            # On column 2, we move the bottom left end inwards a little bit, so
-            # it does not stick out past the key hole
-            posts.append(
-                self.wall_post(
-                    2, last_row, corner_br(), front_br, front_wall_offset
-                )
-            )
-            front_bl2 = Transform().translate(
-                -mount_width / 2 + self.wall_radius,
-                -mount_height / 2 - self.wall_radius,
-                plate_thickness - self.wall_radius,
-            )
-            posts.append(
-                self.wall_post(
-                    2, last_row, corner_bl(), front_bl2, front_wall_offset
-                )
-            )
+        # We don't want the very last post; we want to end on the right hand
+        # side of column 1 rather than the left.
+        del posts[-1]
 
         min_y = min(post.far.y for post in posts)
         for post in posts:
@@ -1059,8 +1139,14 @@ class MyKeyboard:
             -mount_height / 2 - self.wall_radius - wall_offset,
             plate_thickness - self.wall_radius,
         )
+
+        # Note: wall_extra_len is the extra length needed so that this wall
+        # extends so that it is even with the front wall.  Ideally it would be
+        # nice to calculate this from self.front_wall_posts[-1].far.y
+        wall_extra_len = 18.6
+
         bottom_right = Transform().translate(
-            mount_width / 2 + self.wall_radius + wall_offset + 16.2,
+            mount_width / 2 + self.wall_radius + wall_offset + wall_extra_len,
             -mount_height / 2 - self.wall_radius - wall_offset,
             plate_thickness - self.wall_radius,
         )
