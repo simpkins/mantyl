@@ -1268,6 +1268,14 @@ class MyKeyboard:
         pos_parts.append(front_right_foot.pos)
         neg_parts.append(front_right_foot.neg)
 
+        left_corner = self.left_wall_posts[4].far
+        left_corner_foot = foot(off_x=7, off_y=-5)
+        left_corner_foot = left_corner_foot.translate(
+            left_corner.x, left_corner.y, 0
+        )
+        pos_parts.append(left_corner_foot.pos)
+        neg_parts.append(left_corner_foot.neg)
+
         return [Shape.difference(Shape.union(pos_parts), neg_parts)]
 
     def apply_to_wall(
