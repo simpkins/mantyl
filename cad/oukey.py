@@ -1068,8 +1068,14 @@ class MyKeyboard:
                 [
                     post1.post,
                     post2.post,
-                    corner.ptranslate(post1.near),
                     corner.ptranslate(post2.near),
+                ]
+            ).highlight(post1.highlight or post2.highlight),
+            Shape.hull(
+                [
+                    corner.ptranslate(post2.near),
+                    corner.ptranslate(post1.near),
+                    post1.post,
                 ]
             ).highlight(post1.highlight or post2.highlight),
             Shape.hull(
