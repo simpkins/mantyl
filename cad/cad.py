@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import math
 import numpy
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 
 class Shape:
@@ -206,6 +206,21 @@ class Shape:
     def polygon(cls, points: List[Tuple[float, float]]) -> Shape:
         points_str = ", ".join(f"[{x}, {y}]" for x, y in points)
         return cls(f"polygon([{points_str}])")
+
+    @classmethod
+    def polyhedron(
+        cls,
+        points: List[Tuple[float, float, float]],
+        faces: List[Sequence[int]],
+        convexivity: int = 10,
+    ) -> Shape:
+        points_str = ", ".join(f"[{x}, {y}, {z}]" for x, y, z in points)
+
+        faces_strs = []
+        for f in faces:
+            faces_strs.append("[" + ", ".join(str(idx) for idx in f) + "]")
+        faces_str = ", ".join(faces_strs)
+        return cls(f"polyhedron([{points_str}], [{faces_str}], {convexivity})")
 
     @classmethod
     def project(cls, children: List[Shape]) -> Shape:
