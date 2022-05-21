@@ -1270,6 +1270,17 @@ class MyKeyboard:
         pos_parts.append(left_corner_foot.pos)
         neg_parts.append(left_corner_foot.neg)
 
+        # Screw holes for wrist rest
+        for x, z in [(-20, 5), (20, 5), (-20, 25), (20, 25)]:
+            screw_hole_tf = self.apply_to_wall(
+                self.front_wall_posts[0].far,
+                self.front_wall_posts[-1].far,
+                Transform().translate(x, 0, z),
+            )
+            neg_parts.append(
+                screw_hole_parts(self.wall_radius * 2).transform(screw_hole_tf)
+            )
+
         return [Shape.difference(Shape.union(pos_parts), neg_parts)]
 
     def apply_to_wall(
@@ -1950,6 +1961,23 @@ def micro_usb_holder() -> Shape:
     return Shape.difference(wall, [negative_part])
 
 
+def screw_hole_parts(wall_thickness: float) -> Shape:
+    r = 1.8
+    return (
+        Shape.cylinder(h=wall_thickness * 1.1, r=r, fn=15)
+        .rotate(90, 0, 0)
+        .translate(0, wall_thickness * 0.5, 0)
+    )
+
+
+def screw_hole_test() -> Shape:
+    wall_thickness = 4.0
+    negative_part = screw_hole_parts(wall_thickness)
+    wall = Shape.cube(8, wall_thickness, 8).translate(0, wall_thickness / 2, 0)
+
+    return Shape.difference(wall, [negative_part])
+
+
 def keycaps() -> Shape:
     import keyboard
 
@@ -2002,6 +2030,7 @@ def main() -> None:
     write_shape(idc_header_holder(), out_dir / "header_holder.scad")
     write_shape(mag_conn_holder(), out_dir / "mag_conn_holder.scad")
     write_shape(micro_usb_holder(), out_dir / "micro_usb_holder.scad")
+    write_shape(screw_hole_test(), out_dir / "screw_hole.scad")
     write_shape(keycaps(), out_dir / "keycaps.scad")
 
 
