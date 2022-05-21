@@ -1,6 +1,4 @@
-# Custom concave split keyboard
-
-![Ou Kanji](image/ou.png)
+# ![Ou Kanji](img/ou.png) Custom concave split keyboard
 
 This is code for my custom keyboard.
 
