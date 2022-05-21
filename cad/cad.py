@@ -289,6 +289,13 @@ class Point:
             self._x + point._x, self._y + point._y, self._z + point._z
         )
 
+    def transform(self, tf: Transform) -> Point:
+        return (
+            Transform().translate(self._x, self._y, self._z)
+            .transform(tf)
+            .point()
+        )
+
     def __add__(self, other: Point) -> Point:
         assert isinstance(other, Point)
         return Point(

@@ -131,6 +131,237 @@ class MyKeyboard:
 
         return shapes
 
+    def key_holes_new(self) -> List[Shape]:
+        grid = KeyGrid()
+
+        kn2 = KeyHole(grid, self.place_key(Transform(), -1, 2))
+        kn3 = KeyHole(grid, self.place_key(Transform(), -1, 3))
+        kn4 = KeyHole(grid, self.place_key(Transform(), -1, 4))
+
+        k00 = KeyHole(grid, self.place_key(Transform(), 0, 0))
+        k01 = KeyHole(grid, self.place_key(Transform(), 0, 1))
+        k02 = KeyHole(grid, self.place_key(Transform(), 0, 2))
+        k03 = KeyHole(grid, self.place_key(Transform(), 0, 3))
+        k04 = KeyHole(grid, self.place_key(Transform(), 0, 4))
+
+        k10 = KeyHole(grid, self.place_key(Transform(), 1, 0))
+        k11 = KeyHole(grid, self.place_key(Transform(), 1, 1))
+        k12 = KeyHole(grid, self.place_key(Transform(), 1, 2))
+        k13 = KeyHole(grid, self.place_key(Transform(), 1, 3))
+        k14 = KeyHole(grid, self.place_key(Transform(), 1, 4))
+        k15 = KeyHole(grid, self.place_key(Transform(), 1, 5))
+
+        k20 = KeyHole(grid, self.place_key(Transform(), 2, 0))
+        k21 = KeyHole(grid, self.place_key(Transform(), 2, 1))
+        k22 = KeyHole(grid, self.place_key(Transform(), 2, 2))
+        k23 = KeyHole(grid, self.place_key(Transform(), 2, 3))
+        k24 = KeyHole(grid, self.place_key(Transform(), 2, 4))
+        k25 = KeyHole(grid, self.place_key(Transform(), 2, 5))
+
+        k30 = KeyHole(grid, self.place_key(Transform(), 3, 0))
+        k31 = KeyHole(grid, self.place_key(Transform(), 3, 1))
+        k32 = KeyHole(grid, self.place_key(Transform(), 3, 2))
+        k33 = KeyHole(grid, self.place_key(Transform(), 3, 3))
+        k34 = KeyHole(grid, self.place_key(Transform(), 3, 4))
+        k35 = KeyHole(grid, self.place_key(Transform(), 3, 5))
+
+        k40 = KeyHole(grid, self.place_key(Transform(), 4, 0))
+        k41 = KeyHole(grid, self.place_key(Transform(), 4, 1))
+        k42 = KeyHole(grid, self.place_key(Transform(), 4, 2))
+        k43 = KeyHole(grid, self.place_key(Transform(), 4, 3))
+        k44 = KeyHole(grid, self.place_key(Transform(), 4, 4))
+        k45 = KeyHole(grid, self.place_key(Transform(), 4, 5))
+
+        k50 = KeyHole(grid, self.place_key(Transform(), 5, 0))
+        k51 = KeyHole(grid, self.place_key(Transform(), 5, 1))
+        k52 = KeyHole(grid, self.place_key(Transform(), 5, 2))
+        k53 = KeyHole(grid, self.place_key(Transform(), 5, 3))
+        k54 = KeyHole(grid, self.place_key(Transform(), 5, 4))
+        k55 = KeyHole(grid, self.place_key(Transform(), 5, 5))
+
+        # Column -1
+        kn2.top_wall()
+        kn2.left_wall()
+        kn2.join_bottom(kn3, left=True)
+        kn2.join_right(k02)
+        KeyHole.join_corner(kn2, k02, k03, kn3)
+        # We have one additional unusual corner at the corner
+        # of (-1, 2), (0, 1), and (0, 2)
+        grid.faces += [
+            [kn2.u_out_tr, k01.u_out_bl, k02.u_out_tl],
+            [kn2.m_out_tr, k02.m_out_tl, k01.m_out_bl],
+            [k01.u_out_bl, kn2.u_out_tr, kn2.m_out_tr],
+            [kn2.m_out_tr, k01.m_out_bl, k01.u_out_bl],
+        ]
+
+        kn3.left_wall()
+        kn3.join_bottom(kn4, left=True)
+        kn3.join_right(k03)
+        KeyHole.join_corner(kn3, k03, k04, kn4)
+
+        kn4.left_wall()
+        kn4.bottom_wall()
+        kn4.join_right(k04, bottom=True)
+
+        # Column 0
+        k00.top_wall()
+        k00.left_wall()
+        k00.join_right(k10, top=True)
+        k00.join_bottom(k01, left=True)
+        KeyHole.join_corner(k00, k10, k11, k01)
+
+        k01.left_wall()
+        k01.join_right(k11)
+        k01.join_bottom(k02)
+        KeyHole.join_corner(k01, k11, k12, k02)
+
+        k02.join_right(k12)
+        k02.join_bottom(k03)
+        KeyHole.join_corner(k02, k12, k13, k03)
+
+        k03.join_right(k13)
+        k03.join_bottom(k04)
+        KeyHole.join_corner(k03, k13, k14, k04)
+
+        k04.join_right(k14)
+
+        # Column 1
+        k10.top_wall()
+        k10.join_bottom(k11)
+        k10.join_right(k20, top=True)
+        KeyHole.join_corner(k10, k20, k21, k11)
+
+        k11.join_bottom(k12)
+        k11.join_right(k21)
+        KeyHole.join_corner(k11, k21, k22, k12)
+
+        k12.join_bottom(k13)
+        k12.join_right(k22)
+        KeyHole.join_corner(k12, k22, k23, k13)
+
+        k13.join_bottom(k14)
+        k13.join_right(k23)
+        KeyHole.join_corner(k13, k23, k24, k14)
+
+        k14.join_bottom(k15)
+        k14.join_right(k24)
+        KeyHole.join_corner(k14, k24, k25, k15)
+
+        k15.bottom_wall()
+        k15.join_right(k25, bottom=True)
+
+        # Column 2
+        k20.top_wall()
+        k20.join_bottom(k21)
+        k20.join_right(k30, top=True)
+        KeyHole.join_corner(k20, k30, k31, k21)
+
+        k21.join_bottom(k22)
+        k21.join_right(k31)
+        KeyHole.join_corner(k21, k31, k32, k22)
+
+        k22.join_bottom(k23)
+        k22.join_right(k32)
+        KeyHole.join_corner(k22, k32, k33, k23)
+
+        k23.join_bottom(k24)
+        k23.join_right(k33)
+        KeyHole.join_corner(k23, k33, k34, k24)
+
+        k24.join_bottom(k25)
+        k24.join_right(k34)
+        KeyHole.join_corner(k24, k34, k35, k25)
+
+        k25.bottom_wall()
+        k25.join_right(k35, bottom=True)
+
+        # Column 3
+        k30.top_wall()
+        k30.join_bottom(k31)
+        k30.join_right(k40, top=True)
+        KeyHole.join_corner(k30, k40, k41, k31)
+
+        k31.join_bottom(k32)
+        k31.join_right(k41)
+        KeyHole.join_corner(k31, k41, k42, k32)
+
+        k32.join_bottom(k33)
+        k32.join_right(k42)
+        KeyHole.join_corner(k32, k42, k43, k33)
+
+        k33.join_bottom(k34)
+        k33.join_right(k43)
+        KeyHole.join_corner(k33, k43, k44, k34)
+
+        k34.join_bottom(k35)
+        k34.join_right(k44)
+        KeyHole.join_corner(k34, k44, k45, k35)
+
+        k35.bottom_wall()
+        k35.join_right(k45, bottom=True)
+
+        # Column 4
+        k40.top_wall()
+        k40.join_bottom(k41)
+        k40.join_right(k50, top=True)
+        KeyHole.join_corner(k40, k50, k51, k41)
+
+        k41.join_bottom(k42)
+        k41.join_right(k51)
+        KeyHole.join_corner(k41, k51, k52, k42)
+
+        k42.join_bottom(k43)
+        k42.join_right(k52)
+        KeyHole.join_corner(k42, k52, k53, k43)
+
+        k43.join_bottom(k44)
+        k43.join_right(k53)
+        KeyHole.join_corner(k43, k53, k54, k44)
+
+        k44.join_bottom(k45)
+        k44.join_right(k54)
+        KeyHole.join_corner(k44, k54, k55, k45)
+
+        k45.bottom_wall()
+        k45.join_right(k55, bottom=True)
+
+        # Column 5
+        k50.top_wall()
+        k50.right_wall()
+        k50.join_bottom(k51, right=True)
+
+        k51.right_wall()
+        k51.join_bottom(k52, right=True)
+
+        k52.right_wall()
+        k52.join_bottom(k53, right=True)
+
+        k53.right_wall()
+        k53.join_bottom(k54, right=True)
+
+        k54.right_wall()
+        k54.join_bottom(k55, right=True)
+
+        k55.right_wall()
+        k55.bottom_wall()
+
+        # Extra connector for the thumb area
+        grid.faces += [
+            # top
+            [k04.u_out_bl, k04.u_out_br, k14.u_out_bl],
+            [k04.u_out_bl, k14.u_out_bl, k15.u_out_tl],
+            [k04.u_out_bl, k15.u_out_tl, k15.u_out_bl],
+            # bottom
+            [k04.m_out_bl, k14.m_out_bl, k04.m_out_br],
+            [k04.m_out_bl, k15.m_out_tl, k14.m_out_bl],
+            [k04.m_out_bl, k15.m_out_bl, k15.m_out_tl],
+            # side wall
+            [k04.u_out_bl, k15.u_out_bl, k15.m_out_bl],
+            [k15.m_out_bl, k04.m_out_bl, k04.u_out_bl],
+        ]
+
+        return grid.gen()
+
     def key_holes(self) -> List[Shape]:
         return self.key_positions("Key", self.key_hole)
 
@@ -674,7 +905,7 @@ class MyKeyboard:
 
         corner, ground_corner = self.wall_corners()
         small_r = self.wall_radius * 0.5
-        small_corner = Shape.sphere(small_r, fn=30)
+        small_corner = Shape.sphere(small_r, fn=24)
 
         left_bl = small_corner.translate(
             -mount_width / 2 - (small_r * 0.5),
@@ -797,15 +1028,6 @@ class MyKeyboard:
         parts.append(self.thumb_pos(dsa_cap(ratio=1.5), 2, 1))
         return self.thumb_orientation(Shape.union(parts))
 
-    def wrist_rest(self) -> List[Shape]:
-        rest = (
-            Shape.cube(140, 90, 3)
-            .translate(50, -97, 34)
-            .rotate(10, 12, 0)
-            .translate(0, 0, 20)
-        )
-        return [rest]
-
     def wall_tl(self, column: int, row: int) -> Transform:
         tf = Transform().translate(-mount_width / 2, mount_height / 2, 0)
         tf2 = self.place_key(tf, column, row)
@@ -824,8 +1046,8 @@ class MyKeyboard:
         return result
 
     def wall_corners(self) -> Tuple[Shape, Shape]:
-        corner = Shape.sphere(self.wall_radius, fn=30)
-        ground_corner = Shape.sphere(self.wall_radius, fn=30).difference(
+        corner = Shape.sphere(self.wall_radius, fn=24)
+        ground_corner = Shape.sphere(self.wall_radius, fn=24).difference(
             [
                 Shape.cube(
                     self.wall_radius * 2,
@@ -1339,13 +1561,11 @@ def model_right(
     if loose_holes:
         kbd.key_hole = single_plate(loose=True)
     parts = (
-        kbd.key_holes()
-        + kbd.connectors()
+        [kbd.key_holes_new()]
         + kbd.thumb_area()
         + kbd.thumb_walls(oled_display=oled_display)
         + kbd.main_walls()
         + kbd.thumb_connect_wall()
-        # + kbd.wrist_rest()
     )
 
     if show_caps:
@@ -1996,6 +2216,202 @@ def write_shape(shape: Shape, path: Path) -> None:
     path.write_text(shape.to_str())
 
 
+class KeyGrid:
+    def __init__(self) -> None:
+        self.points: List[Tuple[float, float, float]] = []
+        self.faces: List[Sequence[int]] = []
+
+    def gen(self) -> Shape:
+        return Shape.polyhedron(self.points, self.faces, convexivity=20)
+
+
+class KeyHole:
+    def __init__(self, grid: KeyGrid, transform: Transform) -> None:
+        from keyboard import (
+            keyswitch_width,
+            keyswitch_height,
+            keywell_wall_width,
+            plate_thickness,
+            web_thickness,
+        )
+
+        self.grid = grid
+        start_idx = len(self.grid.points)
+
+        inner_w = keyswitch_width * 0.5
+        outer_w = inner_w + keywell_wall_width
+
+        inner_h = keyswitch_height * 0.5
+        outer_h = inner_h + keywell_wall_width
+
+        mid_thickness = plate_thickness - web_thickness
+
+        orig_points = [
+            Point(-inner_w, -inner_h, 0.0),
+            Point(inner_w, -inner_h, 0.0),
+            Point(inner_w, inner_h, 0.0),
+            Point(-inner_w, inner_h, 0.0),
+            Point(-outer_w, -outer_h, 0.0),
+            Point(outer_w, -outer_h, 0.0),
+            Point(outer_w, outer_h, 0.0),
+            Point(-outer_w, outer_h, 0.0),
+            Point(-inner_w, -inner_h, plate_thickness),
+            Point(inner_w, -inner_h, plate_thickness),
+            Point(inner_w, inner_h, plate_thickness),
+            Point(-inner_w, inner_h, plate_thickness),
+            Point(-outer_w, -outer_h, plate_thickness),
+            Point(outer_w, -outer_h, plate_thickness),
+            Point(outer_w, outer_h, plate_thickness),
+            Point(-outer_w, outer_h, plate_thickness),
+            Point(-outer_w, -outer_h, mid_thickness),
+            Point(outer_w, -outer_h, mid_thickness),
+            Point(outer_w, outer_h, mid_thickness),
+            Point(-outer_w, outer_h, mid_thickness),
+        ]
+        points = [p.transform(transform) for p in orig_points]
+        for p in points:
+            self.grid.points.append((p.x, p.y, p.z))
+
+        # Lower inner point indices
+        self.l_in_bl = 0 + start_idx
+        self.l_in_br = 1 + start_idx
+        self.l_in_tr = 2 + start_idx
+        self.l_in_tl = 3 + start_idx
+
+        # Lower outer point indices
+        self.l_out_bl = 4 + start_idx
+        self.l_out_br = 5 + start_idx
+        self.l_out_tr = 6 + start_idx
+        self.l_out_tl = 7 + start_idx
+
+        # Upper inner point indices
+        self.u_in_bl = 8 + start_idx
+        self.u_in_br = 9 + start_idx
+        self.u_in_tr = 10 + start_idx
+        self.u_in_tl = 11 + start_idx
+
+        # Upper outer point indices
+        self.u_out_bl = 12 + start_idx
+        self.u_out_br = 13 + start_idx
+        self.u_out_tr = 14 + start_idx
+        self.u_out_tl = 15 + start_idx
+
+        # Mid outer point indices
+        self.m_out_bl = 16 + start_idx
+        self.m_out_br = 17 + start_idx
+        self.m_out_tr = 18 + start_idx
+        self.m_out_tl = 19 + start_idx
+
+        self.standard_walls()
+
+    def standard_walls(self) -> None:
+        # All key holes have the inner walls, plus top and bottom walls
+        # They also have outer walls from the bottom to the mid-point
+        self.grid.faces += [
+            # inner walls
+            [self.u_in_bl, self.l_in_bl, self.l_in_br, self.u_in_br],
+            [self.u_in_br, self.l_in_br, self.l_in_tr, self.u_in_tr],
+            [self.u_in_tr, self.l_in_tr, self.l_in_tl, self.u_in_tl],
+            [self.u_in_tl, self.l_in_tl, self.l_in_bl, self.u_in_bl],
+            # top walls
+            [self.u_in_bl, self.u_in_br, self.u_out_br, self.u_out_bl],
+            [self.u_in_br, self.u_in_tr, self.u_out_tr, self.u_out_br],
+            [self.u_in_tr, self.u_in_tl, self.u_out_tl, self.u_out_tr],
+            [self.u_in_tl, self.u_in_bl, self.u_out_bl, self.u_out_tl],
+            # bottom walls
+            [self.l_in_bl, self.l_out_bl, self.l_out_br, self.l_in_br],
+            [self.l_in_br, self.l_out_br, self.l_out_tr, self.l_in_tr],
+            [self.l_in_tr, self.l_out_tr, self.l_out_tl, self.l_in_tl],
+            [self.l_in_tl, self.l_out_tl, self.l_out_bl, self.l_in_bl],
+            # outer walls from bottom layer to mid point
+            [self.l_out_bl, self.m_out_bl, self.m_out_br, self.l_out_br],
+            [self.l_out_br, self.m_out_br, self.m_out_tr, self.l_out_tr],
+            [self.l_out_tr, self.m_out_tr, self.m_out_tl, self.l_out_tl],
+            [self.l_out_tl, self.m_out_tl, self.m_out_bl, self.l_out_bl],
+        ]
+
+    def top_wall(self) -> None:
+        self.grid.faces += [
+            [self.u_out_tr, self.u_out_tl, self.m_out_tl, self.m_out_tr]
+        ]
+
+    def bottom_wall(self) -> None:
+        self.grid.faces += [
+            [self.u_out_bl, self.u_out_br, self.m_out_br, self.m_out_bl]
+        ]
+
+    def left_wall(self) -> None:
+        self.grid.faces += [
+            [self.u_out_tl, self.u_out_bl, self.m_out_bl, self.m_out_tl]
+        ]
+
+    def right_wall(self) -> None:
+        self.grid.faces += [
+            [self.u_out_br, self.u_out_tr, self.m_out_tr, self.m_out_br]
+        ]
+
+    def join_bottom(
+        self, kh: KeyHole, left: bool = False, right: bool = False
+    ) -> None:
+        # Join this key hole to one below it
+        self.grid.faces += [
+            [self.u_out_bl, self.u_out_br, kh.u_out_tr],
+            [kh.u_out_tr, kh.u_out_tl, self.u_out_bl],
+            [self.m_out_bl, kh.m_out_tr, self.m_out_br],
+            [kh.m_out_tr, self.m_out_bl, kh.m_out_tl],
+        ]
+
+        if left:
+            self.grid.faces += [
+                [self.u_out_bl, kh.u_out_tl, self.m_out_bl],
+                [self.m_out_bl, kh.u_out_tl, kh.m_out_tl],
+            ]
+
+        if right:
+            self.grid.faces += [
+                [kh.u_out_tr, self.u_out_br, self.m_out_br],
+                [self.m_out_br, kh.m_out_tr, kh.u_out_tr],
+            ]
+
+    def join_right(
+        self, kh: KeyHole, top: bool = False, bottom: bool = False
+    ) -> None:
+        self.grid.faces += [
+            [self.u_out_tr, kh.u_out_tl, kh.u_out_bl],
+            [kh.u_out_bl, self.u_out_br, self.u_out_tr],
+            [self.m_out_tr, kh.m_out_bl, kh.m_out_tl],
+            [kh.m_out_bl, self.m_out_tr, self.m_out_br],
+        ]
+
+        if top:
+            self.grid.faces += [
+                [kh.u_out_tl, self.u_out_tr, self.m_out_tr],
+                [self.m_out_tr, kh.m_out_tl, kh.u_out_tl],
+            ]
+        if bottom:
+            self.grid.faces += [
+                [self.u_out_br, kh.u_out_bl, kh.m_out_bl],
+                [kh.m_out_bl, self.m_out_br, self.u_out_br],
+            ]
+
+    @staticmethod
+    def join_corner(
+        tl: KeyHole, tr: KeyHole, br: KeyHole, bl: KeyHole
+    ) -> None:
+        tl.grid.faces += [
+            [tl.u_out_br, tr.u_out_bl, br.u_out_tl],
+            [br.u_out_tl, bl.u_out_tr, tl.u_out_br],
+            [tl.m_out_br, br.m_out_tl, tr.m_out_bl],
+            [br.m_out_tl, tl.m_out_br, bl.m_out_tr],
+        ]
+
+
+def key_hole_test() -> List[Shape]:
+    kbd = MyKeyboard()
+    #return Shape.union(kbd.key_holes() + kbd.connectors())
+    return kbd.key_holes_new()
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--show-keycaps", action="store_true")
@@ -2024,6 +2440,7 @@ def main() -> None:
     )
 
     # Component debugging
+    write_shape(key_hole_test(), out_dir / "key_hole.scad")
     write_shape(sx1509_holder(), out_dir / "sx1509_holder.scad")
     write_shape(oled_holder(), out_dir / "oled_holder.scad")
     write_shape(joint_holder(), out_dir / "joint_holder.scad")
