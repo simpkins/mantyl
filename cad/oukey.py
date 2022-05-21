@@ -1163,7 +1163,7 @@ class MyKeyboard:
 
         return posts
 
-    def thumb_walls(self) -> List[Shape]:
+    def thumb_walls(self, oled_display: bool) -> List[Shape]:
         self.thumb_posts = self.wall_thumb_posts()
 
         # Thumb area walls
@@ -1174,26 +1174,19 @@ class MyKeyboard:
             pos_parts: List[Shape] = [Shape.union(wall_segments).grey()]
         else:
             pos_parts: List[Shape] = wall_segments
-        neg_parts: List[Shape] = []
 
         # OLED holder
-        holder_tf = self.apply_to_wall(
-            self.thumb_posts[2].corner,
-            self.thumb_posts[1].corner,
-            Transform().translate(1.75 * 0.5, 0, 22.5),
-        )
-        add_oled_holder = True
-        if add_oled_holder:
+        if oled_display:
+            holder_tf = self.apply_to_wall(
+                self.thumb_posts[2].corner,
+                self.thumb_posts[1].corner,
+                Transform().translate(1.75 * 0.5, 0, 22.5),
+            )
             holder_neg, holder_pos = joint_holder_parts(
                 self.wall_radius * 2, holder_top=False
             )
             neg_parts.append(holder_neg.transform(holder_tf))
-        else:
-            holder_pos = sx1509_holder_part(
-                self.wall_radius * 2, holder_top=False
-            )
-
-        holder_pos = holder_pos.transform(holder_tf)
+            holder_pos = holder_pos.transform(holder_tf)
 
         # Add the cable connector cutout
         cable_holder_neg = mag_conn_holder_parts(
@@ -1221,10 +1214,11 @@ class MyKeyboard:
         pos_parts.append(front_right_foot.pos)
         neg_parts.append(front_right_foot.neg)
 
-        return [
-            Shape.difference(Shape.union(pos_parts), neg_parts),
-            holder_pos,
-        ]
+        result = [Shape.difference(Shape.union(pos_parts), neg_parts)]
+        if oled_display:
+            result.append(holder_pos)
+
+        return result
 
     def main_walls(self) -> List[Shape]:
         back_wall_posts = self.wall_back()
@@ -1325,6 +1319,7 @@ class MyKeyboard:
 
 def model_right(
     *,
+    oled_display: bool = False,
     show_caps: bool = False,
     show_collisions: bool = False,
     loose_holes: bool = False,
@@ -1336,7 +1331,7 @@ def model_right(
         kbd.key_holes()
         + kbd.connectors()
         + kbd.thumb_area()
-        + kbd.thumb_walls()
+        + kbd.thumb_walls(oled_display=oled_display)
         + kbd.main_walls()
         + kbd.thumb_connect_wall()
         # + kbd.wrist_rest()
@@ -1358,6 +1353,7 @@ def model_left(
     loose_holes: bool = False,
 ) -> Shape:
     right = model_right(
+        oled_display=True,
         show_caps=show_caps,
         show_collisions=show_collisions,
         loose_holes=loose_holes,
