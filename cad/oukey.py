@@ -1068,14 +1068,8 @@ class MyKeyboard:
                 [
                     post1.post,
                     post2.post,
-                    corner.ptranslate(post2.near),
-                ]
-            ).highlight(post1.highlight or post2.highlight),
-            Shape.hull(
-                [
-                    corner.ptranslate(post2.near),
                     corner.ptranslate(post1.near),
-                    post1.post,
+                    corner.ptranslate(post2.near),
                 ]
             ).highlight(post1.highlight or post2.highlight),
             Shape.hull(
@@ -2414,7 +2408,6 @@ class KeyHole:
 
 def key_hole_test() -> List[Shape]:
     kbd = MyKeyboard()
-    #return Shape.union(kbd.key_holes() + kbd.connectors())
     return kbd.key_holes_new()
 
 
