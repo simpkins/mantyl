@@ -216,13 +216,23 @@ class Shape:
         faces: List[Sequence[int]],
         convexivity: int = 10,
     ) -> Shape:
-        points_str = ", ".join(f"[{x}, {y}, {z}]" for x, y, z in points)
+        points_str = ",\n    ".join(f"[{x}, {y}, {z}]" for x, y, z in points)
 
         faces_strs = []
         for f in faces:
             faces_strs.append("[" + ", ".join(str(idx) for idx in f) + "]")
-        faces_str = ", ".join(faces_strs)
-        return cls(f"polyhedron([{points_str}], [{faces_str}], {convexivity})")
+        faces_str = ",\n    ".join(faces_strs)
+        return cls(
+            "polyhedron(\n"
+            "  [\n"
+            f"    {points_str}\n"
+            "  ],\n"
+            "  [\n"
+            f"    {faces_str}\n"
+            "  ],\n"
+            f"  {convexivity}\n"
+            ")"
+        )
 
     @classmethod
     def polyhedron_from_mesh(cls, mesh: Mesh, convexivity: int = 10) -> Shape:
