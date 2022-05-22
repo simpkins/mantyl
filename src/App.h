@@ -20,7 +20,7 @@ private:
 
   void writeMsg(std::string_view msg);
 
-  static constexpr int kSerialBaudRate = 9600;
+  static constexpr int kSerialBaudRate = 115200;
 
   static constexpr uint8_t kScreenWidth = 128;
   static constexpr uint8_t kScreenHeight = 32;

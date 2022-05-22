@@ -18,6 +18,7 @@ void App::setup() {
     esp_deep_sleep_start();
   }
 
+  Serial.println(F("oukey init"));
   display_.clearDisplay();
   display_.setTextSize(1);      // Normal 1:1 pixel scale
   display_.setTextColor(SSD1306_WHITE); // Draw white text
