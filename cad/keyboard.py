@@ -79,7 +79,7 @@ def dsa_cap(include_base: bool = False) -> Shape:
     return cap.translate(0, 0, z_offset)
 
 
-def dsa_cap(ratio = 1.0, include_base: bool = False) -> Shape:
+def dsa_cap(ratio=1.0, include_base: bool = False) -> Shape:
     """
     Create an approximation of a 1xN DSA keycap.
 
@@ -112,8 +112,12 @@ def dsa_cap(ratio = 1.0, include_base: bool = False) -> Shape:
     # upper_h doesn't really matter, just needs to be a number less than height
     upper_h = 1
 
-    lower = Shape.cube(lower_w, lower_d, lower_h).translate(0, 0, lower_h * .5)
-    top = Shape.cube(upper_w, upper_d, upper_h).translate(0, 0, height - (upper_h * .5))
+    lower = Shape.cube(lower_w, lower_d, lower_h).translate(
+        0, 0, lower_h * 0.5
+    )
+    top = Shape.cube(upper_w, upper_d, upper_h).translate(
+        0, 0, height - (upper_h * 0.5)
+    )
     main = Shape.hull([lower, top])
     parts = [lower, top, main]
 
@@ -126,9 +130,9 @@ def dsa_cap(ratio = 1.0, include_base: bool = False) -> Shape:
     # This helps detect if there will be collisions with another key along the
     # key's path of travel.
     if include_base:
-        base = Shape.cube(
-            lower_w, lower_d, switch_height - 0.01
-        ).translate(0, 0, 0.01 - switch_height / 2)
+        base = Shape.cube(lower_w, lower_d, switch_height - 0.01).translate(
+            0, 0, 0.01 - switch_height / 2
+        )
         parts.append(base)
 
     # Translate the cap upwards to take into account the plate thickness, and
@@ -204,33 +208,37 @@ def corner_post(size: float = post_size) -> Shape:
     )
 
 
-def corner_tl(x: float = 0.0, y: float = 0.0) -> Shape:
-    return corner_post().translate(
-        ((post_size - mount_width) / 2) + x,
-        ((mount_height - post_size) / 2) + y,
+def corner_tl(
+    x: float = 0.0, y: float = 0.0, size: float = post_size
+) -> Shape:
+    return corner_post(size=size).translate(
+        ((size - mount_width) / 2) + x,
+        ((mount_height - size) / 2) + y,
         0,
     )
 
 
-def corner_tr(x: float = 0.0, y: float = 0.0) -> Shape:
-    return corner_post().translate(
-        ((mount_width - post_size) / 2) + x,
-        ((mount_height - post_size) / 2) + y,
+def corner_tr(
+    x: float = 0.0, y: float = 0.0, size: float = post_size
+) -> Shape:
+    return corner_post(size=size).translate(
+        ((mount_width - size) / 2) + x,
+        ((mount_height - size) / 2) + y,
         0,
     )
 
 
-def corner_bl(x: float = 0.0, y: float = 0.0) -> Shape:
-    return corner_post().translate(
-        ((post_size - mount_width) / 2) + x,
-        ((post_size - mount_height) / 2) + y,
+def corner_bl(x: float = 0.0, y: float = 0.0, size: float = post_size) -> Shape:
+    return corner_post(size=size).translate(
+        ((size - mount_width) / 2) + x,
+        ((size - mount_height) / 2) + y,
         0,
     )
 
 
-def corner_br(x: float = 0.0, y: float = 0.0) -> Shape:
-    return corner_post().translate(
-        ((mount_width - post_size) / 2) + x,
-        ((post_size - mount_height) / 2) + y,
+def corner_br(x: float = 0.0, y: float = 0.0, size: float = post_size) -> Shape:
+    return corner_post(size=size).translate(
+        ((mount_width - size) / 2) + x,
+        ((size - mount_height) / 2) + y,
         0,
     )
