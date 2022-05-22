@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from cad import Shape
+from openscad import Shape
 
 keyswitch_width: float = 14.4
 keyswitch_height: float = 14.4

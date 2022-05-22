@@ -10,7 +10,7 @@ import math
 from pathlib import Path
 from typing import List, Tuple, TypeVar
 
-from cad import Point, PosAndNeg, Shape, Transform, tri_strip
+from openscad import Point, PosAndNeg, Shape, Transform, tri_strip
 from keyboard import (
     corner_tl,
     corner_tr,
