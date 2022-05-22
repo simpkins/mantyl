@@ -80,59 +80,64 @@ class Transform:
 
 
 class Point:
-    def __init__(self, x: float, y: float, z: float) -> None:
-        self._x = x
-        self._y = y
-        self._z = z
+    __slots__ = ["x", "y", "z"]
+    x: float
+    y: float
+    z: float
+
+    def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0) -> str:
+        self.x = x
+        self.y = y
+        self.z = z
 
     def __str__(self) -> str:
         return f"[{self.x}, {self.y}, {self.z}]"
 
+    def __repr__(self) -> str:
+        return f"Point({self.x}, {self.y}, {self.z})"
+
     def as_tuple(self) -> Tuple[float, float, float]:
         return (self.x, self.y, self.z)
 
-    def get_x(self) -> float:
-        return self._x
-
-    def get_y(self) -> float:
-        return self._y
-
-    def get_z(self) -> float:
-        return self._z
-
-    def set_x(self, x: float) -> None:
-        self._x = x
-
-    def set_y(self, y: float) -> None:
-        self._y = y
-
-    def set_z(self, z: float) -> None:
-        self._z = z
-
-    x = property(get_x, set_x)
-    y = property(get_y, set_y)
-    z = property(get_z, set_z)
-
     def copy(self) -> Point:
-        return Point(self._x, self._y, self._z)
+        return Point(self.x, self.y, self.z)
 
     def translate(self, x: float, y: float, z: float) -> Point:
-        return Point(self._x + x, self._y + y, self._z + z)
+        return Point(self.x + x, self.y + y, self.z + z)
 
     def ptranslate(self, point: Point) -> Point:
-        return Point(
-            self._x + point._x, self._y + point._y, self._z + point._z
-        )
+        return Point(self.x + point.x, self.y + point.y, self.z + point.z)
+
+    def to_transform(self) -> Transform:
+        return Transform().translate(self.x, self.y, self.z)
 
     def transform(self, tf: Transform) -> Point:
-        return (
-            Transform().translate(self._x, self._y, self._z)
-            .transform(tf)
-            .point()
-        )
+        return self.to_transform().transform(tf).point()
+
+    def __hash__(self) -> int:
+        return hash(self.as_tuple())
+
+    def __eq__(self, other: Point) -> Point:
+        assert isinstance(other, Point)
+        return (self.x == other.x and self.y == other.y and self.z == other.z)
+
+    def __ne__(self, other: Point) -> Point:
+        assert isinstance(other, Point)
+        return not self.__eq__(other)
 
     def __add__(self, other: Point) -> Point:
         assert isinstance(other, Point)
-        return Point(
-            self._x + other._x, self._y + other._y, self._z + other._z
-        )
+        return Point(self.x + other.x, self.y + other.y, self.z + other.z)
+
+
+class MeshPoint:
+    def __init__(self, mesh: Mesh, point: Point, index: int):
+        self.mesh = mesh
+        self.point = point
+        self.index = index
+
+
+class Mesh:
+    def __init__(self) -> None:
+        self.points: List[Tuple[float, float, float]] = []
+        self.faces: List[Sequence[int]] = []
