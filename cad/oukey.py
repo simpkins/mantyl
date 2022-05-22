@@ -10,7 +10,8 @@ import math
 from pathlib import Path
 from typing import List, Tuple, TypeVar
 
-from openscad import Point, PosAndNeg, Shape, Transform, tri_strip
+from cad import Mesh, Point, Transform
+from openscad import PosAndNeg, Shape, tri_strip
 from keyboard import (
     corner_tl,
     corner_tr,
@@ -132,7 +133,7 @@ class MyKeyboard:
         return shapes
 
     def key_holes_new(self) -> List[Shape]:
-        grid = KeyGrid()
+        grid = Mesh()
 
         kn2 = KeyHole(grid, self.place_key(Transform(), -1, 2))
         kn3 = KeyHole(grid, self.place_key(Transform(), -1, 3))
@@ -187,12 +188,10 @@ class MyKeyboard:
         KeyHole.join_corner(kn2, k02, k03, kn3)
         # We have one additional unusual corner at the corner
         # of (-1, 2), (0, 1), and (0, 2)
-        grid.faces += [
-            [kn2.u_out_tr, k01.u_out_bl, k02.u_out_tl],
-            [kn2.m_out_tr, k02.m_out_tl, k01.m_out_bl],
-            [k01.u_out_bl, kn2.u_out_tr, kn2.m_out_tr],
-            [kn2.m_out_tr, k01.m_out_bl, k01.u_out_bl],
-        ]
+        grid.add_face(kn2.u_out_tr, k01.u_out_bl, k02.u_out_tl)
+        grid.add_face(kn2.m_out_tr, k02.m_out_tl, k01.m_out_bl)
+        grid.add_face(k01.u_out_bl, kn2.u_out_tr, kn2.m_out_tr)
+        grid.add_face(kn2.m_out_tr, k01.m_out_bl, k01.u_out_bl)
 
         kn3.left_wall()
         kn3.join_bottom(kn4, left=True)
@@ -346,21 +345,19 @@ class MyKeyboard:
         k55.bottom_wall()
 
         # Extra connector for the thumb area
-        grid.faces += [
-            # top
-            [k04.u_out_bl, k04.u_out_br, k14.u_out_bl],
-            [k04.u_out_bl, k14.u_out_bl, k15.u_out_tl],
-            [k04.u_out_bl, k15.u_out_tl, k15.u_out_bl],
-            # bottom
-            [k04.m_out_bl, k14.m_out_bl, k04.m_out_br],
-            [k04.m_out_bl, k15.m_out_tl, k14.m_out_bl],
-            [k04.m_out_bl, k15.m_out_bl, k15.m_out_tl],
-            # side wall
-            [k04.u_out_bl, k15.u_out_bl, k15.m_out_bl],
-            [k15.m_out_bl, k04.m_out_bl, k04.u_out_bl],
-        ]
+        # top
+        grid.add_face(k04.u_out_bl, k04.u_out_br, k14.u_out_bl)
+        grid.add_face(k04.u_out_bl, k14.u_out_bl, k15.u_out_tl)
+        grid.add_face(k04.u_out_bl, k15.u_out_tl, k15.u_out_bl)
+        # bottom
+        grid.add_face(k04.m_out_bl, k14.m_out_bl, k04.m_out_br)
+        grid.add_face(k04.m_out_bl, k15.m_out_tl, k14.m_out_bl)
+        grid.add_face(k04.m_out_bl, k15.m_out_bl, k15.m_out_tl)
+        # side wall
+        grid.add_face(k04.u_out_bl, k15.u_out_bl, k15.m_out_bl)
+        grid.add_face(k15.m_out_bl, k04.m_out_bl, k04.u_out_bl)
 
-        return grid.gen()
+        return Shape.polyhedron_from_mesh(grid, convexivity=20)
 
     def key_holes(self) -> List[Shape]:
         return self.key_positions("Key", self.key_hole)
@@ -2216,17 +2213,8 @@ def write_shape(shape: Shape, path: Path) -> None:
     path.write_text(shape.to_str())
 
 
-class KeyGrid:
-    def __init__(self) -> None:
-        self.points: List[Tuple[float, float, float]] = []
-        self.faces: List[Sequence[int]] = []
-
-    def gen(self) -> Shape:
-        return Shape.polyhedron(self.points, self.faces, convexivity=20)
-
-
 class KeyHole:
-    def __init__(self, grid: KeyGrid, transform: Transform) -> None:
+    def __init__(self, grid: Mesh, transform: Transform) -> None:
         from keyboard import (
             keyswitch_width,
             keyswitch_height,
@@ -2236,174 +2224,150 @@ class KeyHole:
         )
 
         self.grid = grid
-        start_idx = len(self.grid.points)
 
         inner_w = keyswitch_width * 0.5
         outer_w = inner_w + keywell_wall_width
-
         inner_h = keyswitch_height * 0.5
         outer_h = inner_h + keywell_wall_width
-
         mid_thickness = plate_thickness - web_thickness
 
-        orig_points = [
-            Point(-inner_w, -inner_h, 0.0),
-            Point(inner_w, -inner_h, 0.0),
-            Point(inner_w, inner_h, 0.0),
-            Point(-inner_w, inner_h, 0.0),
-            Point(-outer_w, -outer_h, 0.0),
-            Point(outer_w, -outer_h, 0.0),
-            Point(outer_w, outer_h, 0.0),
-            Point(-outer_w, outer_h, 0.0),
-            Point(-inner_w, -inner_h, plate_thickness),
-            Point(inner_w, -inner_h, plate_thickness),
-            Point(inner_w, inner_h, plate_thickness),
-            Point(-inner_w, inner_h, plate_thickness),
-            Point(-outer_w, -outer_h, plate_thickness),
-            Point(outer_w, -outer_h, plate_thickness),
-            Point(outer_w, outer_h, plate_thickness),
-            Point(-outer_w, outer_h, plate_thickness),
-            Point(-outer_w, -outer_h, mid_thickness),
-            Point(outer_w, -outer_h, mid_thickness),
-            Point(outer_w, outer_h, mid_thickness),
-            Point(-outer_w, outer_h, mid_thickness),
-        ]
-        points = [p.transform(transform) for p in orig_points]
-        for p in points:
-            self.grid.points.append((p.x, p.y, p.z))
+        def add_point(x: float, y: float, z: float) -> MeshPoint:
+            p = Point(x, y, z).transform(transform)
+            return grid.add_point(p)
 
-        # Lower inner point indices
-        self.l_in_bl = 0 + start_idx
-        self.l_in_br = 1 + start_idx
-        self.l_in_tr = 2 + start_idx
-        self.l_in_tl = 3 + start_idx
+        # Lower inner points
+        self.l_in_bl = add_point(-inner_w, -inner_h, 0.0)
+        self.l_in_br = add_point(inner_w, -inner_h, 0.0)
+        self.l_in_tr = add_point(inner_w, inner_h, 0.0)
+        self.l_in_tl = add_point(-inner_w, inner_h, 0.0)
 
-        # Lower outer point indices
-        self.l_out_bl = 4 + start_idx
-        self.l_out_br = 5 + start_idx
-        self.l_out_tr = 6 + start_idx
-        self.l_out_tl = 7 + start_idx
+        # Lower outer points
+        self.l_out_bl = add_point(-outer_w, -outer_h, 0.0)
+        self.l_out_br = add_point(outer_w, -outer_h, 0.0)
+        self.l_out_tr = add_point(outer_w, outer_h, 0.0)
+        self.l_out_tl = add_point(-outer_w, outer_h, 0.0)
 
-        # Upper inner point indices
-        self.u_in_bl = 8 + start_idx
-        self.u_in_br = 9 + start_idx
-        self.u_in_tr = 10 + start_idx
-        self.u_in_tl = 11 + start_idx
+        # Upper inner points
+        self.u_in_bl = add_point(-inner_w, -inner_h, plate_thickness)
+        self.u_in_br = add_point(inner_w, -inner_h, plate_thickness)
+        self.u_in_tr = add_point(inner_w, inner_h, plate_thickness)
+        self.u_in_tl = add_point(-inner_w, inner_h, plate_thickness)
 
-        # Upper outer point indices
-        self.u_out_bl = 12 + start_idx
-        self.u_out_br = 13 + start_idx
-        self.u_out_tr = 14 + start_idx
-        self.u_out_tl = 15 + start_idx
+        # Upper outer points
+        self.u_out_bl = add_point(-outer_w, -outer_h, plate_thickness)
+        self.u_out_br = add_point(outer_w, -outer_h, plate_thickness)
+        self.u_out_tr = add_point(outer_w, outer_h, plate_thickness)
+        self.u_out_tl = add_point(-outer_w, outer_h, plate_thickness)
 
-        # Mid outer point indices
-        self.m_out_bl = 16 + start_idx
-        self.m_out_br = 17 + start_idx
-        self.m_out_tr = 18 + start_idx
-        self.m_out_tl = 19 + start_idx
+        # Mid outer points
+        self.m_out_bl = add_point(-outer_w, -outer_h, mid_thickness)
+        self.m_out_br = add_point(outer_w, -outer_h, mid_thickness)
+        self.m_out_tr = add_point(outer_w, outer_h, mid_thickness)
+        self.m_out_tl = add_point(-outer_w, outer_h, mid_thickness)
 
         self.standard_walls()
+
+    def add_quad(
+        self, p0: MeshPoint, p1: MeshPoint, p2: MeshPoint, p3: MeshPoint
+    ) -> None:
+        self.grid.add_face(p0, p1, p2)
+        self.grid.add_face(p2, p3, p0)
 
     def standard_walls(self) -> None:
         # All key holes have the inner walls, plus top and bottom walls
         # They also have outer walls from the bottom to the mid-point
-        self.grid.faces += [
-            # inner walls
-            [self.u_in_bl, self.l_in_bl, self.l_in_br, self.u_in_br],
-            [self.u_in_br, self.l_in_br, self.l_in_tr, self.u_in_tr],
-            [self.u_in_tr, self.l_in_tr, self.l_in_tl, self.u_in_tl],
-            [self.u_in_tl, self.l_in_tl, self.l_in_bl, self.u_in_bl],
-            # top walls
-            [self.u_in_bl, self.u_in_br, self.u_out_br, self.u_out_bl],
-            [self.u_in_br, self.u_in_tr, self.u_out_tr, self.u_out_br],
-            [self.u_in_tr, self.u_in_tl, self.u_out_tl, self.u_out_tr],
-            [self.u_in_tl, self.u_in_bl, self.u_out_bl, self.u_out_tl],
-            # bottom walls
-            [self.l_in_bl, self.l_out_bl, self.l_out_br, self.l_in_br],
-            [self.l_in_br, self.l_out_br, self.l_out_tr, self.l_in_tr],
-            [self.l_in_tr, self.l_out_tr, self.l_out_tl, self.l_in_tl],
-            [self.l_in_tl, self.l_out_tl, self.l_out_bl, self.l_in_bl],
-            # outer walls from bottom layer to mid point
-            [self.l_out_bl, self.m_out_bl, self.m_out_br, self.l_out_br],
-            [self.l_out_br, self.m_out_br, self.m_out_tr, self.l_out_tr],
-            [self.l_out_tr, self.m_out_tr, self.m_out_tl, self.l_out_tl],
-            [self.l_out_tl, self.m_out_tl, self.m_out_bl, self.l_out_bl],
-        ]
+        q = self.add_quad
+
+        # inner walls
+        q(self.u_in_bl, self.l_in_bl, self.l_in_br, self.u_in_br)
+        q(self.u_in_br, self.l_in_br, self.l_in_tr, self.u_in_tr)
+        q(self.u_in_tr, self.l_in_tr, self.l_in_tl, self.u_in_tl)
+        q(self.u_in_tl, self.l_in_tl, self.l_in_bl, self.u_in_bl)
+
+        # top walls
+        q(self.u_in_bl, self.u_in_br, self.u_out_br, self.u_out_bl)
+        q(self.u_in_br, self.u_in_tr, self.u_out_tr, self.u_out_br)
+        q(self.u_in_tr, self.u_in_tl, self.u_out_tl, self.u_out_tr)
+        q(self.u_in_tl, self.u_in_bl, self.u_out_bl, self.u_out_tl)
+
+        # bottom walls
+        q(self.l_in_bl, self.l_out_bl, self.l_out_br, self.l_in_br)
+        q(self.l_in_br, self.l_out_br, self.l_out_tr, self.l_in_tr)
+        q(self.l_in_tr, self.l_out_tr, self.l_out_tl, self.l_in_tl)
+        q(self.l_in_tl, self.l_out_tl, self.l_out_bl, self.l_in_bl)
+
+        # outer walls from bottom layer to mid point
+        q(self.l_out_bl, self.m_out_bl, self.m_out_br, self.l_out_br)
+        q(self.l_out_br, self.m_out_br, self.m_out_tr, self.l_out_tr)
+        q(self.l_out_tr, self.m_out_tr, self.m_out_tl, self.l_out_tl)
+        q(self.l_out_tl, self.m_out_tl, self.m_out_bl, self.l_out_bl)
 
     def top_wall(self) -> None:
-        self.grid.faces += [
-            [self.u_out_tr, self.u_out_tl, self.m_out_tl, self.m_out_tr]
-        ]
+        self.add_quad(
+            self.u_out_tr, self.u_out_tl, self.m_out_tl, self.m_out_tr
+        )
 
     def bottom_wall(self) -> None:
-        self.grid.faces += [
-            [self.u_out_bl, self.u_out_br, self.m_out_br, self.m_out_bl]
-        ]
+        self.add_quad(
+            self.u_out_bl, self.u_out_br, self.m_out_br, self.m_out_bl
+        )
 
     def left_wall(self) -> None:
-        self.grid.faces += [
-            [self.u_out_tl, self.u_out_bl, self.m_out_bl, self.m_out_tl]
-        ]
+        self.add_quad(
+            self.u_out_tl, self.u_out_bl, self.m_out_bl, self.m_out_tl
+        )
 
     def right_wall(self) -> None:
-        self.grid.faces += [
-            [self.u_out_br, self.u_out_tr, self.m_out_tr, self.m_out_br]
-        ]
+        self.add_quad(
+            self.u_out_br, self.u_out_tr, self.m_out_tr, self.m_out_br
+        )
 
     def join_bottom(
         self, kh: KeyHole, left: bool = False, right: bool = False
     ) -> None:
+        f = self.grid.add_face
+
         # Join this key hole to one below it
-        self.grid.faces += [
-            [self.u_out_bl, self.u_out_br, kh.u_out_tr],
-            [kh.u_out_tr, kh.u_out_tl, self.u_out_bl],
-            [self.m_out_bl, kh.m_out_tr, self.m_out_br],
-            [kh.m_out_tr, self.m_out_bl, kh.m_out_tl],
-        ]
+        f(self.u_out_bl, self.u_out_br, kh.u_out_tr)
+        f(kh.u_out_tr, kh.u_out_tl, self.u_out_bl)
+        f(self.m_out_bl, kh.m_out_tr, self.m_out_br)
+        f(kh.m_out_tr, self.m_out_bl, kh.m_out_tl)
 
         if left:
-            self.grid.faces += [
-                [self.u_out_bl, kh.u_out_tl, self.m_out_bl],
-                [self.m_out_bl, kh.u_out_tl, kh.m_out_tl],
-            ]
+            f(self.u_out_bl, kh.u_out_tl, self.m_out_bl)
+            f(self.m_out_bl, kh.u_out_tl, kh.m_out_tl)
 
         if right:
-            self.grid.faces += [
-                [kh.u_out_tr, self.u_out_br, self.m_out_br],
-                [self.m_out_br, kh.m_out_tr, kh.u_out_tr],
-            ]
+            f(kh.u_out_tr, self.u_out_br, self.m_out_br)
+            f(self.m_out_br, kh.m_out_tr, kh.u_out_tr)
 
     def join_right(
         self, kh: KeyHole, top: bool = False, bottom: bool = False
     ) -> None:
-        self.grid.faces += [
-            [self.u_out_tr, kh.u_out_tl, kh.u_out_bl],
-            [kh.u_out_bl, self.u_out_br, self.u_out_tr],
-            [self.m_out_tr, kh.m_out_bl, kh.m_out_tl],
-            [kh.m_out_bl, self.m_out_tr, self.m_out_br],
-        ]
+        f = self.grid.add_face
+
+        f(self.u_out_tr, kh.u_out_tl, kh.u_out_bl)
+        f(kh.u_out_bl, self.u_out_br, self.u_out_tr)
+        f(self.m_out_tr, kh.m_out_bl, kh.m_out_tl)
+        f(kh.m_out_bl, self.m_out_tr, self.m_out_br)
 
         if top:
-            self.grid.faces += [
-                [kh.u_out_tl, self.u_out_tr, self.m_out_tr],
-                [self.m_out_tr, kh.m_out_tl, kh.u_out_tl],
-            ]
+            f(kh.u_out_tl, self.u_out_tr, self.m_out_tr)
+            f(self.m_out_tr, kh.m_out_tl, kh.u_out_tl)
         if bottom:
-            self.grid.faces += [
-                [self.u_out_br, kh.u_out_bl, kh.m_out_bl],
-                [kh.m_out_bl, self.m_out_br, self.u_out_br],
-            ]
+            f(self.u_out_br, kh.u_out_bl, kh.m_out_bl)
+            f(kh.m_out_bl, self.m_out_br, self.u_out_br)
 
     @staticmethod
     def join_corner(
         tl: KeyHole, tr: KeyHole, br: KeyHole, bl: KeyHole
     ) -> None:
-        tl.grid.faces += [
-            [tl.u_out_br, tr.u_out_bl, br.u_out_tl],
-            [br.u_out_tl, bl.u_out_tr, tl.u_out_br],
-            [tl.m_out_br, br.m_out_tl, tr.m_out_bl],
-            [br.m_out_tl, tl.m_out_br, bl.m_out_tr],
-        ]
+        f = tl.grid.add_face
+
+        f(tl.u_out_br, tr.u_out_bl, br.u_out_tl)
+        f(br.u_out_tl, bl.u_out_tr, tl.u_out_br)
+        f(tl.m_out_br, br.m_out_tl, tr.m_out_bl)
+        f(br.m_out_tl, tl.m_out_br, bl.m_out_tr)
 
 
 def key_hole_test() -> List[Shape]:

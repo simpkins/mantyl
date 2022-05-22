@@ -9,7 +9,7 @@ import math
 import numpy
 from typing import List, Optional, Sequence, Tuple
 
-from cad import Point, Transform
+from cad import Mesh, Point, Transform
 
 
 class Shape:
@@ -223,6 +223,14 @@ class Shape:
             faces_strs.append("[" + ", ".join(str(idx) for idx in f) + "]")
         faces_str = ", ".join(faces_strs)
         return cls(f"polyhedron([{points_str}], [{faces_str}], {convexivity})")
+
+    @classmethod
+    def polyhedron_from_mesh(cls, mesh: Mesh, convexivity: int = 10) -> Shape:
+        points = [(p.x, p.y, p.z) for p in mesh.points]
+        faces = [tuple(f) for f in mesh.faces]
+        return cls.polyhedron(
+            points=points, faces=faces, convexivity=convexivity
+        )
 
     @classmethod
     def project(cls, children: List[Shape]) -> Shape:

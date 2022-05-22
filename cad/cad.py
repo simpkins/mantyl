@@ -119,7 +119,7 @@ class Point:
 
     def __eq__(self, other: Point) -> Point:
         assert isinstance(other, Point)
-        return (self.x == other.x and self.y == other.y and self.z == other.z)
+        return self.x == other.x and self.y == other.y and self.z == other.z
 
     def __ne__(self, other: Point) -> Point:
         assert isinstance(other, Point)
@@ -131,13 +131,58 @@ class Point:
 
 
 class MeshPoint:
-    def __init__(self, mesh: Mesh, point: Point, index: int):
+    __slots__ = ["mesh", "_index", "point"]
+    mesh: Mesh
+    _index: int
+    point: Point
+
+    def __init__(self, mesh: Mesh, index: int, point: Point) -> None:
         self.mesh = mesh
+        self._index = index
         self.point = point
-        self.index = index
+
+    def __repr__(self) -> str:
+        return (
+            f"MeshPoint(mesh={self.mesh!r}, point={self.point!r}, "
+            f"index={self.index!r})"
+        )
+
+    @property
+    def index(self) -> int:
+        return self._index
+
+    @property
+    def x(self) -> int:
+        return self.point.x
+
+    @property
+    def y(self) -> int:
+        return self.point.y
+
+    @property
+    def z(self) -> int:
+        return self.point.z
+
+
+class MeshFace:
+    __slots__ = ["mesh", "_index", "point"]
+    mesh: Mesh
+    _index: int
+    point: Point
 
 
 class Mesh:
     def __init__(self) -> None:
-        self.points: List[Tuple[float, float, float]] = []
-        self.faces: List[Sequence[int]] = []
+        self.points: List[MeshPoint] = []
+        # We only allow triangular faces for now
+        self.faces: List[Tuple[int, int, int]] = []
+
+    def add_point(self, point: Point) -> MeshPoint:
+        mp = MeshPoint(self, index=len(self.points), point=point)
+        self.points.append(mp)
+        return mp
+
+    def add_face(self, p0: MeshPoint, p1: MeshPoint, p2: MeshPoint) -> int:
+        index = len(self.faces)
+        self.faces.append((p0.index, p1.index, p2.index))
+        return index
