@@ -182,7 +182,14 @@ class Mesh:
         self.points.append(mp)
         return mp
 
-    def add_face(self, p0: MeshPoint, p1: MeshPoint, p2: MeshPoint) -> int:
+    def add_tri(self, p0: MeshPoint, p1: MeshPoint, p2: MeshPoint) -> int:
         index = len(self.faces)
         self.faces.append((p0.index, p1.index, p2.index))
+        return index
+
+    def add_quad(
+        self, p0: MeshPoint, p1: MeshPoint, p2: MeshPoint, p3: MeshPoint
+    ) -> int:
+        index = len(self.faces)
+        self.faces.append((p0.index, p1.index, p2.index, p3.index))
         return index

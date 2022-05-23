@@ -1990,7 +1990,8 @@ def key_hole_test() -> Shape:
     import oukey2
     grid = oukey2.KeyGrid()
     grid.gen_main_grid()
-    grid.gen_main_grid_edges()
+    # grid.gen_main_grid_edges()
+    grid.gen_back_wall()
     return Shape.polyhedron_from_mesh(grid.mesh, convexivity=20)
 
 
