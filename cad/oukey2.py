@@ -409,31 +409,51 @@ class KeyGrid:
         )
 
     def gen_back_wall(self) -> None:
-        near_off = 4.0
+        u_near_off = 4.0
+        m_near_off = 2.0
         far_off = Point(0.0, 6.0, -4.0)
+        wall_thickness = 4.0
 
         u_wall_points: List[MeshPoint] = []
         u_near_points: List[MeshPoint] = []
         u_far_points: List[MeshPoint] = []
+        u_ground_points: List[MeshPoint] = []
+        m_ground_points: List[MeshPoint] = []
+        m_far_points: List[MeshPoint] = []
+        m_near_points: List[MeshPoint] = []
+        m_wall_points: List[MeshPoint] = []
 
         for col in range(1, 7):
             k = self._keys[col][0]
+
             if col == 1:
                 k.u_wallnear_tl = k.add_point(
-                    -k.outer_w - near_off, k.outer_h + near_off, k.height
+                    -k.outer_w - u_near_off, k.outer_h + u_near_off, k.height
+                )
+                k.m_wallnear_tl = k.add_point(
+                    -k.outer_w - m_near_off, k.outer_h + m_near_off, k.mid_height
                 )
             else:
                 k.u_wallnear_tl = k.add_point(
-                    -k.outer_w, k.outer_h + near_off, k.height
+                    -k.outer_w, k.outer_h + u_near_off, k.height
+                )
+                k.m_wallnear_tl = k.add_point(
+                    -k.outer_w, k.outer_h + m_near_off, k.mid_height
                 )
 
             if col == 6:
                 k.u_wallnear_tr = k.add_point(
-                    k.outer_w + near_off, k.outer_h + near_off, k.height
+                    k.outer_w + wall_thickness, k.outer_h + u_near_off, k.height
+                )
+                k.m_wallnear_tr = k.add_point(
+                    k.outer_w, k.outer_h + m_near_off, k.mid_height
                 )
             else:
                 k.u_wallnear_tr = k.add_point(
-                    k.outer_w, k.outer_h + near_off, k.height
+                    k.outer_w, k.outer_h + u_near_off, k.height
+                )
+                k.m_wallnear_tr = k.add_point(
+                    k.outer_w, k.outer_h + m_near_off, k.mid_height
                 )
 
             k.u_wallfar_tl = self.mesh.add_point(
@@ -442,45 +462,120 @@ class KeyGrid:
             k.u_wallfar_tr = self.mesh.add_point(
                 k.u_wallnear_tr.point.ptranslate(far_off)
             )
+            k.u_ground_tl = self.mesh.add_point(
+                Point(k.u_wallfar_tl.x, k.u_wallfar_tl.y, 0.0)
+            )
+            k.u_ground_tr = self.mesh.add_point(
+                Point(k.u_wallfar_tr.x, k.u_wallfar_tr.y, 0.0)
+            )
 
             u_wall_points += [k.u_out_tl, k.u_out_tr]
+            m_wall_points += [k.m_out_tl, k.m_out_tr]
             u_near_points += [k.u_wallnear_tl, k.u_wallnear_tr]
             u_far_points += [k.u_wallfar_tl, k.u_wallfar_tr]
+            u_ground_points += [k.u_ground_tl, k.u_ground_tr]
+            m_near_points += [k.m_wallnear_tl, k.m_wallnear_tr]
 
         max_y = max(p.point.y for p in u_far_points)
-        u_ground_points: List[MeshPoint] = []
         for p in u_far_points:
             p.point.y = max_y
-            ground_point = self.mesh.add_point(
-                Point(p.point.x, p.point.y, 0.0)
+            m_far_points.append(
+                self.mesh.add_point(
+                    Point(p.point.x, p.point.y - wall_thickness, p.z - 3.0)
+                )
             )
-            u_ground_points.append(ground_point)
-
-        q = self.mesh.add_quad
-        for idx in range(len(u_wall_points) - 1):
-            # Upper face from near to far point
-            q(
-                u_far_points[idx],
-                u_far_points[idx + 1],
-                u_near_points[idx + 1],
-                u_near_points[idx],
+        for p in u_ground_points:
+            p.point.y = max_y
+            m_ground_points.append(
+                self.mesh.add_point(
+                    Point(p.point.x, p.point.y - wall_thickness, 0.0)
+                )
             )
 
-            # Upper face from wall to near point
-            q(
-                u_near_points[idx],
-                u_near_points[idx + 1],
-                u_wall_points[idx + 1],
-                u_wall_points[idx],
+        m_far_points[-1].point.x -= wall_thickness
+        m_ground_points[-1].point.x -= wall_thickness
+
+        self.add_quad_matrix(
+            [
+                u_wall_points,
+                u_near_points,
+                u_far_points,
+                u_ground_points,
+                m_ground_points,
+                m_far_points,
+                m_near_points,
+                m_wall_points,
+            ]
+        )
+
+    def gen_right_wall(self) -> None:
+        near_off = 4.0
+        far_off = Point(0.6, 0, 0.0)
+
+        u_wall_points: List[MeshPoint] = []
+        u_near_points: List[MeshPoint] = []
+        u_far_points: List[MeshPoint] = []
+        u_ground_points: List[MeshPoint] = []
+
+        for row in range(6):
+            k = self._keys[6][row]
+
+            if row == 0:
+                # u_wallnear_tr should already have been set by gen_back_wall()
+                assert hasattr(k, "u_wallnear_tr")
+                assert hasattr(k, "u_wallfar_tr")
+                assert hasattr(k, "u_ground_tr")
+            else:
+                k.u_wallnear_tr = k.add_point(
+                    k.outer_w + near_off, k.outer_h, k.height
+                )
+                k.u_wallfar_tr = self.mesh.add_point(
+                    k.u_wallnear_tr.point.ptranslate(far_off)
+                )
+                k.u_ground_tr = self.mesh.add_point(
+                    Point(k.u_wallfar_tr.x, k.u_wallfar_tr.y, 0.0)
+                )
+
+            if row == 5:
+                k.u_wallnear_br = k.add_point(
+                    k.outer_w + near_off, -k.outer_h - near_off, k.height
+                )
+            else:
+                k.u_wallnear_br = k.add_point(
+                    k.outer_w + near_off, -k.outer_h, k.height
+                )
+
+            k.u_wallfar_br = self.mesh.add_point(
+                k.u_wallnear_br.point.ptranslate(far_off)
+            )
+            k.u_ground_br = self.mesh.add_point(
+                Point(k.u_wallfar_br.x, k.u_wallfar_br.y, 0.0)
             )
 
-            # "Upper" face from far point to ground
-            q(
-                u_far_points[idx],
-                u_ground_points[idx],
-                u_ground_points[idx + 1],
-                u_far_points[idx + 1],
-            )
+            u_wall_points += [k.u_out_tr, k.u_out_br]
+            u_near_points += [k.u_wallnear_tr, k.u_wallnear_br]
+            u_far_points += [k.u_wallfar_tr, k.u_wallfar_br]
+            u_ground_points += [k.u_ground_tr, k.u_ground_br]
+
+        max_x = max(p.point.x for p in u_far_points)
+        for p in u_far_points:
+            p.point.x = max_x
+        for p in u_ground_points:
+            p.point.x = max_x
+
+        self.add_quad_matrix(
+            [u_wall_points, u_near_points, u_far_points, u_ground_points]
+        )
+
+    def add_quad_matrix(self, matrix: List[List[MeshPoint]]) -> None:
+        for col in range(len(matrix) - 1):
+            for row in range(len(matrix[col]) - 1):
+                self.mesh.add_quad(
+                    matrix[col][row],
+                    matrix[col + 1][row],
+                    matrix[col + 1][row + 1],
+                    matrix[col][row + 1],
+                )
 
 
 class KeyHole:

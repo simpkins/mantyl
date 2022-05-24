@@ -1992,6 +1992,7 @@ def key_hole_test() -> Shape:
     grid.gen_main_grid()
     # grid.gen_main_grid_edges()
     grid.gen_back_wall()
+    grid.gen_right_wall()
     return Shape.polyhedron_from_mesh(grid.mesh, convexivity=20)
 
 
