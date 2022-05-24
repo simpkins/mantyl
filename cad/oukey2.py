@@ -557,6 +557,11 @@ class KeyGrid:
             u_far_points += [k.u_wallfar_tr, k.u_wallfar_br]
             u_ground_points += [k.u_ground_tr, k.u_ground_br]
 
+        for idx in range(len(u_far_points) - 1):
+            if u_far_points[idx].y < u_far_points[idx + 1].y:
+                u_far_points[idx].point.y = u_far_points[idx + 1].y + 0.2
+                u_ground_points[idx].point.y = u_ground_points[idx + 1].y + 0.2
+
         max_x = max(p.point.x for p in u_far_points)
         for p in u_far_points:
             p.point.x = max_x
