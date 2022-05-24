@@ -10,6 +10,7 @@ import bpy
 import logging
 import os
 import sys
+
 sys.path.insert(0, os.path.dirname(__file__))
 
 import oukey2
@@ -32,9 +33,9 @@ def main() -> None:
     print("Generating keyboard...")
     grid = oukey2.KeyGrid()
     grid.gen_main_grid()
-    grid.gen_main_grid_edges()
-    #grid.gen_back_wall()
-    #grid.gen_right_wall()
+    # grid.gen_main_grid_edges()
+    grid.gen_back_wall()
+    grid.gen_right_wall()
 
     bmesh = blender_mesh(grid.mesh)
     obj = bpy.data.objects.new("keyboard", bmesh)
@@ -42,6 +43,20 @@ def main() -> None:
     collection = bpy.data.collections.new("collection")
     bpy.context.scene.collection.children.link(collection)
     collection.objects.link(obj)
+
+    # Adjust the camera to better show the keyboard
+    layout = bpy.data.screens["Layout"]
+    view_areas = [a for a in layout.areas if a.type == "VIEW_3D"]
+    for a in view_areas:
+        region = a.spaces.active.region_3d
+        region.view_distance = 350
+
+    # Select the keyboard
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    # Enter edit mode
+    bpy.ops.object.mode_set(mode="EDIT")
+
     print("done")
 
 

@@ -114,6 +114,15 @@ class Point:
     def transform(self, tf: Transform) -> Point:
         return self.to_transform().transform(tf).point()
 
+    def unit(self) -> Point:
+        """Treating this point as a vector, return a new vector of length 1.0
+        """
+        length = math.sqrt(
+            (self.x * self.x) + (self.y * self.y) + (self.z * self.z)
+        )
+        factor = 1.0 / length
+        return Point(self.x * factor, self.y * factor, self.z * factor)
+
     def __hash__(self) -> int:
         return hash(self.as_tuple())
 
@@ -128,6 +137,10 @@ class Point:
     def __add__(self, other: Point) -> Point:
         assert isinstance(other, Point)
         return Point(self.x + other.x, self.y + other.y, self.z + other.z)
+
+    def __mul__(self, n: Union[float, int]) -> Point:
+        assert isinstance(n, (float, int))
+        return Point(self.x * n, self.y * n, self.z * n)
 
 
 class MeshPoint:

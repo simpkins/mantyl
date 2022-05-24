@@ -12,6 +12,8 @@ from typing import Any, Generator, List, Optional, Tuple
 
 class KeyGrid:
     def __init__(self):
+        self.wall_thickness = 4.0
+
         self.mesh = Mesh()
         self._define_keys()
 
@@ -412,7 +414,6 @@ class KeyGrid:
         u_near_off = 4.0
         m_near_off = 2.0
         far_off = Point(0.0, 6.0, -4.0)
-        wall_thickness = 4.0
 
         u_wall_points: List[MeshPoint] = []
         u_near_points: List[MeshPoint] = []
@@ -426,74 +427,53 @@ class KeyGrid:
         for col in range(1, 7):
             k = self._keys[col][0]
 
-            if col == 1:
-                k.u_wallnear_tl = k.add_point(
-                    -k.outer_w - u_near_off, k.outer_h + u_near_off, k.height
-                )
-                k.m_wallnear_tl = k.add_point(
-                    -k.outer_w - m_near_off, k.outer_h + m_near_off, k.mid_height
-                )
-            else:
-                k.u_wallnear_tl = k.add_point(
-                    -k.outer_w, k.outer_h + u_near_off, k.height
-                )
-                k.m_wallnear_tl = k.add_point(
-                    -k.outer_w, k.outer_h + m_near_off, k.mid_height
-                )
+            u_near_tl = k.add_point(
+                -k.outer_w, k.outer_h + u_near_off, k.height
+            )
+            m_near_tl = k.add_point(
+                -k.outer_w, k.outer_h + m_near_off, k.mid_height
+            )
 
-            if col == 6:
-                k.u_wallnear_tr = k.add_point(
-                    k.outer_w + wall_thickness, k.outer_h + u_near_off, k.height
-                )
-                k.m_wallnear_tr = k.add_point(
-                    k.outer_w, k.outer_h + m_near_off, k.mid_height
-                )
-            else:
-                k.u_wallnear_tr = k.add_point(
-                    k.outer_w, k.outer_h + u_near_off, k.height
-                )
-                k.m_wallnear_tr = k.add_point(
-                    k.outer_w, k.outer_h + m_near_off, k.mid_height
-                )
+            u_near_tr = k.add_point(
+                k.outer_w, k.outer_h + u_near_off, k.height
+            )
+            m_near_tr = k.add_point(
+                k.outer_w, k.outer_h + m_near_off, k.mid_height
+            )
 
-            k.u_wallfar_tl = self.mesh.add_point(
-                k.u_wallnear_tl.point.ptranslate(far_off)
+            u_far_tl = self.mesh.add_point(u_near_tl.point.ptranslate(far_off))
+            u_far_tr = self.mesh.add_point(u_near_tr.point.ptranslate(far_off))
+            u_ground_tl = self.mesh.add_point(
+                Point(u_far_tl.x, u_far_tl.y, 0.0)
             )
-            k.u_wallfar_tr = self.mesh.add_point(
-                k.u_wallnear_tr.point.ptranslate(far_off)
-            )
-            k.u_ground_tl = self.mesh.add_point(
-                Point(k.u_wallfar_tl.x, k.u_wallfar_tl.y, 0.0)
-            )
-            k.u_ground_tr = self.mesh.add_point(
-                Point(k.u_wallfar_tr.x, k.u_wallfar_tr.y, 0.0)
+            u_ground_tr = self.mesh.add_point(
+                Point(u_far_tr.x, u_far_tr.y, 0.0)
             )
 
             u_wall_points += [k.u_out_tl, k.u_out_tr]
             m_wall_points += [k.m_out_tl, k.m_out_tr]
-            u_near_points += [k.u_wallnear_tl, k.u_wallnear_tr]
-            u_far_points += [k.u_wallfar_tl, k.u_wallfar_tr]
-            u_ground_points += [k.u_ground_tl, k.u_ground_tr]
-            m_near_points += [k.m_wallnear_tl, k.m_wallnear_tr]
+            u_near_points += [u_near_tl, u_near_tr]
+            u_far_points += [u_far_tl, u_far_tr]
+            u_ground_points += [u_ground_tl, u_ground_tr]
+            m_near_points += [m_near_tl, m_near_tr]
 
         max_y = max(p.point.y for p in u_far_points)
         for p in u_far_points:
             p.point.y = max_y
             m_far_points.append(
                 self.mesh.add_point(
-                    Point(p.point.x, p.point.y - wall_thickness, p.z - 3.0)
+                    Point(
+                        p.point.x, p.point.y - self.wall_thickness, p.z - 3.0
+                    )
                 )
             )
         for p in u_ground_points:
             p.point.y = max_y
             m_ground_points.append(
                 self.mesh.add_point(
-                    Point(p.point.x, p.point.y - wall_thickness, 0.0)
+                    Point(p.point.x, p.point.y - self.wall_thickness, 0.0)
                 )
             )
-
-        m_far_points[-1].point.x -= wall_thickness
-        m_ground_points[-1].point.x -= wall_thickness
 
         self.add_quad_matrix(
             [
@@ -509,67 +489,99 @@ class KeyGrid:
         )
 
     def gen_right_wall(self) -> None:
-        near_off = 4.0
+        near_off = 4.5
         far_off = Point(0.6, 0, 0.0)
 
         u_wall_points: List[MeshPoint] = []
         u_near_points: List[MeshPoint] = []
         u_far_points: List[MeshPoint] = []
         u_ground_points: List[MeshPoint] = []
+        m_ground_points: List[MeshPoint] = []
+        m_far_points: List[MeshPoint] = []
+        m_near_points: List[MeshPoint] = []
+        m_wall_points: List[MeshPoint] = []
 
         for row in range(6):
             k = self._keys[6][row]
-
-            if row == 0:
-                # u_wallnear_tr should already have been set by gen_back_wall()
-                assert hasattr(k, "u_wallnear_tr")
-                assert hasattr(k, "u_wallfar_tr")
-                assert hasattr(k, "u_ground_tr")
-            else:
-                k.u_wallnear_tr = k.add_point(
-                    k.outer_w + near_off, k.outer_h, k.height
-                )
-                k.u_wallfar_tr = self.mesh.add_point(
-                    k.u_wallnear_tr.point.ptranslate(far_off)
-                )
-                k.u_ground_tr = self.mesh.add_point(
-                    Point(k.u_wallfar_tr.x, k.u_wallfar_tr.y, 0.0)
-                )
-
-            if row == 5:
-                k.u_wallnear_br = k.add_point(
-                    k.outer_w + near_off, -k.outer_h - near_off, k.height
-                )
-            else:
-                k.u_wallnear_br = k.add_point(
-                    k.outer_w + near_off, -k.outer_h, k.height
-                )
-
-            k.u_wallfar_br = self.mesh.add_point(
-                k.u_wallnear_br.point.ptranslate(far_off)
-            )
-            k.u_ground_br = self.mesh.add_point(
-                Point(k.u_wallfar_br.x, k.u_wallfar_br.y, 0.0)
-            )
-
             u_wall_points += [k.u_out_tr, k.u_out_br]
-            u_near_points += [k.u_wallnear_tr, k.u_wallnear_br]
-            u_far_points += [k.u_wallfar_tr, k.u_wallfar_br]
-            u_ground_points += [k.u_ground_tr, k.u_ground_br]
+            m_wall_points += [k.m_out_tr, k.m_out_br]
 
-        for idx in range(len(u_far_points) - 1):
-            if u_far_points[idx].y < u_far_points[idx + 1].y:
-                u_far_points[idx].point.y = u_far_points[idx + 1].y + 0.2
-                u_ground_points[idx].point.y = u_ground_points[idx + 1].y + 0.2
+            u_near_tr = k.add_point(k.outer_w + near_off, k.outer_h, k.height)
+            u_near_br = k.add_point(k.outer_w + near_off, -k.outer_h, k.height)
+            u_near_points += [u_near_tr, u_near_br]
 
-        max_x = max(p.point.x for p in u_far_points)
-        for p in u_far_points:
+            m_near_tr = k.add_point(
+                k.outer_w + near_off, k.outer_h, k.mid_height
+            )
+            m_near_br = k.add_point(
+                k.outer_w + near_off, -k.outer_h, k.mid_height
+            )
+            m_near_points += [m_near_tr, m_near_br]
+
+        max_x = max(p.point.x for p in u_near_points)
+        for p in u_near_points:
             p.point.x = max_x
-        for p in u_ground_points:
-            p.point.x = max_x
+        for p in m_near_points:
+            p.point.x = max_x - self.wall_thickness
+
+        far_offset = 10.0
+        for idx, p in enumerate(m_near_points):
+            if idx + 1 == len(m_near_points):
+                # At the front edge, just drop straight down
+                u_far = k.mesh.add_point(Point(max_x, p.y, p.z - far_offset))
+            else:
+                # Compute the normal at this point along the wall,
+                # Then add the far point along the normal
+
+                normal = Point()
+                if idx > 0:
+                    prev_p = m_near_points[idx - 1]
+                    p_normal = Point(0, prev_p.z - p.z, p.y - prev_p.y).unit()
+                    normal += p_normal
+                if idx + 1 < len(m_near_points):
+                    next_p = m_near_points[idx + 1]
+                    n_normal = Point(0, p.z - next_p.z, next_p.y - p.y).unit()
+                    normal += n_normal
+
+                if idx == 0:
+                    # At index 0 we only have 1 unit normal.
+                    # We still want to shrink a bit here, to avoid extending
+                    # past the back wall
+                    normal *= 0.5 * far_offset
+                else:
+                    # We have added 2 unit normals, so we have to multiply by
+                    # 0.5 to get back to a unit normal
+                    normal *= 0.5 * far_offset
+                    if idx == 1:
+                        # Add a little more here to even some things out
+                        normal *= 1.15
+
+                u_far = k.mesh.add_point(
+                    Point(max_x + normal.x, p.y + normal.y, p.z + normal.z)
+                )
+
+            m_far = Point(u_far.x - self.wall_thickness, u_far.y, u_far.z)
+            u_ground = Point(u_far.x, u_far.y, 0.0)
+            m_ground = Point(
+                u_ground.x - self.wall_thickness, u_ground.y, u_ground.z
+            )
+
+            u_far_points.append(u_far)
+            m_far_points.append(k.mesh.add_point(m_far))
+            u_ground_points.append(k.mesh.add_point(u_ground))
+            m_ground_points.append(k.mesh.add_point(m_ground))
 
         self.add_quad_matrix(
-            [u_wall_points, u_near_points, u_far_points, u_ground_points]
+            [
+                u_wall_points,
+                u_near_points,
+                u_far_points,
+                u_ground_points,
+                m_ground_points,
+                m_far_points,
+                m_near_points,
+                m_wall_points,
+            ]
         )
 
     def add_quad_matrix(self, matrix: List[List[MeshPoint]]) -> None:
