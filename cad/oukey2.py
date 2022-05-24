@@ -585,6 +585,9 @@ class KeyGrid:
         )
 
     def gen_front_wall(self) -> None:
+        u_near_off = Point(0.0, -7.0, -2.0)
+        m_near_off = Point(0.0, -0.5, 0.0)
+
         u_wall_points: List[MeshPoint] = []
         u_near_points: List[MeshPoint] = []
         u_far_points: List[MeshPoint] = []
@@ -594,10 +597,70 @@ class KeyGrid:
         m_near_points: List[MeshPoint] = []
         m_wall_points: List[MeshPoint] = []
 
-        for col in range(1, 7):
-            pass
+        last_row = 5
+        for col in range(6, 2, -1):
+            k = self._keys[col][last_row]
+            u_wall_points += [k.u_out_br, k.u_out_bl]
+            m_wall_points += [k.m_out_br, k.m_out_bl]
 
-        self.add_quad_matrix([u_wall_points, u_near_points])
+            u_near_bl = k.add_point(
+                -k.outer_w + u_near_off.x,
+                -k.outer_h + u_near_off.y,
+                k.height + u_near_off.z,
+            )
+            u_near_br = k.add_point(
+                k.outer_w + u_near_off.x,
+                -k.outer_h + u_near_off.y,
+                k.height + u_near_off.z,
+            )
+            u_near_points += [u_near_br, u_near_bl]
+
+            m_near_bl = k.add_point(
+                -k.outer_w + m_near_off.x,
+                -k.outer_h + m_near_off.y,
+                k.mid_height + m_near_off.z,
+            )
+            m_near_br = k.add_point(
+                k.outer_w + m_near_off.x,
+                -k.outer_h + m_near_off.y,
+                k.mid_height + m_near_off.z,
+            )
+            m_near_points += [m_near_br, m_near_bl]
+
+        min_y = min(p.point.y for p in u_near_points)
+        for p in u_near_points:
+            p.point.y = min_y
+        for p in m_near_points:
+            new_y = min_y + self.wall_thickness
+            if new_y > p.point.y:
+                breakpoint()
+
+            assert new_y <= p.point.y
+            p.point.y = new_y
+
+        far_offset = 10.0
+        for idx, p in enumerate(u_near_points):
+            far = k.mesh.add_point(Point(p.x, p.y, p.z - far_offset))
+
+            u_ground = k.mesh.add_point(Point(far.x, far.y, 0.0))
+            m_near = m_near_points[idx]
+            m_ground = k.mesh.add_point(Point(m_near.x, m_near.y, 0.0))
+
+            u_far_points.append(far)
+            u_ground_points.append(u_ground)
+            m_ground_points.append(m_ground)
+
+        self.add_quad_matrix(
+            [
+                u_wall_points,
+                u_near_points,
+                u_far_points,
+                u_ground_points,
+                m_ground_points,
+                m_near_points,
+                m_wall_points,
+            ]
+        )
 
     def add_quad_matrix(self, matrix: List[List[MeshPoint]]) -> None:
         for col in range(len(matrix) - 1):
