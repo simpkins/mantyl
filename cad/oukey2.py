@@ -584,6 +584,21 @@ class KeyGrid:
             ]
         )
 
+    def gen_front_wall(self) -> None:
+        u_wall_points: List[MeshPoint] = []
+        u_near_points: List[MeshPoint] = []
+        u_far_points: List[MeshPoint] = []
+        u_ground_points: List[MeshPoint] = []
+        m_ground_points: List[MeshPoint] = []
+        m_far_points: List[MeshPoint] = []
+        m_near_points: List[MeshPoint] = []
+        m_wall_points: List[MeshPoint] = []
+
+        for col in range(1, 7):
+            pass
+
+        self.add_quad_matrix([u_wall_points, u_near_points])
+
     def add_quad_matrix(self, matrix: List[List[MeshPoint]]) -> None:
         for col in range(len(matrix) - 1):
             for row in range(len(matrix[col]) - 1):
@@ -743,3 +758,14 @@ class KeyHole:
 
         q(tl.u_out_br, tr.u_out_bl, br.u_out_tl, bl.u_out_tr)
         q(tl.m_out_br, bl.m_out_tr, br.m_out_tl, tr.m_out_bl)
+
+
+def gen_keyboard() -> Mesh:
+    grid = KeyGrid()
+    grid.gen_main_grid()
+    # grid.gen_main_grid_edges()
+    grid.gen_back_wall()
+    grid.gen_right_wall()
+    grid.gen_front_wall()
+
+    return grid.mesh

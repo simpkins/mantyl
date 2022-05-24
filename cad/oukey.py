@@ -1988,12 +1988,8 @@ def write_shape(shape: Shape, path: Path) -> None:
 
 def key_hole_test() -> Shape:
     import oukey2
-    grid = oukey2.KeyGrid()
-    grid.gen_main_grid()
-    # grid.gen_main_grid_edges()
-    grid.gen_back_wall()
-    grid.gen_right_wall()
-    return Shape.polyhedron_from_mesh(grid.mesh, convexivity=20)
+    mesh = oukey2.gen_keyboard()
+    return Shape.polyhedron_from_mesh(mesh, convexivity=20)
 
 
 def main() -> None:

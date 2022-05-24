@@ -31,13 +31,9 @@ def main() -> None:
     bpy.ops.object.delete(use_global=False)
 
     print("Generating keyboard...")
-    grid = oukey2.KeyGrid()
-    grid.gen_main_grid()
-    # grid.gen_main_grid_edges()
-    grid.gen_back_wall()
-    grid.gen_right_wall()
+    mesh = oukey2.gen_keyboard()
 
-    bmesh = blender_mesh(grid.mesh)
+    bmesh = blender_mesh(mesh)
     obj = bpy.data.objects.new("keyboard", bmesh)
 
     collection = bpy.data.collections.new("collection")
