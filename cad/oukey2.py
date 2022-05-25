@@ -55,7 +55,7 @@ class Keyboard:
     def __getattr__(self, name) -> Any:
         # Allow the keys to be accessed as kXY.  e.g., k12 is self._keys[1][2]
         if name.startswith("k") and len(name) == 3:
-            return self._get_key_variable(name, self._keys, "thumb key")
+            return self._get_key_variable(name, self._keys, "key")
 
         # Allow the thumb keys to be accessed as tXY.
         # e.g., t12 is self._thumb_keys[1][2]
@@ -364,6 +364,17 @@ class Keyboard:
 
         raise Exception("unknown thumb position")
 
+    def _thumb_br(self) -> Transform:
+        """The position of the thumb bottom-right key hole,
+        if it were a 3x3 grid.
+        """
+        offset = 19
+        return (
+            Transform()
+            .translate(offset, -offset, 0)
+            .transform(self._main_thumb_transform)
+        )
+
     def gen_main_grid(self) -> None:
         """Generate mesh faces for the main key hole section.
         """
@@ -410,34 +421,13 @@ class Keyboard:
             )
 
         # One slightly unusual corner at the upper-right of k02
-        self.mesh.add_tri(
-            self.k02.u_out_tr, self.k11.u_out_bl, self.k12.u_out_tl
-        )
-        self.mesh.add_tri(
-            self.k02.m_out_tr, self.k12.m_out_tl, self.k11.m_out_bl
-        )
+        KeyHole.top_bottom_tri(self.k02.tr, self.k11.bl, self.k12.tl)
 
         # Extra connector for the thumb area
         # top
-        self.mesh.add_tri(
-            self.k14.u_out_bl, self.k14.u_out_br, self.k24.u_out_bl
-        )
-        self.mesh.add_tri(
-            self.k14.u_out_bl, self.k24.u_out_bl, self.k25.u_out_tl
-        )
-        self.mesh.add_tri(
-            self.k14.u_out_bl, self.k25.u_out_tl, self.k25.u_out_bl
-        )
-        # bottom
-        self.mesh.add_tri(
-            self.k14.m_out_bl, self.k24.m_out_bl, self.k14.m_out_br
-        )
-        self.mesh.add_tri(
-            self.k14.m_out_bl, self.k25.m_out_tl, self.k24.m_out_bl
-        )
-        self.mesh.add_tri(
-            self.k14.m_out_bl, self.k25.m_out_bl, self.k25.m_out_tl
-        )
+        KeyHole.top_bottom_tri(self.k14.bl, self.k14.br, self.k24.bl)
+        KeyHole.top_bottom_tri(self.k14.bl, self.k24.bl, self.k25.tl)
+        KeyHole.top_bottom_tri(self.k14.bl, self.k25.tl, self.k25.bl)
 
     def gen_main_grid_edges(self) -> None:
         """Close off the edges around the main key grid section.
@@ -447,10 +437,7 @@ class Keyboard:
         """
         # Wall on the corner section at the upper right of k02
         self.mesh.add_quad(
-            self.k11.u_out_bl,
-            self.k02.u_out_tr,
-            self.k02.m_out_tr,
-            self.k11.m_out_bl,
+            self.k11.u_bl, self.k02.u_tr, self.k02.l_tr, self.k11.l_bl
         )
 
         # Left side walls
@@ -487,10 +474,7 @@ class Keyboard:
 
         # Side wall for the thumb connector area
         self.mesh.add_quad(
-            self.k14.u_out_bl,
-            self.k25.u_out_bl,
-            self.k25.m_out_bl,
-            self.k14.m_out_bl,
+            self.k14.u_bl, self.k25.u_bl, self.k25.l_bl, self.k14.l_bl
         )
 
     def gen_main_wall(self) -> None:
@@ -534,8 +518,8 @@ class Keyboard:
                 Point(u_far_tr.x, u_far_tr.y, 0.0)
             )
 
-            wp.u_wall_points += [k.u_out_tl, k.u_out_tr]
-            wp.m_wall_points += [k.m_out_tl, k.m_out_tr]
+            wp.u_wall_points += [k.u_tl, k.u_tr]
+            wp.m_wall_points += [k.l_tl, k.l_tr]
             wp.u_near_points += [u_near_tl, u_near_tr]
             wp.u_far_points += [u_far_tl, u_far_tr]
             wp.u_ground_points += [u_ground_tl, u_ground_tr]
@@ -569,8 +553,8 @@ class Keyboard:
 
         for row in range(6):
             k = self._keys[6][row]
-            wp.u_wall_points += [k.u_out_tr, k.u_out_br]
-            wp.m_wall_points += [k.m_out_tr, k.m_out_br]
+            wp.u_wall_points += [k.u_tr, k.u_br]
+            wp.m_wall_points += [k.l_tr, k.l_br]
 
             u_near_tr = k.add_point(k.outer_w + near_off, k.outer_h, k.height)
             u_near_br = k.add_point(k.outer_w + near_off, -k.outer_h, k.height)
@@ -647,8 +631,8 @@ class Keyboard:
         last_row = 5
         for col in range(6, 2, -1):
             k = self._keys[col][last_row]
-            wp.u_wall_points += [k.u_out_br, k.u_out_bl]
-            wp.m_wall_points += [k.m_out_br, k.m_out_bl]
+            wp.u_wall_points += [k.u_br, k.u_bl]
+            wp.m_wall_points += [k.l_br, k.l_bl]
 
             u_near_bl = k.add_point(
                 -k.outer_w + u_near_off.x,
@@ -688,12 +672,12 @@ class Keyboard:
         far_offset = 10.0
         for idx, p in enumerate(wp.u_near_points):
             u_far = k.mesh.add_point(Point(p.x, p.y, p.z - far_offset))
+            m_near = wp.m_near_points[idx]
             m_far = k.mesh.add_point(
-                Point(u_far.x, u_far.y + self.wall_thickness, u_far.z)
+                Point(m_near.x, m_near.y, m_near.z - far_offset)
             )
 
             u_ground = k.mesh.add_point(Point(u_far.x, u_far.y, 0.0))
-            m_near = wp.m_near_points[idx]
             m_ground = k.mesh.add_point(Point(m_near.x, m_near.y, 0.0))
 
             wp.u_far_points.append(u_far)
@@ -723,51 +707,147 @@ class Keyboard:
         KeyHole.join_corner(self.t00, self.t10, self.t11, self.t01)
         KeyHole.join_corner(self.t01, self.t11, self.t12, self.t02)
 
-        tri = self.mesh.add_tri
-        tri(self.t10.u_out_tr, self.t20.u_out_tr, self.t20.u_out_tl)
-        tri(self.t10.m_out_tr, self.t20.m_out_tl, self.t20.m_out_tr)
+        self.t10.join_right(self.t20)
+        KeyHole.join_corner(self.t10, self.t20, self.t21, self.t11)
 
-        tri(self.t10.u_out_tr, self.t20.u_out_tl, self.t10.u_out_br)
+        KeyHole.top_bottom_tri(self.t11.tr, self.t21.tl, self.t11.br)
+        KeyHole.top_bottom_tri(self.t11.br, self.t21.tl, self.t12.tr)
+        self.t12.join_right(self.t21)
 
+        KeyHole.top_bottom_tri(self.t10.tr, self.t20.tr, self.t20.tl)
+        KeyHole.top_bottom_tri(self.t21.bl, self.t21.br, self.t12.br)
+
+    def gen_thumb_grid_edges(self) -> None:
+        """Close off the edges around the main key grid section.
+
+        Useful if we want to render the main grid section by itself, without
+        normal walls dropping down to the ground.
+        """
+        self.t00.left_edge()
+        self.t00.left_edge_bottom(self.t01)
+        self.t01.left_edge()
+        self.t01.left_edge_bottom(self.t02)
+        self.t02.left_edge()
+
+        self.t00.top_edge()
+        self.t00.top_edge_right(self.t10)
+        self.t10.top_edge()
+
+        self.t02.bottom_edge()
+        self.t02.bottom_edge_right(self.t12)
+        self.t12.bottom_edge()
+
+        self.t20.right_edge()
+        self.t20.right_edge_bottom(self.t21)
+        self.t21.right_edge()
+
+        self.mesh.add_quad(
+            self.t12.u_br, self.t21.u_br, self.t21.l_br, self.t12.l_br
+        )
+        self.mesh.add_quad(
+            self.t20.u_tr, self.t10.u_tr, self.t10.l_tr, self.t20.l_tr
+        )
+
+    def gen_thumb_wall(self) -> None:
+        offset = 7.0
+
+        matrix: List[List[MeshPoint]] = []
+        kh_w = KeyHole.outer_w
+        kh_h = KeyHole.outer_h
+
+        off_b = Point(0.0, -1.0, 0.0)
+        off_l = Point(-1.0, 0.0, 0.0)
+        off_bl = Point(-1.0, -1.0, 0.0)
+        off_tl = Point(-1.0, 1.0, 0.0)
+        off_t = Point(0.0, 1.0, 0.0)
+
+        def add(
+            key_points: Tuple[MeshPoint, MeshPoint],
+            key_tf: Transform,
+            x_off: float,
+            y_off: float,
+            wall_direction: Point,
+        ) -> None:
+            upper_rel = Point(x_off, y_off, KeyHole.height) + (
+                wall_direction * offset
+            )
+            lower_rel = Point(x_off, y_off, KeyHole.mid_height) + (
+                wall_direction * (offset - self.wall_thickness)
+            )
+            upper = self.mesh.add_point(upper_rel.transform(key_tf))
+            lower = self.mesh.add_point(lower_rel.transform(key_tf))
+            out_ground = self.mesh.add_point(Point(upper.x, upper.y, 0.0))
+            in_ground = self.mesh.add_point(Point(lower.x, lower.y, 0.0))
+            matrix.append(
+                [
+                    key_points[0],
+                    upper,
+                    out_ground,
+                    in_ground,
+                    lower,
+                    key_points[1],
+                ]
+            )
+
+        add(self.t12.br, self.t12.transform, kh_w, -kh_h, off_b)
+        add(self.t12.bl, self.t12.transform, -kh_w, -kh_h, off_b)
+        add(self.t02.br, self.t02.transform, kh_w, -kh_h, off_b)
+        add(self.t02.bl, self.t02.transform, -kh_w, -kh_h, off_bl)
+        add(self.t02.tl, self.t02.transform, -kh_w, kh_h, off_l)
+        add(self.t01.bl, self.t01.transform, -kh_w, -kh_h, off_l)
+        add(self.t01.tl, self.t01.transform, -kh_w, kh_h, off_l)
+        add(self.t00.bl, self.t00.transform, -kh_w, -kh_h, off_l)
+        add(self.t00.tl, self.t00.transform, -kh_w, kh_h, off_tl)
+        add(self.t00.tr, self.t00.transform, kh_w, kh_h, off_t)
+        add(self.t10.tl, self.t10.transform, -kh_w, kh_h, off_t)
+        add(self.t10.tr, self.t10.transform, kh_w, kh_h, off_t)
+
+        self.add_quad_matrix(matrix)
 
 
 class KeyHole:
-    def __init__(self, mesh: Mesh, transform: Transform) -> None:
-        from keyboard import (
-            keyswitch_width,
-            keyswitch_height,
-            keywell_wall_width,
-            plate_thickness,
-            web_thickness,
-        )
+    keyswitch_width: float = 14.4
+    keyswitch_height: float = 14.4
+    keywell_wall_width = 1.5
+    web_thickness = 3.5
 
+    height: float = 4.0
+    inner_w: float = keyswitch_width * 0.5
+    outer_w: float = inner_w + keywell_wall_width
+    inner_h = keyswitch_height * 0.5
+    outer_h = inner_h + keywell_wall_width
+
+    # The height of the connecting mesh between key holes
+    mid_height = height - web_thickness
+
+    def __init__(self, mesh: Mesh, transform: Transform) -> None:
         self.mesh = mesh
         self.transform = transform
 
-        inner_w = keyswitch_width * 0.5
-        outer_w = inner_w + keywell_wall_width
-        inner_h = keyswitch_height * 0.5
-        outer_h = inner_h + keywell_wall_width
-
-        self.outer_w = outer_w
-        self.outer_h = outer_h
-        self.height = plate_thickness
-        # The height of the connecting mesh between key holes
-        self.mid_height = plate_thickness - web_thickness
-
         add_point = self.add_point
 
-        # Lower inner points
-        self.l_in_bl = add_point(-inner_w, -inner_h, 0.0)
-        self.l_in_br = add_point(inner_w, -inner_h, 0.0)
-        self.l_in_tr = add_point(inner_w, inner_h, 0.0)
-        self.l_in_tl = add_point(-inner_w, inner_h, 0.0)
+        outer_w = self.outer_w
+        outer_h = self.outer_h
+        inner_w = self.inner_w
+        inner_h = self.inner_h
 
-        # Lower outer points
-        self.l_out_bl = add_point(-outer_w, -outer_h, 0.0)
-        self.l_out_br = add_point(outer_w, -outer_h, 0.0)
-        self.l_out_tr = add_point(outer_w, outer_h, 0.0)
-        self.l_out_tl = add_point(-outer_w, outer_h, 0.0)
+        # Upper outer points.
+        # These are the main connection points used externally for the walls
+        self.u_bl = add_point(-outer_w, -outer_h, self.height)
+        self.u_br = add_point(outer_w, -outer_h, self.height)
+        self.u_tr = add_point(outer_w, outer_h, self.height)
+        self.u_tl = add_point(-outer_w, outer_h, self.height)
+
+        # Lower outer points.
+        # These are also connection points used externally,
+        # for the underside of the walls
+        self.l_bl = add_point(-outer_w, -outer_h, self.mid_height)
+        self.l_br = add_point(outer_w, -outer_h, self.mid_height)
+        self.l_tr = add_point(outer_w, outer_h, self.mid_height)
+        self.l_tl = add_point(-outer_w, outer_h, self.mid_height)
+
+        # The remaining points are primarily used only internally
+        # for the interior walls of the key hole.
 
         # Upper inner points
         self.u_in_bl = add_point(-inner_w, -inner_h, self.height)
@@ -775,17 +855,35 @@ class KeyHole:
         self.u_in_tr = add_point(inner_w, inner_h, self.height)
         self.u_in_tl = add_point(-inner_w, inner_h, self.height)
 
-        # Upper outer points
-        self.u_out_bl = add_point(-outer_w, -outer_h, self.height)
-        self.u_out_br = add_point(outer_w, -outer_h, self.height)
-        self.u_out_tr = add_point(outer_w, outer_h, self.height)
-        self.u_out_tl = add_point(-outer_w, outer_h, self.height)
+        # Bottom-most inner points.
+        # The bottom-most points extend slightly below the "lower" points
+        # used for connections to the walls.
+        self.b_in_bl = add_point(-inner_w, -inner_h, 0.0)
+        self.b_in_br = add_point(inner_w, -inner_h, 0.0)
+        self.b_in_tr = add_point(inner_w, inner_h, 0.0)
+        self.b_in_tl = add_point(-inner_w, inner_h, 0.0)
 
-        # Mid outer points
-        self.m_out_bl = add_point(-outer_w, -outer_h, self.mid_height)
-        self.m_out_br = add_point(outer_w, -outer_h, self.mid_height)
-        self.m_out_tr = add_point(outer_w, outer_h, self.mid_height)
-        self.m_out_tl = add_point(-outer_w, outer_h, self.mid_height)
+        # Bottom-most outer points
+        self.b_out_bl = add_point(-outer_w, -outer_h, 0.0)
+        self.b_out_br = add_point(outer_w, -outer_h, 0.0)
+        self.b_out_tr = add_point(outer_w, outer_h, 0.0)
+        self.b_out_tl = add_point(-outer_w, outer_h, 0.0)
+
+    @property
+    def tl(self) -> Tuple[MeshPoint, MeshPoint]:
+        return (self.u_tl, self.l_tl)
+
+    @property
+    def tr(self) -> Tuple[MeshPoint, MeshPoint]:
+        return (self.u_tr, self.l_tr)
+
+    @property
+    def bl(self) -> Tuple[MeshPoint, MeshPoint]:
+        return (self.u_bl, self.l_bl)
+
+    @property
+    def br(self) -> Tuple[MeshPoint, MeshPoint]:
+        return (self.u_br, self.l_br)
 
     def add_point(self, x: float, y: float, z: float) -> MeshPoint:
         p = Point(x, y, z).transform(self.transform)
@@ -795,90 +893,86 @@ class KeyHole:
         q = self.mesh.add_quad
 
         # inner walls
-        q(self.u_in_bl, self.l_in_bl, self.l_in_br, self.u_in_br)
-        q(self.u_in_br, self.l_in_br, self.l_in_tr, self.u_in_tr)
-        q(self.u_in_tr, self.l_in_tr, self.l_in_tl, self.u_in_tl)
-        q(self.u_in_tl, self.l_in_tl, self.l_in_bl, self.u_in_bl)
+        q(self.u_in_bl, self.b_in_bl, self.b_in_br, self.u_in_br)
+        q(self.u_in_br, self.b_in_br, self.b_in_tr, self.u_in_tr)
+        q(self.u_in_tr, self.b_in_tr, self.b_in_tl, self.u_in_tl)
+        q(self.u_in_tl, self.b_in_tl, self.b_in_bl, self.u_in_bl)
 
         # top walls
-        q(self.u_in_bl, self.u_in_br, self.u_out_br, self.u_out_bl)
-        q(self.u_in_br, self.u_in_tr, self.u_out_tr, self.u_out_br)
-        q(self.u_in_tr, self.u_in_tl, self.u_out_tl, self.u_out_tr)
-        q(self.u_in_tl, self.u_in_bl, self.u_out_bl, self.u_out_tl)
+        q(self.u_in_bl, self.u_in_br, self.u_br, self.u_bl)
+        q(self.u_in_br, self.u_in_tr, self.u_tr, self.u_br)
+        q(self.u_in_tr, self.u_in_tl, self.u_tl, self.u_tr)
+        q(self.u_in_tl, self.u_in_bl, self.u_bl, self.u_tl)
 
         # bottom walls
-        q(self.l_in_bl, self.l_out_bl, self.l_out_br, self.l_in_br)
-        q(self.l_in_br, self.l_out_br, self.l_out_tr, self.l_in_tr)
-        q(self.l_in_tr, self.l_out_tr, self.l_out_tl, self.l_in_tl)
-        q(self.l_in_tl, self.l_out_tl, self.l_out_bl, self.l_in_bl)
+        q(self.b_in_bl, self.b_out_bl, self.b_out_br, self.b_in_br)
+        q(self.b_in_br, self.b_out_br, self.b_out_tr, self.b_in_tr)
+        q(self.b_in_tr, self.b_out_tr, self.b_out_tl, self.b_in_tl)
+        q(self.b_in_tl, self.b_out_tl, self.b_out_bl, self.b_in_bl)
 
         # outer walls from bottom layer to mid point
-        q(self.l_out_bl, self.m_out_bl, self.m_out_br, self.l_out_br)
-        q(self.l_out_br, self.m_out_br, self.m_out_tr, self.l_out_tr)
-        q(self.l_out_tr, self.m_out_tr, self.m_out_tl, self.l_out_tl)
-        q(self.l_out_tl, self.m_out_tl, self.m_out_bl, self.l_out_bl)
+        q(self.b_out_bl, self.l_bl, self.l_br, self.b_out_br)
+        q(self.b_out_br, self.l_br, self.l_tr, self.b_out_tr)
+        q(self.b_out_tr, self.l_tr, self.l_tl, self.b_out_tl)
+        q(self.b_out_tl, self.l_tl, self.l_bl, self.b_out_bl)
 
     def top_edge(self) -> None:
-        self.mesh.add_quad(
-            self.u_out_tr, self.u_out_tl, self.m_out_tl, self.m_out_tr
-        )
+        self.mesh.add_quad(self.u_tr, self.u_tl, self.l_tl, self.l_tr)
 
     def top_edge_right(self, kh: KeyHole) -> None:
-        self.mesh.add_quad(
-            kh.u_out_tl, self.u_out_tr, self.m_out_tr, kh.m_out_tl
-        )
+        self.mesh.add_quad(kh.u_tl, self.u_tr, self.l_tr, kh.l_tl)
 
     def bottom_edge(self) -> None:
-        self.mesh.add_quad(
-            self.u_out_bl, self.u_out_br, self.m_out_br, self.m_out_bl
-        )
+        self.mesh.add_quad(self.u_bl, self.u_br, self.l_br, self.l_bl)
 
     def bottom_edge_right(self, kh: KeyHole) -> None:
-        self.mesh.add_quad(
-            self.u_out_br, kh.u_out_bl, kh.m_out_bl, self.m_out_br
-        )
+        self.mesh.add_quad(self.u_br, kh.u_bl, kh.l_bl, self.l_br)
 
     def left_edge(self) -> None:
-        self.mesh.add_quad(
-            self.u_out_tl, self.u_out_bl, self.m_out_bl, self.m_out_tl
-        )
+        self.mesh.add_quad(self.u_tl, self.u_bl, self.l_bl, self.l_tl)
 
     def right_edge(self) -> None:
-        self.mesh.add_quad(
-            self.u_out_br, self.u_out_tr, self.m_out_tr, self.m_out_br
-        )
+        self.mesh.add_quad(self.u_br, self.u_tr, self.l_tr, self.l_br)
 
     def join_bottom(self, kh: KeyHole) -> None:
-        q = self.mesh.add_quad
-
         # Join this key hole to one below it
-        q(self.u_out_bl, self.u_out_br, kh.u_out_tr, kh.u_out_tl)
-        q(self.m_out_bl, kh.m_out_tl, kh.m_out_tr, self.m_out_br)
+        KeyHole.top_bottom_quad(self.bl, self.br, kh.tr, kh.tl)
 
     def left_edge_bottom(self, kh: KeyHole) -> None:
-        self.mesh.add_quad(
-            self.u_out_bl, kh.u_out_tl, kh.m_out_tl, self.m_out_bl
-        )
+        self.mesh.add_quad(self.u_bl, kh.u_tl, kh.l_tl, self.l_bl)
 
     def right_edge_bottom(self, kh: KeyHole) -> None:
-        self.mesh.add_quad(
-            kh.u_out_tr, self.u_out_br, self.m_out_br, kh.m_out_tr
-        )
+        self.mesh.add_quad(kh.u_tr, self.u_br, self.l_br, kh.l_tr)
 
     def join_right(self, kh: KeyHole) -> None:
-        q = self.mesh.add_quad
-
-        q(self.u_out_tr, kh.u_out_tl, kh.u_out_bl, self.u_out_br)
-        q(self.m_out_tr, self.m_out_br, kh.m_out_bl, kh.m_out_tl)
+        KeyHole.top_bottom_quad(self.tr, kh.tl, kh.bl, self.br)
 
     @staticmethod
     def join_corner(
         tl: KeyHole, tr: KeyHole, br: KeyHole, bl: KeyHole
     ) -> None:
-        q = tl.mesh.add_quad
+        KeyHole.top_bottom_quad(tl.br, tr.bl, br.tl, bl.tr)
 
-        q(tl.u_out_br, tr.u_out_bl, br.u_out_tl, bl.u_out_tr)
-        q(tl.m_out_br, bl.m_out_tr, br.m_out_tl, tr.m_out_bl)
+    @staticmethod
+    def top_bottom_tri(
+        p0: Tuple[MeshPoint, MeshPoint],
+        p1: Tuple[MeshPoint, MeshPoint],
+        p2: Tuple[MeshPoint, MeshPoint],
+    ) -> None:
+        mesh = p0[0].mesh
+        mesh.add_tri(p0[0], p1[0], p2[0])
+        mesh.add_tri(p2[1], p1[1], p0[1])
+
+    @staticmethod
+    def top_bottom_quad(
+        p0: Tuple[MeshPoint, MeshPoint],
+        p1: Tuple[MeshPoint, MeshPoint],
+        p2: Tuple[MeshPoint, MeshPoint],
+        p3: Tuple[MeshPoint, MeshPoint],
+    ) -> None:
+        mesh = p0[0].mesh
+        mesh.add_quad(p0[0], p1[0], p2[0], p3[0])
+        mesh.add_quad(p3[1], p2[1], p1[1], p0[1])
 
 
 class WallPoints:
@@ -918,9 +1012,13 @@ class WallPoints:
 def gen_keyboard() -> Mesh:
     kbd = Keyboard()
     kbd.gen_main_grid()
-    # kbd.gen_main_grid_edges()
     kbd.gen_main_wall()
 
     kbd.gen_thumb_grid()
+    kbd.gen_thumb_wall()
+
+    if False:
+        kbd.gen_main_grid_edges()
+        kbd.gen_thumb_grid_edges()
 
     return kbd.mesh
