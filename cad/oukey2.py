@@ -10,29 +10,57 @@ from cad import Mesh, Point, Transform
 from typing import Any, Generator, List, Optional, Tuple
 
 
-class KeyGrid:
+class Keyboard:
     def __init__(self):
         self.wall_thickness = 4.0
+
+        self._main_thumb_transform = (
+            Transform()
+            .rotate(0, 0, 40)
+            .rotate(0, 25, 0)
+            .translate(-86, -66, 41)
+        )
 
         self.mesh = Mesh()
         self._define_keys()
 
+    def add_quad_matrix(self, matrix: List[List[MeshPoint]]) -> None:
+        for col in range(len(matrix) - 1):
+            for row in range(len(matrix[col]) - 1):
+                self.mesh.add_quad(
+                    matrix[col][row],
+                    matrix[col + 1][row],
+                    matrix[col + 1][row + 1],
+                    matrix[col][row + 1],
+                )
+
+    @staticmethod
+    def _get_key_variable(
+        name: str, keys: List[List[KeyHole]], msg: str
+    ) -> KeyHole:
+        try:
+            col = int(name[1])
+            row = int(name[2])
+        except ValueError:
+            raise AttributeError(name)
+        if col < 0 or col > len(keys):
+            raise AttributeError(name)
+        if row < 0 or row > len(keys[col]):
+            raise AttributeError(name)
+        value = keys[col][row]
+        if value is None:
+            raise IndexError(f"invalid {msg} position {name}")
+        return value
+
     def __getattr__(self, name) -> Any:
-        # Allow the keys to be accessed as kXY.  e.e., k12 is self._keys[1][2]
+        # Allow the keys to be accessed as kXY.  e.g., k12 is self._keys[1][2]
         if name.startswith("k") and len(name) == 3:
-            try:
-                col = int(name[1])
-                row = int(name[2])
-            except ValueError:
-                raise AttributeError(name)
-            if col < 0 or col > len(self._keys):
-                raise AttributeError(name)
-            if row < 0 or row > len(self._keys[col]):
-                raise AttributeError(name)
-            value = self._keys[col][row]
-            if value is None:
-                raise IndexError(f"invalid key position {name}")
-            return value
+            return self._get_key_variable(name, self._keys, "thumb key")
+
+        # Allow the thumb keys to be accessed as tXY.
+        # e.g., t12 is self._thumb_keys[1][2]
+        if name.startswith("t") and len(name) == 3:
+            return self._get_key_variable(name, self._thumb_keys, "thumb key")
 
         raise AttributeError(name)
 
@@ -45,13 +73,27 @@ class KeyGrid:
             for row in range(6):
                 yield (col, row)
 
+    def thumb_indices(self) -> Generator[[Tuple[int, int]], None, None]:
+        for col in range(2):
+            for row in range(3):
+                yield (col, row)
+        yield (2, 0)
+        yield (2, 1)
+
     def _define_keys(self) -> None:
         self._keys: List[List[Optional[KeyHole]]] = []
         for col in range(7):
             self._keys.append([None] * 6)
-
         for col, row in self.key_indices():
             self._keys[col][row] = KeyHole(self.mesh, self._key_tf(col, row))
+
+        self._thumb_keys: List[List[Optional[KeyHole]]] = []
+        for col in range(3):
+            self._thumb_keys.append([None] * 3)
+        for col, row in self.thumb_indices():
+            self._thumb_keys[col][row] = KeyHole(
+                self.mesh, self._thumb_tf(col, row)
+            )
 
     def _key_tf(self, column: int, row: int) -> Transform:
         if column == 0:
@@ -280,6 +322,47 @@ class KeyGrid:
         tf = tf.rotate(0, 5, 0)
         tf = tf.translate(47, -5, 19)
         return tf
+
+    def _thumb_tf(self, col: int, row: int) -> Transform:
+        return self._rel_thumb_tf(col, row).transform(
+            self._main_thumb_transform
+        )
+
+    def _rel_thumb_tf(self, col: int, row: int) -> Transform:
+        offset = 19
+        key = (col, row)
+        tf = Transform()
+
+        # Left column
+        if key == (0, 0):
+            return tf.translate(-offset, offset, 0)
+        if key == (0, 1):
+            return tf.translate(-offset, 0, 0)
+        if key == (0, 2):
+            return tf.translate(-offset, -offset, 0)
+
+        # Middle column
+        if key == (1, 0):
+            return tf.translate(0, offset, 0)
+        if key == (1, 1):
+            return tf
+        if key == (1, 2):
+            return tf.translate(0, -offset, 0)
+
+        # Right column
+        if key == (2, 0):
+            return tf.translate(offset, offset / 2.0, 0)
+        if key == (2, 1):
+            # I plan to use a 1x1.5 key for this position
+            # The bottom end of the other rows is at -offset - (18.415 / 2)
+            # The 1.5 key is 27.6225mm in length.
+            len_1x1 = 18.415
+            len_1x1_5 = len_1x1 * 1.5
+            bottom_edge = -offset - (len_1x1 * 0.5)
+            y = bottom_edge + (len_1x1_5 * 0.5)
+            return tf.translate(offset, y, 0)
+
+        raise Exception("unknown thumb position")
 
     def gen_main_grid(self) -> None:
         """Generate mesh faces for the main key hole section.
@@ -620,15 +703,32 @@ class KeyGrid:
 
         return wp
 
-    def add_quad_matrix(self, matrix: List[List[MeshPoint]]) -> None:
-        for col in range(len(matrix) - 1):
-            for row in range(len(matrix[col]) - 1):
-                self.mesh.add_quad(
-                    matrix[col][row],
-                    matrix[col + 1][row],
-                    matrix[col + 1][row + 1],
-                    matrix[col][row + 1],
-                )
+    def gen_thumb_grid(self) -> None:
+        """Generate mesh faces for the thumb key hole section.
+        """
+        for col, row in self.thumb_indices():
+            self._thumb_keys[col][row].inner_walls()
+
+        # Connections between key holes
+        self.t00.join_bottom(self.t01)
+        self.t01.join_bottom(self.t02)
+        self.t10.join_bottom(self.t11)
+        self.t11.join_bottom(self.t12)
+        self.t20.join_bottom(self.t21)
+
+        self.t00.join_right(self.t10)
+        self.t01.join_right(self.t11)
+        self.t02.join_right(self.t12)
+
+        KeyHole.join_corner(self.t00, self.t10, self.t11, self.t01)
+        KeyHole.join_corner(self.t01, self.t11, self.t12, self.t02)
+
+        tri = self.mesh.add_tri
+        tri(self.t10.u_out_tr, self.t20.u_out_tr, self.t20.u_out_tl)
+        tri(self.t10.m_out_tr, self.t20.m_out_tl, self.t20.m_out_tr)
+
+        tri(self.t10.u_out_tr, self.t20.u_out_tl, self.t10.u_out_br)
+
 
 
 class KeyHole:
@@ -816,9 +916,11 @@ class WallPoints:
 
 
 def gen_keyboard() -> Mesh:
-    grid = KeyGrid()
-    grid.gen_main_grid()
-    # grid.gen_main_grid_edges()
-    grid.gen_main_wall()
+    kbd = Keyboard()
+    kbd.gen_main_grid()
+    # kbd.gen_main_grid_edges()
+    kbd.gen_main_wall()
 
-    return grid.mesh
+    kbd.gen_thumb_grid()
+
+    return kbd.mesh
