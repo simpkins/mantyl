@@ -478,53 +478,60 @@ class Keyboard:
         )
 
     def gen_main_wall(self) -> None:
-        back_wall = self.gen_back_wall()
-        right_wall = self.gen_right_wall()
         front_wall = self.gen_front_wall()
+        right_wall = self.gen_right_wall()
+        back_wall = self.gen_back_wall()
+        left_wall = self.gen_left_wall()
 
-        back_wall.add_faces(self.mesh)
-        right_wall.add_faces(self.mesh)
-        front_wall.add_faces(self.mesh)
+        self.add_wall_faces(front_wall)
+        self.add_wall_faces(right_wall)
+        self.add_wall_faces(back_wall)
+        self.add_wall_faces(left_wall)
 
-    def gen_back_wall(self) -> WallPoints:
+    def add_wall_faces(self, columns: List[WallColumn]) -> None:
+        for idx in range(len(columns) - 1):
+            col0 = columns[idx].get_rows()
+            col1 = columns[idx + 1].get_rows()
+            for row in range(len(col0) - 1):
+                self.mesh.add_quad(
+                    col0[row], col1[row], col1[row + 1], col0[row + 1]
+                )
+
+    def gen_back_wall(self) -> List[WallColumn]:
         u_near_off = 4.0
         l_near_off = 2.0
         far_off = Point(0.0, 6.0, -4.0)
 
-        wp = WallPoints()
+        columns: List[WallColumn] = []
         for col in range(6, 0, -1):
             k = self._keys[col][0]
 
             # Left and right columns for this key hole
             l = WallColumn()
             r = WallColumn()
-            wp.columns += [r, l]
+            columns += [r, l]
 
             l.out0 = k.u_tl
-            r.out0 = k.u_tr
-
             l.in0 = k.l_tl
+            r.out0 = k.u_tr
             r.in0 = k.l_tr
 
             l.out1 = k.add_point(-k.outer_w, k.outer_h + u_near_off, k.height)
             l.in1 = k.add_point(
                 -k.outer_w, k.outer_h + l_near_off, k.mid_height
             )
-
             r.out1 = k.add_point(k.outer_w, k.outer_h + u_near_off, k.height)
             r.in1 = k.add_point(
                 k.outer_w, k.outer_h + l_near_off, k.mid_height
             )
 
-            l.out2 = self.mesh.add_point(l.out1.point.ptranslate(far_off))
-            r.out2 = self.mesh.add_point(r.out1.point.ptranslate(far_off))
-            l.out3 = self.mesh.add_point(Point(l.out2.x, l.out2.y, 0.0))
-            r.out3 = self.mesh.add_point(Point(r.out2.x, r.out2.y, 0.0))
+        for col in columns:
+            col.out2 = self.mesh.add_point(col.out1.point.ptranslate(far_off))
 
-        max_y = max(col.out2.y for col in wp.columns)
-        for col in wp.columns:
+        max_y = max(col.out2.y for col in columns)
+        for col in columns:
             col.out2.point.y = max_y
-            col.out3.point.y = max_y
+            col.out3 = self.mesh.add_point(Point(col.out2.x, col.out2.y, 0.0))
             col.in2 = self.mesh.add_point(
                 Point(
                     col.out2.point.x,
@@ -540,20 +547,19 @@ class Keyboard:
                 )
             )
 
-        return wp
+        return columns
 
-    def gen_right_wall(self) -> WallPoints:
+    def gen_right_wall(self) -> List[WallColumn]:
         near_off = 4.5
         far_off = Point(0.6, 0, 0.0)
 
-        wp = WallPoints()
-
+        columns: List[WallColumn] = []
         for row in range(5, -1, -1):
             k = self._keys[6][row]
             # top and bottom columns
             b = WallColumn()
             t = WallColumn()
-            wp.columns += [b, t]
+            columns += [b, t]
 
             b.out0 = k.u_br
             t.out0 = k.u_tr
@@ -567,8 +573,8 @@ class Keyboard:
             t.in1 = k.add_point(k.outer_w + near_off, k.outer_h, k.mid_height)
 
         far_offset = 10.0
-        max_x = max(col.out1.point.x for col in wp.columns)
-        for idx, col in enumerate(wp.columns):
+        max_x = max(col.out1.point.x for col in columns)
+        for idx, col in enumerate(columns):
             # Set the x values
             col.out1.point.x = max_x
             col.in1.point.x = max_x - self.wall_thickness
@@ -584,17 +590,17 @@ class Keyboard:
                 # Then add the far point along the normal
                 p = col.out1
 
-                prev_p = wp.columns[idx - 1].out1
+                prev_p = columns[idx - 1].out1
                 p_normal = Point(0, prev_p.z - p.z, p.y - prev_p.y).unit()
                 normal = p_normal
-                if idx + 1 < len(wp.columns):
-                    next_p = wp.columns[idx + 1].out1
+                if idx + 1 < len(columns):
+                    next_p = columns[idx + 1].out1
                     n_normal = Point(0, p.z - next_p.z, next_p.y - p.y).unit()
                     normal += n_normal
                     # We have added 2 unit normals, so we have to multiply by
                     # 0.5 to get back to a unit normal
                     normal *= 0.5 * far_offset
-                    if idx + 2 == len(wp.columns):
+                    if idx + 2 == len(columns):
                         # Add a little more here to even some things out
                         normal *= 1.2
                 else:
@@ -616,21 +622,21 @@ class Keyboard:
                 Point(col.out3.x - self.wall_thickness, col.out3.y, col.out3.z)
             )
 
-        return wp
+        return columns
 
-    def gen_front_wall(self) -> WallPoints:
-        u_near_off = Point(0.0, -7.0, -2.0)
-        m_near_off = Point(0.0, -0.5, 0.0)
+    def gen_front_wall(self) -> List[WallColumn]:
+        u_near_off = Point(0.0, -5.0, -2.0)
+        m_near_off = Point(0.0, -0.0, 0.0)
 
-        wp = WallPoints()
+        columns: List[WallColumn] = []
         last_row = 5
-        for col in range(3, 7):
+        for col in range(2, 7):
             k = self._keys[col][last_row]
 
             # Left and right columns for this key hole
             l = WallColumn()
             r = WallColumn()
-            wp.columns += [l, r]
+            columns += [l, r]
 
             l.out0 = k.u_bl
             r.out0 = k.u_br
@@ -659,9 +665,13 @@ class Keyboard:
                 k.mid_height + m_near_off.z,
             )
 
-        min_y = min(col.out1.y for col in wp.columns)
+        # We want the front wall to start at the right-hand side of
+        # key column 2, so drop the left side.
+        del columns[0]
+
+        min_y = min(col.out1.y for col in columns)
         far_offset = 10.0
-        for col in wp.columns:
+        for col in columns:
             col.out1.point.y = min_y
             assert min_y + self.wall_thickness <= col.in1.y
             col.in1.point.y = min_y + self.wall_thickness
@@ -676,7 +686,152 @@ class Keyboard:
             col.out3 = k.mesh.add_point(Point(col.out2.x, col.out2.y, 0.0))
             col.in3 = k.mesh.add_point(Point(col.in1.x, col.in1.y, 0.0))
 
-        return wp
+        return columns
+
+    def _left_wall_helper(
+        self, indices: List[Tuple[int, int]], x_aligned: bool
+    ) -> List[WallColumn]:
+        u_near_off = -2.0
+        l_near_off = -1.0
+        far_off = Point(-6.0, 0.0, 0.0)
+
+        columns: List[WallColumn] = []
+        for col, row in indices:
+            k = self._keys[col][row]
+
+            t = WallColumn()
+            b = WallColumn()
+            columns += [t, b]
+
+            t.out0 = k.u_tl
+            b.out0 = k.u_bl
+            t.in0 = k.l_tl
+            b.in0 = k.l_bl
+
+            t.out1 = k.add_point(-k.outer_w + u_near_off, k.outer_h, k.height)
+            t.in1 = k.add_point(
+                -k.outer_w + l_near_off, k.outer_h, k.mid_height
+            )
+            b.out1 = k.add_point(-k.outer_w + u_near_off, -k.outer_h, k.height)
+            b.in1 = k.add_point(
+                -k.outer_w + l_near_off, -k.outer_h, k.mid_height
+            )
+
+        for col in columns:
+            col.out2 = self.mesh.add_point(col.out1.point.ptranslate(far_off))
+        min_x = min(col.out2.x for col in columns)
+
+        for col in columns:
+            if x_aligned:
+                # Make the line straight on the x axis
+                col.out2.point.x = min_x
+            elif False:
+                # Straighten the wall between the two endpoints,
+                # rather than along the x_axis
+                start = columns[0].out2
+                end = columns[-1].out2
+                fraction = (col.out2.y - start.y) / (start.y - end.y)
+                col.out2.point.x = start.x + fraction * (start.x - end.x)
+
+            col.out3 = self.mesh.add_point(Point(col.out2.x, col.out2.y, 0.0))
+            col.in3 = self.mesh.add_point(
+                Point(col.out3.x + self.wall_thickness, col.out3.y, 0.0)
+            )
+            col.in2 = self.mesh.add_point(
+                Point(col.in3.x, col.in3.y, col.out2.z - 3.0)
+            )
+
+        return columns
+
+    def _left_wall_inner_corner(self) -> WallColumn:
+        ic = WallColumn()
+        k = self.k11
+
+        ic.out0 = k.u_bl
+        ic.in0 = k.l_bl
+
+        ic.out1 = k.add_point(-k.outer_w - 2.0, -k.outer_h + 2.0, k.height)
+        ic.in1 = k.add_point(-k.outer_w - 2.0, -k.outer_h + 2.0, k.mid_height)
+
+        ic.in2 = self.mesh.add_point(
+            Point(ic.in1.x - 0.2, ic.in1.y + 0.2, ic.in1.z)
+        )
+        ic.in3 = self.mesh.add_point(Point(ic.in2.x, ic.in2.y, 0.0))
+
+        ic.out3 = self.mesh.add_point(
+            Point(
+                ic.in3.x - self.wall_thickness,
+                ic.in3.y + self.wall_thickness,
+                0.0,
+            )
+        )
+        ic.out2 = self.mesh.add_point(Point(ic.out3.x, ic.out3.y, ic.out1.z))
+
+        return ic
+
+    def _left_wall_outer_corner(self, bottom_out_x: float) -> WallColumn:
+        oc = WallColumn()
+        k = self.k02
+
+        oc.out0 = k.u_tl
+        oc.in0 = k.l_tl
+
+        oc.out1 = k.add_point(-k.outer_w - 2.0, k.outer_h + 2.0, k.height)
+        oc.in1 = k.add_point(-k.outer_w - 2.0, k.outer_h + 2.0, k.mid_height)
+
+        oc.out2 = self.mesh.add_point(
+            Point(bottom_out_x, oc.out1.y + 6.0, oc.out1.z)
+        )
+        oc.out3 = self.mesh.add_point(Point(oc.out2.x, oc.out2.y, 0.0))
+        oc.in3 = self.mesh.add_point(
+            Point(
+                oc.out3.x + self.wall_thickness,
+                oc.out3.y - self.wall_thickness,
+                0.0,
+            )
+        )
+        oc.in2 = self.mesh.add_point(
+            Point(oc.in3.x, oc.in3.y, oc.out2.z - 4.0)
+        )
+
+        return oc
+
+    def _left_wall_straighten(self, segment: List[WallColumn]) -> None:
+        dx = segment[0].out2.x - segment[-1].out2.x
+        dy = segment[0].out2.y - segment[-1].out2.y
+
+        for idx in range(1, len(segment) - 1):
+            col = segment[idx]
+            fx = (col.out2.x - segment[-1].out2.x) / dx
+            fy = (col.out2.y - segment[-1].out2.y) / dy
+            col.out2.point.x = segment[-1].out2.x + (fy * dx)
+
+            col.out3.point.x = col.out2.x
+            col.in3.point.x = col.out3.x + self.wall_thickness
+            col.in2.point.x = col.in3.x
+
+    def gen_left_wall(self) -> List[WallColumn]:
+        ic = self._left_wall_inner_corner()
+
+        # The top-most vertical segment
+        segment0 = self._left_wall_helper([(1, 0), (1, 1)], x_aligned=False)
+        # The bottom vertical segment
+        segment2 = self._left_wall_helper(
+            [(0, 2), (0, 3), (0, 4)], x_aligned=True
+        )
+
+        oc = self._left_wall_outer_corner(segment2[0].out3.x)
+
+        # The last column of segment0 will be replaced by the inner corner
+        segment0 = segment0[:-1] + [ic]
+
+        # Straighten out segment0 between its first point and the inner corner
+        self._left_wall_straighten(segment0)
+
+        # Fill in one gap left where we connected the concave corner
+        KeyHole.top_bottom_tri(self.k02.tl, self.k11.bl, self.k02.tr)
+
+        return segment0[:-1] + [ic, oc] + segment2[1:-1]
 
     def gen_thumb_grid(self) -> None:
         """Generate mesh faces for the thumb key hole section.
@@ -967,6 +1122,9 @@ class KeyHole:
 
 
 class WallColumn:
+    """A class representing a vertical column of points in the main grid walls.
+    """
+
     __slots__ = ["out0", "out1", "out2", "out3", "in0", "in1", "in2", "in3"]
 
     def __init__(self) -> None:
@@ -995,26 +1153,6 @@ class WallColumn:
         for p in rows:
             assert p is not None
         return rows
-
-
-class WallPoints:
-    """A class representing the points for the main wall sections.
-
-    This is effectively a matrix of points defining quadrilaterals for the
-    wall.
-    """
-
-    def __init__(self) -> None:
-        self.columns: List[WallColumn] = []
-
-    def add_faces(self, mesh: Mesh) -> None:
-        for idx in range(len(self.columns) - 1):
-            col0 = self.columns[idx].get_rows()
-            col1 = self.columns[idx + 1].get_rows()
-            for row in range(len(col0) - 1):
-                mesh.add_quad(
-                    col0[row], col1[row], col1[row + 1], col0[row + 1]
-                )
 
 
 def gen_keyboard() -> Mesh:

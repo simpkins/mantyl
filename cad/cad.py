@@ -146,12 +146,12 @@ class Point:
 class MeshPoint:
     __slots__ = ["mesh", "_index", "point"]
     mesh: Mesh
-    _index: int
+    _index: Optional[int]
     point: Point
 
-    def __init__(self, mesh: Mesh, index: int, point: Point) -> None:
+    def __init__(self, mesh: Mesh, point: Point) -> None:
         self.mesh = mesh
-        self._index = index
+        self._index = None
         self.point = point
 
     def __repr__(self) -> str:
@@ -162,6 +162,9 @@ class MeshPoint:
 
     @property
     def index(self) -> int:
+        if self._index is None:
+            self._index = len(self.mesh.points)
+            self.mesh.points.append(self)
         return self._index
 
     @property
@@ -191,9 +194,7 @@ class Mesh:
         self.faces: List[Tuple[int, int, int]] = []
 
     def add_point(self, point: Point) -> MeshPoint:
-        mp = MeshPoint(self, index=len(self.points), point=point)
-        self.points.append(mp)
-        return mp
+        return MeshPoint(self, point=point)
 
     def add_tri(self, p0: MeshPoint, p1: MeshPoint, p2: MeshPoint) -> int:
         index = len(self.faces)
