@@ -1986,10 +1986,25 @@ def write_shape(shape: Shape, path: Path) -> None:
     path.write_text(shape.to_str())
 
 
-def key_hole_test() -> Shape:
+def kbd2_test() -> Shape:
     import oukey2
     mesh = oukey2.gen_keyboard()
     return Shape.polyhedron_from_mesh(mesh, convexivity=20)
+
+def key_hole_test() -> Shape:
+    import oukey2
+    mesh = Mesh()
+    kh = oukey2.KeyHole(mesh, Transform())
+    kh.inner_walls()
+
+    mesh.add_quad(kh.u_bl, kh.u_br, kh.l_br, kh.l_bl)
+    mesh.add_quad(kh.u_tl, kh.u_bl, kh.l_bl, kh.l_tl)
+    mesh.add_quad(kh.u_tr, kh.u_tl, kh.l_tl, kh.l_tr)
+    mesh.add_quad(kh.u_br, kh.u_tr, kh.l_tr, kh.l_br)
+    return Shape.polyhedron_from_mesh(mesh)
+
+def orig_key_hole_test() -> Shape:
+    return single_plate()
 
 
 def main() -> None:
@@ -2020,7 +2035,9 @@ def main() -> None:
     )
 
     # Component debugging
+    write_shape(kbd2_test(), out_dir / "kbd2.scad")
     write_shape(key_hole_test(), out_dir / "key_hole.scad")
+    write_shape(orig_key_hole_test(), out_dir / "orig_key_hole.scad")
     write_shape(sx1509_holder(), out_dir / "sx1509_holder.scad")
     write_shape(oled_holder(), out_dir / "oled_holder.scad")
     write_shape(joint_holder(), out_dir / "joint_holder.scad")

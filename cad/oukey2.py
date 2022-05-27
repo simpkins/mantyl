@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from cad import Mesh, Point, Transform
 
+import math
 from typing import Any, Generator, List, Optional, Tuple
 
 
@@ -1375,50 +1376,23 @@ class KeyHole:
         self.mesh = mesh
         self.transform = transform
 
-        add_point = self.add_point
-
         outer_w = self.outer_w
         outer_h = self.outer_h
-        inner_w = self.inner_w
-        inner_h = self.inner_h
 
         # Upper outer points.
         # These are the main connection points used externally for the walls
-        self.u_bl = add_point(-outer_w, -outer_h, self.height)
-        self.u_br = add_point(outer_w, -outer_h, self.height)
-        self.u_tr = add_point(outer_w, outer_h, self.height)
-        self.u_tl = add_point(-outer_w, outer_h, self.height)
+        self.u_bl = self.add_point(-outer_w, -outer_h, self.height)
+        self.u_br = self.add_point(outer_w, -outer_h, self.height)
+        self.u_tr = self.add_point(outer_w, outer_h, self.height)
+        self.u_tl = self.add_point(-outer_w, outer_h, self.height)
 
         # Lower outer points.
         # These are also connection points used externally,
         # for the underside of the walls
-        self.l_bl = add_point(-outer_w, -outer_h, self.mid_height)
-        self.l_br = add_point(outer_w, -outer_h, self.mid_height)
-        self.l_tr = add_point(outer_w, outer_h, self.mid_height)
-        self.l_tl = add_point(-outer_w, outer_h, self.mid_height)
-
-        # The remaining points are primarily used only internally
-        # for the interior walls of the key hole.
-
-        # Upper inner points
-        self.u_in_bl = add_point(-inner_w, -inner_h, self.height)
-        self.u_in_br = add_point(inner_w, -inner_h, self.height)
-        self.u_in_tr = add_point(inner_w, inner_h, self.height)
-        self.u_in_tl = add_point(-inner_w, inner_h, self.height)
-
-        # Bottom-most inner points.
-        # The bottom-most points extend slightly below the "lower" points
-        # used for connections to the walls.
-        self.b_in_bl = add_point(-inner_w, -inner_h, 0.0)
-        self.b_in_br = add_point(inner_w, -inner_h, 0.0)
-        self.b_in_tr = add_point(inner_w, inner_h, 0.0)
-        self.b_in_tl = add_point(-inner_w, inner_h, 0.0)
-
-        # Bottom-most outer points
-        self.b_out_bl = add_point(-outer_w, -outer_h, 0.0)
-        self.b_out_br = add_point(outer_w, -outer_h, 0.0)
-        self.b_out_tr = add_point(outer_w, outer_h, 0.0)
-        self.b_out_tl = add_point(-outer_w, outer_h, 0.0)
+        self.l_bl = self.add_point(-outer_w, -outer_h, self.mid_height)
+        self.l_br = self.add_point(outer_w, -outer_h, self.mid_height)
+        self.l_tr = self.add_point(outer_w, outer_h, self.mid_height)
+        self.l_tl = self.add_point(-outer_w, outer_h, self.mid_height)
 
     @property
     def tl(self) -> Tuple[MeshPoint, MeshPoint]:
@@ -1441,31 +1415,131 @@ class KeyHole:
         return self.mesh.add_point(p)
 
     def inner_walls(self) -> None:
-        q = self.mesh.add_quad
+        quad = self.mesh.add_quad
+        tri = self.mesh.add_tri
 
-        # inner walls
-        q(self.u_in_bl, self.b_in_bl, self.b_in_br, self.u_in_br)
-        q(self.u_in_br, self.b_in_br, self.b_in_tr, self.u_in_tr)
-        q(self.u_in_tr, self.b_in_tr, self.b_in_tl, self.u_in_tl)
-        q(self.u_in_tl, self.b_in_tl, self.b_in_bl, self.u_in_bl)
+        outer_w = self.outer_w
+        outer_h = self.outer_h
+        inner_w = self.inner_w
+        inner_h = self.inner_h
 
-        # top walls
-        q(self.u_in_bl, self.u_in_br, self.u_br, self.u_bl)
-        q(self.u_in_br, self.u_in_tr, self.u_tr, self.u_br)
-        q(self.u_in_tr, self.u_in_tl, self.u_tl, self.u_tr)
-        q(self.u_in_tl, self.u_in_bl, self.u_bl, self.u_tl)
+        nub_h = 2.75 * 0.5
+        nub_r = 1
 
-        # bottom walls
-        q(self.b_in_bl, self.b_out_bl, self.b_out_br, self.b_in_br)
-        q(self.b_in_br, self.b_out_br, self.b_out_tr, self.b_in_tr)
-        q(self.b_in_tr, self.b_out_tr, self.b_out_tl, self.b_in_tl)
-        q(self.b_in_tl, self.b_out_tl, self.b_out_bl, self.b_in_bl)
+        # Upper inner points
+        u_in_bl = self.add_point(-inner_w, -inner_h, self.height)
+        u_in_br = self.add_point(inner_w, -inner_h, self.height)
+        u_in_tr = self.add_point(inner_w, inner_h, self.height)
+        u_in_tl = self.add_point(-inner_w, inner_h, self.height)
 
-        # outer walls from bottom layer to mid point
-        q(self.b_out_bl, self.l_bl, self.l_br, self.b_out_br)
-        q(self.b_out_br, self.l_br, self.l_tr, self.b_out_tr)
-        q(self.b_out_tr, self.l_tr, self.l_tl, self.b_out_tl)
-        q(self.b_out_tl, self.l_tl, self.l_bl, self.b_out_bl)
+        # Bottom-most inner points.
+        # The bottom-most points extend slightly below the "lower" points
+        # used for connections to the walls.
+        b_in_bl = self.add_point(-inner_w, -inner_h, 0.0)
+        b_in_br = self.add_point(inner_w, -inner_h, 0.0)
+        b_in_tr = self.add_point(inner_w, inner_h, 0.0)
+        b_in_tl = self.add_point(-inner_w, inner_h, 0.0)
+
+        # Bottom-most outer points
+        b_out_bl = self.add_point(-outer_w, -outer_h, 0.0)
+        b_out_br = self.add_point(outer_w, -outer_h, 0.0)
+        b_out_tr = self.add_point(outer_w, outer_h, 0.0)
+        b_out_tl = self.add_point(-outer_w, outer_h, 0.0)
+
+        # Bottom section
+        quad(u_in_bl, b_in_bl, b_in_br, u_in_br)
+        quad(u_in_bl, u_in_br, self.u_br, self.u_bl)
+        quad(b_in_bl, b_out_bl, b_out_br, b_in_br)
+        quad(b_out_bl, self.l_bl, self.l_br, b_out_br)
+
+        # Top section
+        quad(u_in_tr, b_in_tr, b_in_tl, u_in_tl)
+        quad(u_in_tr, u_in_tl, self.u_tl, self.u_tr)
+        quad(b_in_tr, b_out_tr, b_out_tl, b_in_tl)
+        quad(b_out_tr, self.l_tr, self.l_tl, b_out_tl)
+
+        # Left section, except for the nub
+        u_mid_bl = self.add_point(-inner_w, -nub_h, self.height)
+        u_mid_tl = self.add_point(-inner_w, nub_h, self.height)
+        b_mid_bl = self.add_point(-inner_w, -nub_h, 0)
+        b_mid_tl = self.add_point(-inner_w, nub_h, 0)
+        lnub_center_b = self.add_point(-inner_w, -nub_h, nub_r)
+        lnub_center_t = self.add_point(-inner_w, nub_h, nub_r)
+
+        quad(self.u_bl, self.u_tl, u_mid_tl, u_mid_bl)
+        tri(self.u_bl, u_mid_bl, u_in_bl)
+        tri(u_mid_tl, self.u_tl, u_in_tl)
+        quad(b_out_tl, b_out_bl, b_mid_bl, b_mid_tl)
+        tri(b_out_bl, b_in_bl, b_mid_bl)
+        tri(b_out_tl, b_mid_tl, b_in_tl)
+        quad(b_out_tl, self.l_tl, self.l_bl, b_out_bl)
+        quad(u_in_bl, lnub_center_b, b_mid_bl, b_in_bl)
+        tri(u_in_bl, u_mid_bl, lnub_center_b)
+        quad(lnub_center_t, u_in_tl, b_in_tl, b_mid_tl)
+        tri(u_mid_tl, u_in_tl, lnub_center_t)
+
+        # Right section, except for the nub
+        u_mid_br = self.add_point(inner_w, -nub_h, self.height)
+        u_mid_tr = self.add_point(inner_w, nub_h, self.height)
+        b_mid_br = self.add_point(inner_w, -nub_h, 0)
+        b_mid_tr = self.add_point(inner_w, nub_h, 0)
+        rnub_center_b = self.add_point(inner_w, -nub_h, nub_r)
+        rnub_center_t = self.add_point(inner_w, nub_h, nub_r)
+
+        quad(self.u_br, u_mid_br, u_mid_tr, self.u_tr)
+        tri(self.u_br, u_in_br, u_mid_br)
+        tri(u_mid_tr, u_in_tr, self.u_tr)
+        quad(b_out_br, b_out_tr, b_mid_tr, b_mid_br)
+        tri(b_out_br, b_mid_br, b_in_br)
+        tri(b_mid_tr, b_out_tr, b_in_tr)
+        quad(b_out_br, self.l_br, self.l_tr, b_out_tr)
+        quad(u_in_tr, rnub_center_t, b_mid_tr, b_in_tr)
+        tri(u_in_tr, u_mid_tr, rnub_center_t)
+        quad(rnub_center_b, u_in_br, b_in_br, b_mid_br)
+        tri(u_mid_br, u_in_br, rnub_center_b)
+
+        # The left nub
+        prev_b = b_mid_bl
+        prev_t = b_mid_tl
+        for angle in range(0, 110, 12):
+            rad = math.radians(angle)
+            x = math.sin(rad) * nub_r
+            z = nub_r - (nub_r * math.cos(rad))
+            b = self.add_point(-inner_w + x, -nub_h, z)
+            t = self.add_point(-inner_w + x, nub_h, z)
+
+            tri(lnub_center_b, b, prev_b)
+            tri(lnub_center_t, prev_t, t)
+            quad(prev_b, b, t, prev_t)
+
+            prev_b = b
+            prev_t = t
+
+        tri(u_mid_bl, prev_b, lnub_center_b)
+        tri(u_mid_tl, lnub_center_t, prev_t)
+        quad(u_mid_bl, u_mid_tl, prev_t, prev_b)
+
+        # The right nub
+        prev_b = b_mid_br
+        prev_t = b_mid_tr
+        for angle in range(0, 110, 12):
+            rad = math.radians(angle)
+            x = math.sin(rad) * nub_r
+            z = nub_r - (nub_r * math.cos(rad))
+            b = self.add_point(inner_w - x, -nub_h, z)
+            t = self.add_point(inner_w - x, nub_h, z)
+
+            tri(rnub_center_b, prev_b, b)
+            tri(rnub_center_t, t, prev_t)
+            quad(t, b, prev_b, prev_t)
+
+            prev_b = b
+            prev_t = t
+
+        tri(u_mid_br, rnub_center_b, prev_b)
+        tri(u_mid_tr, prev_t, rnub_center_t)
+        quad(u_mid_tr, u_mid_br, prev_b, prev_t)
+
 
     def top_edge(self) -> None:
         self.mesh.add_quad(self.u_tr, self.u_tl, self.l_tl, self.l_tr)
