@@ -496,7 +496,7 @@ class Keyboard:
 
         # Thumb walls
         thumb_wall = self.gen_thumb_wall()
-        self.add_wall_faces(thumb_wall)
+        self.add_wall_faces(list(reversed(thumb_wall)))
 
         # Connections between the thumb area and main grid area
         self.gen_thumb_connect(thumb_wall, front_wall, left_wall)
@@ -707,6 +707,13 @@ class Keyboard:
         del columns[0]
 
         min_y = min(col.out1.y for col in columns)
+
+        # Also adjust min_y to make sure the inner wall won't hit k25
+        k25_edge = Point(KeyHole.outer_w, -KeyHole.outer_h, 0).transform(
+            self.k25.transform
+        )
+        min_y = min(min_y, k25_edge.y - self.wall_thickness - 0.25)
+
         far_offset = 10.0
         for col in columns:
             col.out1.point.y = min_y
@@ -1088,7 +1095,12 @@ class Keyboard:
         left_wall: List[WallColumn],
     ) -> None:
         bu0, bl0 = self.connect_thumb_front(thumb_wall, front_wall)
-        # self.connect_thumb_left(thumb_wall, left_wall)
+        (c0_in2, c1_in2, c2_in2, c3_in2), (
+            c0_out2,
+            c1_out2,
+            c2_out2,
+            c3_out2,
+        ) = self.thumb_connect_top(front_wall, left_wall)
 
         KH = KeyHole
 
@@ -1097,7 +1109,8 @@ class Keyboard:
             KH.outer_w + 8.0, -KH.outer_h + 2.0, KH.height
         )
         bu2 = self.t20.add_point(KH.outer_w + 4.0, KH.outer_h + 4.0, KH.height)
-        bu3 = self.t10.add_point(KH.outer_w + 4.0, KH.outer_h + 4.0, KH.height)
+        bu3_x_offset = 3.0
+        bu3 = self.t10.add_point(KH.outer_w + bu3_x_offset, KH.outer_h + 3.0, KH.height)
 
         self.mesh.add_quad(
             self.t12.u_br, self.t21.u_br, bu0, thumb_wall[0].out1
@@ -1109,7 +1122,6 @@ class Keyboard:
         self.mesh.add_quad(bu3, bu2, self.t20.u_tr, self.t10.u_tr)
 
         thumb_wall_offset = 7.0
-        bu3_x_offset = 4.0
         bu4 = self.t10.add_point(
             KH.outer_w + bu3_x_offset,
             KH.outer_h + thumb_wall_offset,
@@ -1125,6 +1137,9 @@ class Keyboard:
         bl2 = self.t20.add_point(
             KH.outer_w + 6.5, KH.outer_h + 5.5, KH.mid_height
         )
+        bl3 = self.t10.add_point(
+            KH.outer_w + 6.0, KH.outer_h + 3.0, KH.mid_height
+        )
 
         self.mesh.add_quad(
             self.t12.l_br, thumb_wall[0].in1, bl0, self.t21.l_br
@@ -1132,6 +1147,31 @@ class Keyboard:
         self.mesh.add_tri(self.t21.l_br, bl0, bl1)
         self.mesh.add_tri(self.t21.l_tr, self.t21.l_br, bl1)
         self.mesh.add_quad(self.t20.l_br, self.t21.l_tr, bl1, bl2)
+        self.mesh.add_tri(self.t20.l_br, bl2, self.t20.l_tr)
+
+        self.mesh.add_quad(self.t20.l_tr, bl2, bl3, self.t10.l_tr)
+        self.mesh.add_tri(self.t10.l_tr, bl3, thumb_wall[-1].in1)
+        self.mesh.add_tri(bl2, c3_in2, bl3)
+
+        # Remaining vertical connection walls
+        self.mesh.add_tri(bl0, front_wall[0].in2, c0_in2)
+        self.mesh.add_tri(bl0, c0_in2, bl1)
+        self.mesh.add_tri(bu0, c0_out2, front_wall[0].out2)
+        self.mesh.add_tri(front_wall[0].out2, c0_out2, front_wall[0].out1)
+        self.mesh.add_tri(bu0, bu1, c0_out2)
+
+        self.mesh.add_quad(bl2, bl1, c0_in2, c1_in2)
+        self.mesh.add_tri(bl2, c1_in2, c2_in2)
+        self.mesh.add_tri(bl2, c2_in2, c3_in2)
+
+        self.mesh.add_quad(bu1, bu2, c1_out2, c0_out2)
+        self.mesh.add_tri(bu2, c2_out2, c1_out2)
+        self.mesh.add_tri(bu2, c3_out2, c2_out2)
+        self.mesh.add_tri(bu2, bu3, c3_out2)
+
+        self.mesh.add_quad(bu3, bu4, left_wall[-1].out2, c3_out2)
+
+        self.connect_thumb_left(thumb_wall, left_wall, bu4, bl3, c3_in2)
 
     def connect_thumb_front(
         self, thumb_wall: List[ThumbColumn], front_wall: List[WallColumn]
@@ -1168,7 +1208,12 @@ class Keyboard:
         return o, i
 
     def connect_thumb_left(
-        self, thumb_wall: List[ThumbColumn], left_wall: List[WallColumn]
+        self,
+        thumb_wall: List[ThumbColumn],
+        left_wall: List[WallColumn],
+        bu4: MeshPoint,
+        bl3: MeshPoint,
+        c3_in2: MeshPoint,
     ) -> None:
         def find_x_intersect(
             p1: MeshPoint, p2: MeshPoint, x: float
@@ -1187,10 +1232,128 @@ class Keyboard:
             thumb_wall[-1].in1, thumb_wall[-2].in1, left_wall[-1].in2.x
         )
         ig = self.mesh.add_point(Point(i.x, i.y, 0.0))
-        self.mesh.add_quad(thumb_wall[-1].out1, thumb_wall[-1].out2, og, o)
-        self.mesh.add_quad(thumb_wall[-1].in1, i, ig, thumb_wall[-1].in2)
-        self.mesh.add_quad(og, thumb_wall[-1].out2, thumb_wall[-1].in2, ig)
-        self.mesh.add_quad(left_wall[-1].out3, og, ig, left_wall[-1].in3)
+
+        bu4g = self.mesh.add_point(Point(bu4.x, bu4.y, 0.0))
+        bl3g = self.mesh.add_point(Point(bl3.x, bl3.y, 0.0))
+
+        self.mesh.add_quad(left_wall[-1].out3, left_wall[-1].out2, o, og)
+        self.mesh.add_tri(o, left_wall[-1].out2, bu4)
+
+        self.mesh.add_quad(og, o, bu4, bu4g)
+        self.mesh.add_quad(bu4g, bu4, thumb_wall[-1].out1, thumb_wall[-1].out2)
+
+        self.mesh.add_quad(thumb_wall[-1].in2, bl3g, bu4g, thumb_wall[-1].out2)
+        self.mesh.add_quad(thumb_wall[-1].in2, thumb_wall[-1].in1, bl3, bl3g)
+        self.mesh.add_quad(bl3g, bl3, i, ig)
+        self.mesh.add_quad(bu4g, bl3g, ig, og)
+        self.mesh.add_quad(og, ig, left_wall[-1].in3, left_wall[-1].out3)
+
+        self.mesh.add_quad(ig, i, left_wall[-1].in2, left_wall[-1].in3)
+
+        self.mesh.add_tri(left_wall[-1].in2, bl3, c3_in2)
+        self.mesh.add_tri(left_wall[-1].in2, i, bl3)
+
+    def thumb_connect_top(
+        self, front_wall: List[WallColumn], left_wall: List[WallColumn]
+    ) -> None:
+        KH = KeyHole
+        c0_out1 = self.k25.add_point(
+            -KH.outer_w - 1.5, -KH.outer_h - 1.5, KH.height
+        )
+        c0_out2 = self.k25.add_point(
+            -KH.outer_w - 1.5, -KH.outer_h - 1.5, KH.height - 7.0
+        )
+        self.mesh.add_quad(
+            self.k25.u_bl, self.k25.u_br, front_wall[0].out1, c0_out1
+        )
+        self.mesh.add_tri(c0_out1, front_wall[0].out1, c0_out2)
+
+        c0_in1 = self.k25.add_point(
+            -KH.outer_w - 0.25, -KH.outer_h - 0.25, KH.mid_height
+        )
+        c0_in2 = self.k25.add_point(
+            -KH.outer_w - 0.25, -KH.outer_h - 0.25, KH.mid_height - 3.0
+        )
+
+        # The top portion of wall in front of k25
+        self.mesh.add_quad(
+            front_wall[0].in0, self.k25.l_bl, c0_in1, front_wall[0].in1
+        )
+        self.mesh.add_tri(front_wall[0].in1, c0_in1, c0_in2)
+        self.mesh.add_tri(front_wall[0].in1, c0_in2, front_wall[0].in2)
+
+        # The wall down the triangular section between k25 and k14
+        c1_out1 = self.k14.add_point(
+            -KH.outer_w - 1.5, -KH.outer_h - 1.5, KH.height
+        )
+        c1_out2 = self.k14.add_point(
+            -KH.outer_w - 1.5, -KH.outer_h - 1.5, KH.height - 7.0
+        )
+        c1_in1 = self.k14.add_point(
+            -KH.outer_w - 0.25, -KH.outer_h - 0.25, KH.mid_height
+        )
+        c1_in2 = self.k14.add_point(
+            -KH.outer_w - 0.25, -KH.outer_h - 0.25, KH.mid_height - 3.0
+        )
+        self.mesh.add_quad(self.k14.l_bl, c1_in1, c0_in1, self.k25.l_bl)
+        self.mesh.add_quad(c1_in1, c1_in2, c0_in2, c0_in1)
+        self.mesh.add_quad(self.k14.u_bl, self.k25.u_bl, c0_out1, c1_out1)
+        self.mesh.add_quad(c1_out1, c0_out1, c0_out2, c1_out2)
+
+        # The wall down between k14 and k04
+        c2_out1 = self.k04.add_point(
+            KH.outer_w - 1.5, -KH.outer_h - 2.0, KH.height
+        )
+        c2_out2 = self.k04.add_point(
+            KH.outer_w - 1.5, -KH.outer_h - 2.0, KH.height - 7.0
+        )
+        c2_in1 = self.k04.add_point(
+            KH.outer_w - 0.25, -KH.outer_h - 0.50, KH.mid_height
+        )
+        c2_in2 = self.k04.add_point(
+            KH.outer_w - 0.25, -KH.outer_h - 0.50, KH.mid_height - 3.0
+        )
+        self.mesh.add_quad(self.k04.l_br, c2_in1, c1_in1, self.k14.l_bl)
+        self.mesh.add_quad(c2_in1, c2_in2, c1_in2, c1_in1)
+        self.mesh.add_quad(self.k04.u_br, self.k14.u_bl, c1_out1, c2_out1)
+        self.mesh.add_quad(c2_out1, c1_out1, c1_out2, c2_out2)
+
+        # The wall down the front of k04
+        c3_out1 = self.k04.add_point(
+            -KH.outer_w - 3.5, -KH.outer_h - 2.0, KH.height
+        )
+        c3_out2 = self.k04.add_point(
+            -KH.outer_w - 3.5, -KH.outer_h - 2.0, KH.height - 7.0
+        )
+        c3_in1 = self.k04.add_point(
+            -KH.outer_w - 1.5, -KH.outer_h - 0.50, KH.mid_height
+        )
+        c3_in2 = self.k04.add_point(
+            -KH.outer_w - 1.5, -KH.outer_h - 0.50, KH.mid_height - 3.0
+        )
+        self.mesh.add_quad(self.k04.l_bl, c3_in1, c2_in1, self.k04.l_br)
+        self.mesh.add_quad(c3_in1, c3_in2, c2_in2, c2_in1)
+        self.mesh.add_quad(self.k04.u_bl, self.k04.u_br, c2_out1, c3_out1)
+        self.mesh.add_quad(c3_out1, c2_out1, c2_out2, c3_out2)
+
+        # The wall to the left of k04
+        # This section is a little irregular
+        self.mesh.add_quad(
+            self.k04.l_tl, left_wall[-1].in1, c3_in1, self.k04.l_bl
+        )
+        self.mesh.add_tri(left_wall[-1].in1, left_wall[-1].in2, c3_in1)
+        self.mesh.add_tri(left_wall[-1].in2, c3_in2, c3_in1)
+
+        self.mesh.add_quad(
+            self.k04.u_tl, self.k04.u_bl, c3_out1, left_wall[-1].out1
+        )
+        self.mesh.add_tri(left_wall[-1].out1, c3_out1, left_wall[-1].out2)
+        self.mesh.add_tri(left_wall[-1].out2, c3_out1, c3_out2)
+
+        return (
+            (c0_in2, c1_in2, c2_in2, c3_in2),
+            (c0_out2, c1_out2, c2_out2, c3_out2),
+        )
 
 
 class KeyHole:
