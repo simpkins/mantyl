@@ -488,6 +488,11 @@ class Keyboard:
         self.add_wall_faces(back_wall)
         self.add_wall_faces(left_wall)
 
+        # Front-right corner
+        self._front_right_wall_corner(front_wall[-1], right_wall[0])
+        self._back_right_wall_corner(right_wall[-1], back_wall[0])
+        self._back_left_wall_corner(back_wall[-1], left_wall)
+
     def add_wall_faces(self, columns: List[WallColumn]) -> None:
         for idx in range(len(columns) - 1):
             col0 = columns[idx].get_rows()
@@ -496,6 +501,25 @@ class Keyboard:
                 self.mesh.add_quad(
                     col0[row], col1[row], col1[row + 1], col0[row + 1]
                 )
+
+    def add_wall_corner(
+        self, c0: WallColumn, c1: WallColumn, c2: WallColumn,
+        start_row: int = 1
+    ) -> None:
+        # Very similar to add_wall_faces(), but exclude the first and last rows
+        # (out0 and in0)
+        columns = (c0, c1, c2)
+        for idx in range(len(columns) - 1):
+            col0 = columns[idx].get_rows()
+            col1 = columns[idx + 1].get_rows()
+            for row in range(start_row, len(col0) - 2):
+                self.mesh.add_quad(
+                    col0[row], col1[row], col1[row + 1], col0[row + 1]
+                )
+
+        # Now handle the quads at out0 and in0
+        self.mesh.add_quad(c0.in0, c0.in1, c1.in1, c2.in1)
+        self.mesh.add_quad(c0.out0, c2.out1, c1.out1, c0.out1)
 
     def gen_back_wall(self) -> List[WallColumn]:
         u_near_off = 4.0
@@ -832,6 +856,102 @@ class Keyboard:
         KeyHole.top_bottom_tri(self.k02.tl, self.k11.bl, self.k02.tr)
 
         return segment0[:-1] + [ic, oc] + segment2[1:-1]
+
+    def _front_right_wall_corner(
+        self, front: WallColumn, right: WallColumn
+    ) -> None:
+        fr = WallColumn()
+        fr.out0 = self.k65.u_bl
+        fr.in0 = self.k65.l_bl
+        fr.out1 = self.mesh.add_point(
+            Point(right.out1.x, front.out1.y, front.out1.z)
+        )
+        fr.in1 = self.mesh.add_point(
+            Point(right.in1.x, front.in1.y, front.in1.z)
+        )
+        fr.out2 = self.mesh.add_point(
+            Point(right.out2.x, front.out2.y, front.out2.z)
+        )
+        fr.in2 = self.mesh.add_point(
+            Point(right.in2.x, front.in2.y, front.in2.z)
+        )
+        fr.out3 = self.mesh.add_point(
+            Point(right.out3.x, front.out3.y, front.out3.z)
+        )
+        fr.in3 = self.mesh.add_point(
+            Point(right.in3.x, front.in3.y, front.in3.z)
+        )
+
+        self.add_wall_corner(front, fr, right)
+
+    def _back_right_wall_corner(
+        self, right: WallColumn, back: WallColumn
+    ) -> None:
+        br = WallColumn()
+        br.out0 = self.k65.u_bl
+        br.in0 = self.k65.l_bl
+        br.out1 = self.mesh.add_point(
+            Point(right.out1.x, back.out1.y, back.out1.z)
+        )
+        br.in1 = self.mesh.add_point(
+            Point(right.in1.x, back.in1.y, back.in1.z)
+        )
+        br.out2 = self.mesh.add_point(
+            Point(right.out2.x, back.out2.y, back.out2.z)
+        )
+        br.in2 = self.mesh.add_point(
+            Point(right.in2.x, back.in2.y, back.in2.z)
+        )
+        br.out3 = self.mesh.add_point(
+            Point(right.out3.x, back.out3.y, back.out3.z)
+        )
+        br.in3 = self.mesh.add_point(
+            Point(right.in3.x, back.in3.y, back.in3.z)
+        )
+
+        self.add_wall_corner(right, br, back)
+
+    def _back_left_wall_corner(
+        self, back: WallColumn, left_wall: List[WallColumn]
+    ) -> None:
+        left = left_wall[0]
+        last_left = left_wall[-1]
+
+        # Make the X position line up with the left wall
+        dx = left.out2.x - last_left.out2.x
+        dy = left.out2.y - last_left.out2.y
+        f = (back.out2.y - last_left.out2.y) / dy
+        out_x = last_left.out2.x + f * dx
+
+        in_x = out_x + 3.0
+        assert in_x < back.in3.x
+
+        #out_x = left.out2.x
+        #in_x = left.in2.x
+
+        bl = WallColumn()
+        bl.out0 = self.k65.u_bl
+        bl.in0 = self.k65.l_bl
+
+        #bl.out1 = self.mesh.add_point(Point(left.out1.x, back.out1.y, back.out1.z))
+        #bl.in1 = self.mesh.add_point(Point(left.in1.x, back.in1.y, back.in1.z))
+        KH = KeyHole
+        bl.out1 = self.k10.add_point(-KH.outer_w - 2.0, KH.outer_h + 3.0, KH.height)
+        bl.in1 = self.k10.add_point(-KH.outer_w - 0.5, KH.outer_h + 1.0, KH.mid_height)
+
+        bl.out2 = self.mesh.add_point(Point(out_x, back.out2.y, back.out2.z))
+        bl.in2 = self.mesh.add_point(Point(in_x, back.in2.y, back.in2.z))
+        bl.out3 = self.mesh.add_point(Point(out_x, back.out3.y, back.out3.z))
+        bl.in3 = self.mesh.add_point(Point(in_x, back.in3.y, back.in3.z))
+
+        # Some of the top corner faces aren't really flat here.
+        # Prevent add_wall_corner() from adding row 1 as quads, and we will
+        # add them ourselves as triangles, to ensure that they are subdivided
+        # into the triangles we want.
+        self.add_wall_corner(back, bl, left, start_row=2)
+        self.mesh.add_tri(bl.out1, left.out1, left.out2)
+        self.mesh.add_tri(bl.out1, left.out2, bl.out2)
+        self.mesh.add_quad(bl.out1, bl.out2, back.out2, back.out1)
 
     def gen_thumb_grid(self) -> None:
         """Generate mesh faces for the thumb key hole section.
