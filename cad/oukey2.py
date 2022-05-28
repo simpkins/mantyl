@@ -32,6 +32,7 @@ class Keyboard:
         self._bevel_outer_ring = 1.0
         self._bevel_outer_ring_front = 0.5
         self._bevel_ring_flat = 0.3
+        self._bevel_ring_flat_front = 0.75
 
     def gen_mesh(self, gen_walls: bool = True) -> None:
         self.gen_main_grid()
@@ -552,15 +553,20 @@ class Keyboard:
         back_wall: List[WallColumn],
         left_wall: List[WallColumn],
     ) -> None:
-        for idx in range(len(front_wall) - 1):
-            c0 = front_wall[idx]
-            c1 = front_wall[idx + 1]
-            self._bevel_edge(c0.out1, c1.out1, self._bevel_outer_ring)
+        for idx, col in enumerate(front_wall):
+            if idx + 1 < len(front_wall):
+                c1 = front_wall[idx + 1]
+                self._bevel_edge(col.out0, c1.out0, self._bevel_outer_ring_front)
+                self._bevel_edge(col.out1, c1.out1, self._bevel_outer_ring_front)
 
-            self._bevel_edge(c0.out0, c1.out0, self._bevel_outer_ring_front)
-            self._bevel_edge(c0.out0, c0.out1, self._bevel_ring_flat)
+            self._bevel_edge(col.out0, col.out1, self._bevel_ring_flat_front)
+            # The wall between out1 and out2 is already basically flat,
+            # but enabling bevel here eimprovesakes the bevelling between
+            # out0 and out1.
+            self._bevel_edge(col.out1, col.out2, self._bevel_ring_flat_front)
 
         for idx, col in enumerate(back_wall):
+            self._bevel_edge(col.out0, col.out1, self._bevel_ring_flat)
             self._bevel_edge(col.out1, col.out2, self._bevel_ring_flat)
             if idx + 1 < len(back_wall):
                 self._bevel_edge(col.out1, back_wall[idx + 1].out1)
@@ -581,6 +587,8 @@ class Keyboard:
                 c1 = left_wall[idx + 1]
                 self._bevel_edge(c0.out2, c1.out2, self._bevel_outer_ring)
                 self._bevel_edge(c0.out1, c1.out1, self._bevel_ring_flat)
+
+        self._bevel_edge(left_wall[0].out3, left_wall[0].out2)
 
         # Mark the back right corner edge
         self._bevel_edge(
@@ -947,7 +955,7 @@ class Keyboard:
         fr.out0 = self.k65.u_bl
         fr.in0 = self.k65.l_bl
         fr.out1 = self.mesh.add_point(
-            Point(right.out1.x, front.out1.y, front.out1.z)
+            Point(right.out1.x, front.out1.y, front.out1.z - 0.4)
         )
         fr.in1 = self.mesh.add_point(
             Point(right.in1.x, front.in1.y, front.in1.z)
@@ -1031,6 +1039,8 @@ class Keyboard:
         right.out3 = br.out3
         right.out2 = br.out2
         right.out1 = br.out1
+
+        self._bevel_edge(right.in3, right.in2, self._bevel_inner_vert_corner)
 
     def _back_left_wall_corner(
         self, back: WallColumn, left_wall: List[WallColumn]
@@ -1280,12 +1290,16 @@ class Keyboard:
         ]
 
         for idx in range(len(columns) - 1):
-            self._bevel_edge(columns[idx].out1, columns[idx + 1].out1)
+            self._bevel_edge(
+                columns[idx].out1,
+                columns[idx + 1].out1,
+                self._bevel_outer_ring,
+            )
 
-        self._bevel_edge(bl.out2, bl.out1)
-        self._bevel_edge(bl.in2, bl.in1, 0.75)
-        self._bevel_edge(tl.out2, tl.out1)
-        self._bevel_edge(tl.in2, tl.in1, 0.75)
+        self._bevel_edge(bl.out2, bl.out1, self._bevel_outer_vert_corner)
+        self._bevel_edge(bl.in2, bl.in1, self._bevel_inner_vert_corner)
+        self._bevel_edge(tl.out2, tl.out1, self._bevel_outer_vert_corner)
+        self._bevel_edge(tl.in2, tl.in1, self._bevel_inner_vert_corner)
         return columns
 
     def _thumb_lz_from_xy(self, in2: Point) -> Point:
@@ -1396,7 +1410,13 @@ class Keyboard:
 
         self.connect_thumb_left(thumb_wall, left_wall, bu4, bl3, c3_in2)
 
+        self._bevel_edge(bu1, c0_out2)
+        self._bevel_edge(bu2, c2_out2, 0.5)
         self._bevel_edge(bu3, c3_out2)
+
+        # This is a flat edge, but enabling the bevel here improves the bevel
+        # on the inner corner up the thumb connecting wall
+        self._bevel_edge(bu2, self.t20.u_tr, 0.5)
 
     def connect_thumb_front(
         self, thumb_wall: List[ThumbColumn], front_wall: List[WallColumn]
@@ -1430,7 +1450,10 @@ class Keyboard:
         self.mesh.add_quad(o, front_wall[0].out2, front_wall[0].out3, og)
         self.mesh.add_quad(i, ig, front_wall[0].in3, front_wall[0].in2)
 
-        self._bevel_edge(thumb_wall[0].out1, o)
+        self._bevel_edge(thumb_wall[0].out1, o, self._bevel_outer_ring)
+        # This edge is flat, but enabling a bevel on it improves how
+        # the beveled edge between the thumb wall joins the front wall.
+        self._bevel_edge(front_wall[0].out2, o, self._bevel_outer_ring)
 
         return o, i
 
@@ -1550,13 +1573,13 @@ class Keyboard:
 
         # The wall down the front of k04
         c3_out1 = self.k04.add_point(
-            -KH.outer_w - 3.5, -KH.outer_h - 2.0, KH.height
+            -KH.outer_w - 2.0, -KH.outer_h - 2.0, KH.height
         )
         c3_out2 = self.k04.add_point(
-            -KH.outer_w - 3.5, -KH.outer_h - 2.0, KH.height - 7.0
+            -KH.outer_w - 4.0, -KH.outer_h - 3.0, KH.height - 5.0
         )
         c3_in1 = self.k04.add_point(
-            -KH.outer_w - 1.5, -KH.outer_h - 0.50, KH.mid_height
+            -KH.outer_w - 0.5, -KH.outer_h - 0.50, KH.mid_height
         )
         c3_in2 = self.k04.add_point(
             -KH.outer_w - 1.5, -KH.outer_h - 0.50, KH.mid_height - 3.0
@@ -1577,8 +1600,9 @@ class Keyboard:
         self.mesh.add_quad(
             self.k04.u_tl, self.k04.u_bl, c3_out1, left_wall[-1].out1
         )
-        self.mesh.add_tri(left_wall[-1].out1, c3_out1, left_wall[-1].out2)
-        self.mesh.add_tri(left_wall[-1].out2, c3_out1, c3_out2)
+        self.mesh.add_quad(
+            left_wall[-1].out1, c3_out1, c3_out2, left_wall[-1].out2
+        )
 
         self._bevel_edge(front_wall[0].out1, c0_out1, 0.5)
         self._bevel_edge(c0_out1, c1_out1, 0.5)
@@ -1591,6 +1615,12 @@ class Keyboard:
         self._bevel_edge(c2_out2, c3_out2)
 
         self._bevel_edge(c3_out2, c3_out1)
+        self._bevel_edge(left_wall[-1].out2, c3_out2)
+        self._bevel_edge(left_wall[-1].out1, c3_out1)
+
+        self._bevel_edge(c0_out2, c0_out1, 0.5)
+        self._bevel_edge(c1_out2, c1_out1, 0.5)
+        self._bevel_edge(c2_out2, c2_out1, 0.5)
 
         return (
             (c0_in2, c1_in2, c2_in2, c3_in2),
