@@ -27,6 +27,11 @@ class Keyboard:
 
         self._bevel_edges: Dict[Tuple[int, int], float] = {}
 
+        self._bevel_outer_vert_corner = 1.0
+        self._bevel_inner_vert_corner = 0.75
+
+        self._bevel_outer_ring = 1.0
+
     def gen_mesh(self, gen_walls: bool = True) -> None:
         self.gen_main_grid()
         self.gen_thumb_grid()
@@ -507,15 +512,17 @@ class Keyboard:
         back_wall = self.gen_back_wall()
         left_wall = self.gen_left_wall()
 
+        # The main wall corners
+        # Note that these methods do mutate the walls slightly,
+        # so only call add_wall_faces() after these are done.
+        self._front_right_wall_corner(front_wall[-1], right_wall[0])
+        self._back_right_wall_corner(right_wall[-1], back_wall[0])
+        self._back_left_wall_corner(back_wall[-1], left_wall)
+
         self.add_wall_faces(front_wall)
         self.add_wall_faces(right_wall)
         self.add_wall_faces(back_wall)
         self.add_wall_faces(left_wall)
-
-        # The main wall corners
-        self._front_right_wall_corner(front_wall[-1], right_wall[0])
-        self._back_right_wall_corner(right_wall[-1], back_wall[0])
-        self._back_left_wall_corner(back_wall[-1], left_wall)
 
         # Thumb walls
         thumb_wall = self.gen_thumb_wall()
@@ -534,28 +541,6 @@ class Keyboard:
                 self.mesh.add_quad(
                     col0[row], col1[row], col1[row + 1], col0[row + 1]
                 )
-
-    def add_wall_corner(
-        self,
-        c0: WallColumn,
-        c1: WallColumn,
-        c2: WallColumn,
-        start_row: int = 1,
-    ) -> None:
-        # Very similar to add_wall_faces(), but exclude the first and last rows
-        # (out0 and in0)
-        columns = (c0, c1, c2)
-        for idx in range(len(columns) - 1):
-            col0 = columns[idx].get_rows()
-            col1 = columns[idx + 1].get_rows()
-            for row in range(start_row, len(col0) - 2):
-                self.mesh.add_quad(
-                    col0[row], col1[row], col1[row + 1], col0[row + 1]
-                )
-
-        # Now handle the quads at out0 and in0
-        self.mesh.add_quad(c0.in0, c0.in1, c1.in1, c2.in1)
-        self.mesh.add_quad(c0.out0, c2.out1, c1.out1, c0.out1)
 
     def gen_back_wall(self) -> List[WallColumn]:
         u_near_off = 4.0
@@ -959,22 +944,37 @@ class Keyboard:
             Point(right.in3.x, front.in3.y, front.in3.z)
         )
 
-        self.add_wall_corner(front, fr, right)
+        # Move the front inner edge over to share the same edge as the corner
+        front.in1 = fr.in1
+        front.in2 = fr.in2
+        front.in3 = fr.in3
 
-        self._bevel_edge(fr.out3, fr.out2)
-        self._bevel_edge(fr.out2, fr.out1)
-        self._bevel_edge(fr.in3, fr.in2, 0.5)
-        self._bevel_edge(fr.in2, fr.in1, 0.5)
+        self.mesh.add_tri(front.in0, front.in1, right.in1)
+        self.mesh.add_quad(front.in1, front.in2, right.in2, right.in1)
+        self.mesh.add_quad(front.in2, front.in3, right.in3, right.in2)
+        self.mesh.add_quad(front.in3, fr.out3, right.out3, right.in3)
+        self.mesh.add_tri(front.in3, front.out3, fr.out3)
 
-        self._bevel_edge(fr.out1, front.out1)
-        self._bevel_edge(fr.out1, right.out1)
+        self.mesh.add_quad(front.out2, fr.out2, fr.out3, front.out3)
+        self.mesh.add_quad(front.out1, fr.out1, fr.out2, front.out2)
+        self.mesh.add_quad(front.out0, right.out1, fr.out1, front.out1)
+        self.mesh.add_quad(fr.out1, right.out1, right.out2, fr.out2)
+        self.mesh.add_quad(fr.out2, right.out2, right.out3, fr.out3)
+
+        self._bevel_edge(fr.out3, fr.out2, self._bevel_outer_vert_corner)
+        self._bevel_edge(fr.out2, fr.out1, self._bevel_outer_vert_corner)
+        self._bevel_edge(fr.in3, fr.in2, self._bevel_inner_vert_corner)
+        self._bevel_edge(fr.in2, fr.in1, self._bevel_inner_vert_corner)
+
+        self._bevel_edge(fr.out1, front.out1, self._bevel_outer_ring)
+        self._bevel_edge(fr.out1, right.out1, self._bevel_outer_ring)
 
     def _back_right_wall_corner(
         self, right: WallColumn, back: WallColumn
     ) -> None:
         br = WallColumn()
-        br.out0 = self.k65.u_bl
-        br.in0 = self.k65.l_bl
+        br.out0 = self.k60.u_tr
+        br.in0 = self.k60.l_tr
         br.out1 = self.mesh.add_point(
             Point(right.out1.x, back.out1.y, back.out1.z)
         )
@@ -994,13 +994,33 @@ class Keyboard:
             Point(right.in3.x, back.in3.y, back.in3.z)
         )
 
-        self.add_wall_corner(right, br, back)
+        # The inner edges of back and br are very close together.
+        # This causes problems when attempting to bevel the inside corner,
+        # so just merge them, by having the back wall use the inner corner
+        # edge.
+        back.in3 = br.in3
+        back.in2 = br.in2
+        back.in1 = br.in1
 
-        self._bevel_edge(br.out3, br.out2)
-        self._bevel_edge(br.out2, br.out1)
-        self._bevel_edge(br.out1, right.out1)
-        self._bevel_edge(br.out1, back.out1)
-        self._bevel_edge(br.out2, back.out2)
+        self.mesh.add_tri(br.in0, right.in1, back.in1)
+        self.mesh.add_quad(back.in1, right.in1, right.in2, back.in2)
+        self.mesh.add_quad(right.in2, right.in3, back.in3, back.in2)
+
+        self.mesh.add_quad(br.out0, back.out1, br.out1, right.out1)
+        self.mesh.add_quad(br.out1, back.out1, back.out2, br.out2)
+        self.mesh.add_quad(right.out1, br.out1, br.out2, right.out2)
+        self.mesh.add_quad(right.out2, br.out2, br.out3, right.out3)
+        self.mesh.add_quad(br.out2, back.out2, back.out3, br.out3)
+
+        self.mesh.add_quad(right.in3, right.out3, br.out3, br.in3)
+        self.mesh.add_tri(back.in3, br.out3, back.out3)
+
+        self._bevel_edge(br.out3, br.out2, self._bevel_outer_vert_corner)
+        self._bevel_edge(br.out2, br.out1, self._bevel_outer_vert_corner)
+        self._bevel_edge(br.out1, right.out1, self._bevel_outer_vert_corner)
+        self._bevel_edge(br.out1, back.out1, self._bevel_outer_vert_corner)
+        self._bevel_edge(br.out2, back.out2, self._bevel_outer_vert_corner)
+        self._bevel_edge(br.in3, br.in2, self._bevel_inner_vert_corner)
 
     def _back_left_wall_corner(
         self, back: WallColumn, left_wall: List[WallColumn]
@@ -1021,17 +1041,17 @@ class Keyboard:
         # in_x = left.in2.x
 
         bl = WallColumn()
-        bl.out0 = self.k65.u_bl
-        bl.in0 = self.k65.l_bl
+        bl.out0 = self.k10.u_tl
+        bl.in0 = self.k10.l_tl
 
         # bl.out1 = self.mesh.add_point(Point(left.out1.x, back.out1.y, back.out1.z))
         # bl.in1 = self.mesh.add_point(Point(left.in1.x, back.in1.y, back.in1.z))
         KH = KeyHole
         bl.out1 = self.k10.add_point(
-            -KH.outer_w - 2.0, KH.outer_h + 3.0, KH.height
+            -KH.outer_w - 3.0, KH.outer_h + 3.0, KH.height
         )
         bl.in1 = self.k10.add_point(
-            -KH.outer_w - 0.5, KH.outer_h + 1.0, KH.mid_height
+            -KH.outer_w - 0.5, KH.outer_h + 2.0, KH.mid_height
         )
 
         bl.out2 = self.mesh.add_point(Point(out_x, back.out2.y, back.out2.z))
@@ -1039,23 +1059,39 @@ class Keyboard:
         bl.out3 = self.mesh.add_point(Point(out_x, back.out3.y, back.out3.z))
         bl.in3 = self.mesh.add_point(Point(in_x, back.in3.y, back.in3.z))
 
-        # Some of the top corner faces aren't really flat here.
-        # Prevent add_wall_corner() from adding row 1 as quads, and we will
-        # add them ourselves as triangles, to ensure that they are subdivided
-        # into the triangles we want.
-        self.add_wall_corner(back, bl, left, start_row=2)
+        # The inner wall of back and bl are very close together, which makes
+        # it difficult to bevel the inside corner.  Just have the back wall
+        # use our inner edge, rather than having 2 edges close together.
+        back.in1 = bl.in1
+        back.in2 = bl.in2
+        back.in3 = bl.in3
+
+        self.mesh.add_quad(bl.out1, back.out1, back.out0, left.out1)
+        self.mesh.add_quad(bl.out2, back.out2, back.out1, bl.out1)
         self.mesh.add_tri(bl.out1, left.out1, left.out2)
-        self.mesh.add_tri(bl.out1, left.out2, bl.out2)
-        self.mesh.add_quad(bl.out1, bl.out2, back.out2, back.out1)
+        self.mesh.add_tri(bl.out2, bl.out1, left.out2)
+        self.mesh.add_quad(back.out2, bl.out2, bl.out3, back.out3)
+        self.mesh.add_quad(bl.out2, left.out2, left.out3, bl.out3)
 
-        self._bevel_edge(bl.out3, bl.out2)
-        self._bevel_edge(bl.out2, bl.out1)
+        self.mesh.add_quad(back.in2, back.in3, left.in3, left.in2)
+        self.mesh.add_tri(left.in1, back.in2, left.in2)
+        self.mesh.add_tri(back.in1, back.in2, left.in1)
+        self.mesh.add_tri(back.in1, left.in1, back.in0)
 
-        self._bevel_edge(bl.out2, back.out2)
-        self._bevel_edge(bl.out1, back.out1)
+        self.mesh.add_tri(back.out3, bl.out3, back.in3)
+        self.mesh.add_quad(back.in3, bl.out3, left.out3, left.in3)
 
-        self._bevel_edge(bl.out2, left.out2)
-        self._bevel_edge(bl.out1, left.out2)
+        self._bevel_edge(bl.out3, bl.out2, self._bevel_outer_vert_corner)
+        self._bevel_edge(bl.out2, bl.out1, 0.1)
+        self._bevel_edge(back.out2, back.out1, 0.1)
+
+        self._bevel_edge(bl.in3, bl.in2, self._bevel_inner_vert_corner)
+
+        self._bevel_edge(bl.out2, back.out2, self._bevel_outer_ring)
+        self._bevel_edge(bl.out1, back.out1, self._bevel_outer_ring)
+
+        self._bevel_edge(bl.out2, left.out2, self._bevel_outer_ring)
+        self._bevel_edge(bl.out1, left.out2, self._bevel_outer_ring)
 
     def gen_thumb_grid(self) -> None:
         """Generate mesh faces for the thumb key hole section.
