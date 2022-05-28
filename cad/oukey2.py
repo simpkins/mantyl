@@ -999,7 +999,11 @@ class Keyboard:
         self._bevel_edge(fr.in3, fr.in2, self._bevel_inner_vert_corner)
         self._bevel_edge(fr.in2, fr.in1, self._bevel_inner_vert_corner)
 
-        self._bevel_edge(fr.out1, front.out1, self._bevel_outer_ring)
+        self._bevel_edge(
+            fr.out1,
+            front.out1,
+            (self._bevel_outer_ring_front + self._bevel_outer_ring) * 0.5,
+        )
         self._bevel_edge(fr.out1, right.out1, self._bevel_outer_ring)
 
     def _back_right_wall_corner(
