@@ -1178,42 +1178,44 @@ class Keyboard:
         tl.in2 = self.mesh.add_point(tl.out2.point + back_delta + left_delta)
         tr.in2 = self.mesh.add_point(tr.out2.point + back_delta)
 
-        def in1_from_in2(in2: Point) -> Point:
-            line = (Point(in2.x, in2.y, 0.0), Point(in2.x, in2.y, 1.0))
-            plane = (
-                self.t00.l_tl.point,
-                self.t00.l_tr.point,
-                self.t00.l_br.point,
-            )
-            intersect = intersect_line_and_plane(line, plane)
-            if intersect is None:
-                raise Exception("thumb grid is completely vertical")
-            return Point(in2.x, in2.y, intersect.z)
-
         # Now compute the inner wall top points
         l_plane = (self.t00.l_tl, self.t00.l_tr, self.t00.l_br)
-        br.in1 = self.mesh.add_point(in1_from_in2(br.in2))
-        bl.in1 = self.mesh.add_point(in1_from_in2(bl.in2))
-        tl.in1 = self.mesh.add_point(in1_from_in2(tl.in2))
-        tr.in1 = self.mesh.add_point(in1_from_in2(tr.in2))
+        br.in1 = self.mesh.add_point(self._thumb_lz_from_xy(br.in2))
+        bl.in1 = self.mesh.add_point(self._thumb_lz_from_xy(bl.in2))
+        tl.in1 = self.mesh.add_point(self._thumb_lz_from_xy(tl.in2))
+        tr.in1 = self.mesh.add_point(self._thumb_lz_from_xy(tr.in2))
 
-        def make_column(mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], x_off: float, y_off: float, in_delta: Point) -> ThumbColumn:
+        def make_column(
+            mp: MeshPoint,
+            p0: Tuple[MeshPoint, MeshPoint],
+            x_off: float,
+            y_off: float,
+            in_delta: Point,
+        ) -> ThumbColumn:
             c = ThumbColumn()
             c.out0 = p0[0]
             c.in0 = p0[1]
             c.out1 = mp.add_point(x_off, y_off, KH.height)
             c.out2 = self.mesh.add_point(Point(c.out1.x, c.out1.y, 0.0))
             c.in2 = self.mesh.add_point(c.out2.point + in_delta)
-            c.in1 = self.mesh.add_point(in1_from_in2(c.in2))
+            c.in1 = self.mesh.add_point(self._thumb_lz_from_xy(c.in2))
             return c
 
-        def front_column(mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], x_off: float) -> ThumbColumn:
-            return make_column(mp, p0, x_off, -KH.outer_h - offset, front_delta)
+        def front_column(
+            mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], x_off: float
+        ) -> ThumbColumn:
+            return make_column(
+                mp, p0, x_off, -KH.outer_h - offset, front_delta
+            )
 
-        def left_column(mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], y_off: float) -> ThumbColumn:
+        def left_column(
+            mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], y_off: float
+        ) -> ThumbColumn:
             return make_column(mp, p0, -KH.outer_w - offset, y_off, left_delta)
 
-        def top_column(mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], x_off: float) -> ThumbColumn:
+        def top_column(
+            mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], x_off: float
+        ) -> ThumbColumn:
             return make_column(mp, p0, x_off, KH.outer_h + offset, back_delta)
 
         columns = [
@@ -1235,10 +1237,21 @@ class Keyboard:
             self._bevel_edge(columns[idx].out1, columns[idx + 1].out1)
 
         self._bevel_edge(bl.out2, bl.out1)
-        self._bevel_edge(bl.in2, bl.in1, .75)
+        self._bevel_edge(bl.in2, bl.in1, 0.75)
         self._bevel_edge(tl.out2, tl.out1)
-        self._bevel_edge(tl.in2, tl.in1, .75)
+        self._bevel_edge(tl.in2, tl.in1, 0.75)
         return columns
+
+    def _thumb_lz_from_xy(self, in2: Point) -> Point:
+        """Compute the z height of the underside of the thumb area,
+        at the x, y coordinates from the input point.
+        """
+        line = (Point(in2.x, in2.y, 0.0), Point(in2.x, in2.y, 1.0))
+        plane = (self.t00.l_tl.point, self.t00.l_tr.point, self.t00.l_br.point)
+        intersect = intersect_line_and_plane(line, plane)
+        if intersect is None:
+            raise Exception("thumb grid is completely vertical")
+        return Point(in2.x, in2.y, intersect.z)
 
     def gen_thumb_connect(
         self,
@@ -1281,6 +1294,7 @@ class Keyboard:
             KH.outer_h + thumb_wall_offset,
             KH.height,
         )
+        back_wall_delta = thumb_wall[-1].in2.point - thumb_wall[-1].out2.point
 
         self.mesh.add_quad(bu3, self.t10.u_tr, thumb_wall[-1].out1, bu4)
 
@@ -1291,8 +1305,12 @@ class Keyboard:
         bl2 = self.t20.add_point(
             KH.outer_w + 6.5, KH.outer_h + 5.5, KH.mid_height
         )
-        bl3 = self.t10.add_point(
-            KH.outer_w + 6.0, KH.outer_h + 3.0, KH.mid_height
+
+        # bl3 is connected to the inside of the thumb wall,
+        # so compute its location correctly so that it is exactly
+        # self.wall_thickness away from the outer thumb wall
+        bl3 = self.mesh.add_point(
+            self._thumb_lz_from_xy(bu4.point + back_wall_delta)
         )
 
         self.mesh.add_quad(
