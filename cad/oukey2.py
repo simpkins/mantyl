@@ -582,6 +582,14 @@ class Keyboard:
                 self._bevel_edge(c0.out2, c1.out2, self._bevel_outer_ring)
                 self._bevel_edge(c0.out1, c1.out1, self._bevel_ring_flat)
 
+        # Mark the back right corner edge
+        self._bevel_edge(
+            back_wall[0].out3, back_wall[0].out2, self._bevel_outer_vert_corner
+        )
+        self._bevel_edge(
+            back_wall[0].out2, back_wall[0].out1, self._bevel_outer_vert_corner
+        )
+
     def gen_back_wall(self) -> List[WallColumn]:
         u_near_off = 4.0
         l_near_off = 2.0
@@ -985,6 +993,7 @@ class Keyboard:
     def _back_right_wall_corner(
         self, right: WallColumn, back: WallColumn
     ) -> None:
+        # Determine the back corner location
         br = WallColumn()
         br.out0 = self.k60.u_tr
         br.in0 = self.k60.l_tr
@@ -1007,50 +1016,21 @@ class Keyboard:
             Point(right.in3.x, back.in3.y, back.in3.z)
         )
 
-        # The inner edges of back and br are very close together.
-        # This causes problems when attempting to bevel the inside corner,
-        # so just merge them, by having the back wall use the inner corner
-        # edge.
+        # Simply move the back and right wall columns over to place them
+        # at the back corner.
         back.in3 = br.in3
         back.in2 = br.in2
         back.in1 = br.in1
+        back.out3 = br.out3
+        back.out2 = br.out2
+        back.out1 = br.out1
 
-        if False:
-            self.mesh.add_tri(br.in0, right.in1, back.in1)
-            self.mesh.add_quad(back.in1, right.in1, right.in2, back.in2)
-            self.mesh.add_quad(right.in2, right.in3, back.in3, back.in2)
-
-            self.mesh.add_quad(br.out0, back.out1, br.out1, right.out1)
-            self.mesh.add_quad(br.out1, back.out1, back.out2, br.out2)
-            self.mesh.add_quad(right.out1, br.out1, br.out2, right.out2)
-            self.mesh.add_quad(right.out2, br.out2, br.out3, right.out3)
-            self.mesh.add_quad(br.out2, back.out2, back.out3, br.out3)
-
-            self.mesh.add_quad(right.in3, right.out3, br.out3, br.in3)
-            self.mesh.add_tri(back.in3, br.out3, back.out3)
-
-            self._bevel_edge(br.out3, br.out2, self._bevel_outer_vert_corner)
-            self._bevel_edge(br.out2, br.out1, self._bevel_outer_vert_corner)
-            self._bevel_edge(
-                br.out1, right.out1, self._bevel_outer_vert_corner
-            )
-            self._bevel_edge(br.out1, back.out1, self._bevel_outer_vert_corner)
-            self._bevel_edge(br.out2, back.out2, self._bevel_outer_vert_corner)
-            self._bevel_edge(br.in3, br.in2, self._bevel_inner_vert_corner)
-        else:
-            back.out3 = br.out3
-            back.out2 = br.out2
-            back.out1 = br.out1
-
-            right.in1 = br.in1
-            right.in2 = br.in2
-            right.in3 = br.in3
-            right.out3 = br.out3
-            right.out2 = br.out2
-            right.out1 = br.out1
-
-            self._bevel_edge(br.out3, br.out2, self._bevel_outer_vert_corner)
-            self._bevel_edge(br.out2, br.out1, self._bevel_outer_vert_corner)
+        right.in1 = br.in1
+        right.in2 = br.in2
+        right.in3 = br.in3
+        right.out3 = br.out3
+        right.out2 = br.out2
+        right.out1 = br.out1
 
     def _back_left_wall_corner(
         self, back: WallColumn, left_wall: List[WallColumn]
