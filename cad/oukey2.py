@@ -1355,8 +1355,13 @@ class Keyboard:
         # bl3 is connected to the inside of the thumb wall,
         # so compute its location correctly so that it is exactly
         # self.wall_thickness away from the outer thumb wall
+        bu5 = self.t10.add_point(
+            KH.outer_w + bu3_x_offset + 6.0,
+            KH.outer_h + thumb_wall_offset,
+            KH.height,
+        )
         bl3 = self.mesh.add_point(
-            self._thumb_lz_from_xy(bu4.point + back_wall_delta)
+            self._thumb_lz_from_xy(bu5.point + back_wall_delta)
         )
 
         self.mesh.add_quad(
