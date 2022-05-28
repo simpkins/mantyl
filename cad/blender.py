@@ -60,7 +60,7 @@ def main() -> None:
 
     # Add a bevel modifier
     bevel = obj.modifiers.new(name="BevelCorners", type='BEVEL')
-    bevel.width = 1.0
+    bevel.width = 2.0
     bevel.limit_method = "WEIGHT"
     bevel.segments = 8
 

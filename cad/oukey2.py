@@ -29,8 +29,9 @@ class Keyboard:
 
         self._bevel_outer_vert_corner = 1.0
         self._bevel_inner_vert_corner = 0.75
-
         self._bevel_outer_ring = 1.0
+        self._bevel_outer_ring_front = 0.5
+        self._bevel_ring_flat = 0.3
 
     def gen_mesh(self, gen_walls: bool = True) -> None:
         self.gen_main_grid()
@@ -519,6 +520,8 @@ class Keyboard:
         self._back_right_wall_corner(right_wall[-1], back_wall[0])
         self._back_left_wall_corner(back_wall[-1], left_wall)
 
+        self.apply_wall_bevels(front_wall, right_wall, back_wall, left_wall)
+
         self.add_wall_faces(front_wall)
         self.add_wall_faces(right_wall)
         self.add_wall_faces(back_wall)
@@ -541,6 +544,43 @@ class Keyboard:
                 self.mesh.add_quad(
                     col0[row], col1[row], col1[row + 1], col0[row + 1]
                 )
+
+    def apply_wall_bevels(
+        self,
+        front_wall: List[WallColumn],
+        right_wall: List[WallColumn],
+        back_wall: List[WallColumn],
+        left_wall: List[WallColumn],
+    ) -> None:
+        for idx in range(len(front_wall) - 1):
+            c0 = front_wall[idx]
+            c1 = front_wall[idx + 1]
+            self._bevel_edge(c0.out1, c1.out1, self._bevel_outer_ring)
+
+            self._bevel_edge(c0.out0, c1.out0, self._bevel_outer_ring_front)
+            self._bevel_edge(c0.out0, c0.out1, self._bevel_ring_flat)
+
+        for idx, col in enumerate(back_wall):
+            self._bevel_edge(col.out1, col.out2, self._bevel_ring_flat)
+            if idx + 1 < len(back_wall):
+                self._bevel_edge(col.out1, back_wall[idx + 1].out1)
+                self._bevel_edge(col.out2, back_wall[idx + 1].out2)
+
+        for idx, col in enumerate(right_wall):
+            if idx + 1 < len(right_wall):
+                self._bevel_edge(
+                    col.out1, right_wall[idx + 1].out1, self._bevel_outer_ring
+                )
+
+            self._bevel_edge(col.out0, col.out1, self._bevel_ring_flat)
+
+        for idx, col in enumerate(left_wall):
+            self._bevel_edge(col.out1, col.out2, 0.5)
+            if idx + 1 < len(left_wall):
+                c0 = left_wall[idx]
+                c1 = left_wall[idx + 1]
+                self._bevel_edge(c0.out2, c1.out2, self._bevel_outer_ring)
+                self._bevel_edge(c0.out1, c1.out1, self._bevel_ring_flat)
 
     def gen_back_wall(self) -> List[WallColumn]:
         u_near_off = 4.0
@@ -591,11 +631,6 @@ class Keyboard:
                     0.0,
                 )
             )
-
-            self._bevel_edge(col.out1, col.out2, 0.5)
-            if idx + 1 < len(columns):
-                self._bevel_edge(col.out1, columns[idx + 1].out1)
-                self._bevel_edge(col.out2, columns[idx + 1].out2)
 
         return columns
 
@@ -672,11 +707,6 @@ class Keyboard:
                 Point(col.out3.x - self.wall_thickness, col.out3.y, col.out3.z)
             )
 
-            if idx + 1 < len(columns):
-                self._bevel_edge(col.out1, columns[idx + 1].out1)
-
-            self._bevel_edge(col.out0, col.out1)
-
         return columns
 
     def gen_front_wall(self) -> List[WallColumn]:
@@ -747,14 +777,6 @@ class Keyboard:
 
             col.out3 = k.mesh.add_point(Point(col.out2.x, col.out2.y, 0.0))
             col.in3 = k.mesh.add_point(Point(col.in1.x, col.in1.y, 0.0))
-
-        for idx in range(len(columns) - 1):
-            c0 = columns[idx]
-            c1 = columns[idx + 1]
-            self._bevel_edge(c0.out1, c1.out1)
-
-            self._bevel_edge(c0.out0, c1.out0, 0.5)
-            self._bevel_edge(c0.out0, c0.out1)
 
         return columns
 
@@ -903,19 +925,10 @@ class Keyboard:
 
         columns = segment0[:-1] + [ic, oc] + segment2[1:-1]
 
-        for idx in range(len(columns) - 1):
-            c0 = columns[idx]
-            c1 = columns[idx + 1]
-            self._bevel_edge(c0.out2, c1.out2)
-            self._bevel_edge(c0.out1, c1.out1, 0.5)
-
-        for col in columns:
-            self._bevel_edge(col.out1, col.out2, 0.5)
-
-        self._bevel_edge(oc.out3, oc.out2)
-        self._bevel_edge(oc.in3, oc.in2)
-        self._bevel_edge(ic.out3, ic.out2)
-        self._bevel_edge(ic.in3, ic.in2)
+        self._bevel_edge(oc.out3, oc.out2, self._bevel_outer_vert_corner)
+        self._bevel_edge(oc.in3, oc.in2, self._bevel_inner_vert_corner)
+        self._bevel_edge(ic.out3, ic.out2, self._bevel_inner_vert_corner)
+        self._bevel_edge(ic.in3, ic.in2, self._bevel_outer_vert_corner)
 
         return columns
 
@@ -1002,25 +1015,42 @@ class Keyboard:
         back.in2 = br.in2
         back.in1 = br.in1
 
-        self.mesh.add_tri(br.in0, right.in1, back.in1)
-        self.mesh.add_quad(back.in1, right.in1, right.in2, back.in2)
-        self.mesh.add_quad(right.in2, right.in3, back.in3, back.in2)
+        if False:
+            self.mesh.add_tri(br.in0, right.in1, back.in1)
+            self.mesh.add_quad(back.in1, right.in1, right.in2, back.in2)
+            self.mesh.add_quad(right.in2, right.in3, back.in3, back.in2)
 
-        self.mesh.add_quad(br.out0, back.out1, br.out1, right.out1)
-        self.mesh.add_quad(br.out1, back.out1, back.out2, br.out2)
-        self.mesh.add_quad(right.out1, br.out1, br.out2, right.out2)
-        self.mesh.add_quad(right.out2, br.out2, br.out3, right.out3)
-        self.mesh.add_quad(br.out2, back.out2, back.out3, br.out3)
+            self.mesh.add_quad(br.out0, back.out1, br.out1, right.out1)
+            self.mesh.add_quad(br.out1, back.out1, back.out2, br.out2)
+            self.mesh.add_quad(right.out1, br.out1, br.out2, right.out2)
+            self.mesh.add_quad(right.out2, br.out2, br.out3, right.out3)
+            self.mesh.add_quad(br.out2, back.out2, back.out3, br.out3)
 
-        self.mesh.add_quad(right.in3, right.out3, br.out3, br.in3)
-        self.mesh.add_tri(back.in3, br.out3, back.out3)
+            self.mesh.add_quad(right.in3, right.out3, br.out3, br.in3)
+            self.mesh.add_tri(back.in3, br.out3, back.out3)
 
-        self._bevel_edge(br.out3, br.out2, self._bevel_outer_vert_corner)
-        self._bevel_edge(br.out2, br.out1, self._bevel_outer_vert_corner)
-        self._bevel_edge(br.out1, right.out1, self._bevel_outer_vert_corner)
-        self._bevel_edge(br.out1, back.out1, self._bevel_outer_vert_corner)
-        self._bevel_edge(br.out2, back.out2, self._bevel_outer_vert_corner)
-        self._bevel_edge(br.in3, br.in2, self._bevel_inner_vert_corner)
+            self._bevel_edge(br.out3, br.out2, self._bevel_outer_vert_corner)
+            self._bevel_edge(br.out2, br.out1, self._bevel_outer_vert_corner)
+            self._bevel_edge(
+                br.out1, right.out1, self._bevel_outer_vert_corner
+            )
+            self._bevel_edge(br.out1, back.out1, self._bevel_outer_vert_corner)
+            self._bevel_edge(br.out2, back.out2, self._bevel_outer_vert_corner)
+            self._bevel_edge(br.in3, br.in2, self._bevel_inner_vert_corner)
+        else:
+            back.out3 = br.out3
+            back.out2 = br.out2
+            back.out1 = br.out1
+
+            right.in1 = br.in1
+            right.in2 = br.in2
+            right.in3 = br.in3
+            right.out3 = br.out3
+            right.out2 = br.out2
+            right.out1 = br.out1
+
+            self._bevel_edge(br.out3, br.out2, self._bevel_outer_vert_corner)
+            self._bevel_edge(br.out2, br.out1, self._bevel_outer_vert_corner)
 
     def _back_left_wall_corner(
         self, back: WallColumn, left_wall: List[WallColumn]
