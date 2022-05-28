@@ -5,10 +5,10 @@
 
 from __future__ import annotations
 
-from cad import Mesh, Point, Transform, intersect_line_and_plane
+from cad import Mesh, MeshPoint, Point, Transform, intersect_line_and_plane
 
 import math
-from typing import Any, Generator, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 
 class Keyboard:
@@ -66,7 +66,7 @@ class Keyboard:
 
     @staticmethod
     def _get_key_variable(
-        name: str, keys: List[List[KeyHole]], msg: str
+        name: str, keys: List[List[Optional[KeyHole]]], msg: str
     ) -> KeyHole:
         try:
             col = int(name[1])
@@ -94,7 +94,7 @@ class Keyboard:
 
         raise AttributeError(name)
 
-    def key_indices(self) -> Generator[[Tuple[int, int]], None, None]:
+    def key_indices(self) -> Generator[Tuple[int, int], None, None]:
         for row in (2, 3, 4):
             yield (0, row)
         for row in range(5):
@@ -103,7 +103,7 @@ class Keyboard:
             for row in range(6):
                 yield (col, row)
 
-    def thumb_indices(self) -> Generator[[Tuple[int, int]], None, None]:
+    def thumb_indices(self) -> Generator[Tuple[int, int], None, None]:
         for col in range(2):
             for row in range(3):
                 yield (col, row)
@@ -556,8 +556,12 @@ class Keyboard:
         for idx, col in enumerate(front_wall):
             if idx + 1 < len(front_wall):
                 c1 = front_wall[idx + 1]
-                self._bevel_edge(col.out0, c1.out0, self._bevel_outer_ring_front)
-                self._bevel_edge(col.out1, c1.out1, self._bevel_outer_ring_front)
+                self._bevel_edge(
+                    col.out0, c1.out0, self._bevel_outer_ring_front
+                )
+                self._bevel_edge(
+                    col.out1, c1.out1, self._bevel_outer_ring_front
+                )
 
             self._bevel_edge(col.out0, col.out1, self._bevel_ring_flat_front)
             # The wall between out1 and out2 is already basically flat,
@@ -604,8 +608,8 @@ class Keyboard:
         far_off = Point(0.0, 6.0, -4.0)
 
         columns: List[WallColumn] = []
-        for col in range(6, 0, -1):
-            k = self._keys[col][0]
+        for col_idx in range(6, 0, -1):
+            k = self._keys[col_idx][0]
 
             # Left and right columns for this key hole
             l = WallColumn()
@@ -731,8 +735,8 @@ class Keyboard:
 
         columns: List[WallColumn] = []
         last_row = 5
-        for col in range(2, 7):
-            k = self._keys[col][last_row]
+        for col_idx in range(2, 7):
+            k = self._keys[col_idx][last_row]
 
             # Left and right columns for this key hole
             l = WallColumn()
@@ -804,8 +808,8 @@ class Keyboard:
         far_off = Point(-6.0, 0.0, 0.0)
 
         columns: List[WallColumn] = []
-        for col, row in indices:
-            k = self._keys[col][row]
+        for col_idx, row_idx in indices:
+            k = self._keys[col_idx][row_idx]
 
             t = WallColumn()
             b = WallColumn()
@@ -1236,13 +1240,13 @@ class Keyboard:
 
         # Now compute the inner wall top points
         l_plane = (self.t00.l_tl, self.t00.l_tr, self.t00.l_br)
-        br.in1 = self.mesh.add_point(self._thumb_lz_from_xy(br.in2))
-        bl.in1 = self.mesh.add_point(self._thumb_lz_from_xy(bl.in2))
-        tl.in1 = self.mesh.add_point(self._thumb_lz_from_xy(tl.in2))
-        tr.in1 = self.mesh.add_point(self._thumb_lz_from_xy(tr.in2))
+        br.in1 = self.mesh.add_point(self._thumb_lz_from_xy(br.in2.point))
+        bl.in1 = self.mesh.add_point(self._thumb_lz_from_xy(bl.in2.point))
+        tl.in1 = self.mesh.add_point(self._thumb_lz_from_xy(tl.in2.point))
+        tr.in1 = self.mesh.add_point(self._thumb_lz_from_xy(tr.in2.point))
 
         def make_column(
-            mp: MeshPoint,
+            kh: KeyHole,
             p0: Tuple[MeshPoint, MeshPoint],
             x_off: float,
             y_off: float,
@@ -1251,28 +1255,28 @@ class Keyboard:
             c = ThumbColumn()
             c.out0 = p0[0]
             c.in0 = p0[1]
-            c.out1 = mp.add_point(x_off, y_off, KH.height)
+            c.out1 = kh.add_point(x_off, y_off, KH.height)
             c.out2 = self.mesh.add_point(Point(c.out1.x, c.out1.y, 0.0))
             c.in2 = self.mesh.add_point(c.out2.point + in_delta)
-            c.in1 = self.mesh.add_point(self._thumb_lz_from_xy(c.in2))
+            c.in1 = self.mesh.add_point(self._thumb_lz_from_xy(c.in2.point))
             return c
 
         def front_column(
-            mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], x_off: float
+            kh: KeyHole, p0: Tuple[MeshPoint, MeshPoint], x_off: float
         ) -> ThumbColumn:
             return make_column(
-                mp, p0, x_off, -KH.outer_h - offset, front_delta
+                kh, p0, x_off, -KH.outer_h - offset, front_delta
             )
 
         def left_column(
-            mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], y_off: float
+            kh: KeyHole, p0: Tuple[MeshPoint, MeshPoint], y_off: float
         ) -> ThumbColumn:
-            return make_column(mp, p0, -KH.outer_w - offset, y_off, left_delta)
+            return make_column(kh, p0, -KH.outer_w - offset, y_off, left_delta)
 
         def top_column(
-            mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], x_off: float
+            kh: KeyHole, p0: Tuple[MeshPoint, MeshPoint], x_off: float
         ) -> ThumbColumn:
-            return make_column(mp, p0, x_off, KH.outer_h + offset, back_delta)
+            return make_column(kh, p0, x_off, KH.outer_h + offset, back_delta)
 
         columns = [
             br,
@@ -1420,7 +1424,7 @@ class Keyboard:
 
     def connect_thumb_front(
         self, thumb_wall: List[ThumbColumn], front_wall: List[WallColumn]
-    ) -> None:
+    ) -> Tuple[MeshPoint, MeshPoint]:
         def find_y_intersect(
             p1: MeshPoint, p2: MeshPoint, y: float
         ) -> MeshPoint:
@@ -1508,7 +1512,10 @@ class Keyboard:
 
     def thumb_connect_top(
         self, front_wall: List[WallColumn], left_wall: List[WallColumn]
-    ) -> None:
+    ) -> Tuple[
+        Tuple[MeshPoint, MeshPoint, MeshPoint, MeshPoint],
+        Tuple[MeshPoint, MeshPoint, MeshPoint, MeshPoint],
+    ]:
         KH = KeyHole
         c0_out1 = self.k25.add_point(
             -KH.outer_w - 1.5, -KH.outer_h - 1.5, KH.height

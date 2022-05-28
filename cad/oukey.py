@@ -1991,6 +1991,7 @@ def kbd2_test() -> Shape:
     mesh = oukey2.gen_keyboard()
     return Shape.polyhedron_from_mesh(mesh, convexivity=20)
 
+
 def key_hole_test() -> Shape:
     mesh = Mesh()
     kh = oukey2.KeyHole(mesh, Transform())
@@ -2001,6 +2002,7 @@ def key_hole_test() -> Shape:
     mesh.add_quad(kh.u_tr, kh.u_tl, kh.l_tl, kh.l_tr)
     mesh.add_quad(kh.u_br, kh.u_tr, kh.l_tr, kh.l_br)
     return Shape.polyhedron_from_mesh(mesh)
+
 
 def orig_key_hole_test() -> Shape:
     return single_plate()

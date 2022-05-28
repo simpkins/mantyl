@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import math
 import numpy
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple, Union
 
 
 class Transform:
@@ -85,7 +85,7 @@ class Point:
     y: float
     z: float
 
-    def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0) -> str:
+    def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0) -> None:
         self.x = x
         self.y = y
         self.z = z
@@ -126,12 +126,12 @@ class Point:
     def __hash__(self) -> int:
         return hash(self.as_tuple())
 
-    def __eq__(self, other: Point) -> Point:
-        assert isinstance(other, Point)
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Point):
+            return False
         return self.x == other.x and self.y == other.y and self.z == other.z
 
-    def __ne__(self, other: Point) -> Point:
-        assert isinstance(other, Point)
+    def __ne__(self, other: object) -> bool:
         return not self.__eq__(other)
 
     def __add__(self, other: Point) -> Point:
@@ -176,15 +176,15 @@ class MeshPoint:
         return self._index
 
     @property
-    def x(self) -> int:
+    def x(self) -> float:
         return self.point.x
 
     @property
-    def y(self) -> int:
+    def y(self) -> float:
         return self.point.y
 
     @property
-    def z(self) -> int:
+    def z(self) -> float:
         return self.point.z
 
 
@@ -198,8 +198,9 @@ class MeshFace:
 class Mesh:
     def __init__(self) -> None:
         self.points: List[MeshPoint] = []
-        # We only allow triangular faces for now
-        self.faces: List[Tuple[int, int, int]] = []
+        self.faces: List[
+            Union[Tuple[int, int, int], Tuple[int, int, int, int]]
+        ] = []
 
     def add_point(self, point: Point) -> MeshPoint:
         return MeshPoint(self, point=point)
@@ -219,7 +220,7 @@ class Mesh:
 
 def intersect_line_and_plane(
     line: Tuple[Point, Point], plane: Tuple[Point, Point, Point]
-) -> Point:
+) -> Optional[Point]:
     # Compute the plane's normal vector
     da = plane[1] - plane[0]
     db = plane[2] - plane[0]
