@@ -23,6 +23,7 @@ from keyboard import (
     plate_thickness,
     single_plate,
 )
+import oukey2
 
 ShapeOrTransform = TypeVar("ShapeOrTransform", Shape, Transform)
 
@@ -1987,12 +1988,10 @@ def write_shape(shape: Shape, path: Path) -> None:
 
 
 def kbd2_test() -> Shape:
-    import oukey2
     mesh = oukey2.gen_keyboard()
     return Shape.polyhedron_from_mesh(mesh, convexivity=20)
 
 def key_hole_test() -> Shape:
-    import oukey2
     mesh = Mesh()
     kh = oukey2.KeyHole(mesh, Transform())
     kh.inner_walls()

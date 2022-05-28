@@ -25,6 +25,18 @@ class Keyboard:
         self.mesh = Mesh()
         self._define_keys()
 
+        self._bevel_edges: Dict[Tuple[int, int], float] = {}
+
+    def gen_mesh(self, gen_walls: bool = True) -> None:
+        self.gen_main_grid()
+        self.gen_thumb_grid()
+
+        if gen_walls:
+            self.gen_walls()
+        else:
+            self.gen_main_grid_edges()
+            self.gen_thumb_grid_edges()
+
     def add_quad_matrix(self, matrix: List[List[MeshPoint]]) -> None:
         for col in range(len(matrix) - 1):
             for row in range(len(matrix[col]) - 1):
@@ -34,6 +46,14 @@ class Keyboard:
                     matrix[col + 1][row + 1],
                     matrix[col][row + 1],
                 )
+
+    def _bevel_edge(self, p0: MeshPoint, p1: MeshPoint, weight: float = 1.0) -> None:
+        """Mark that a vertex is along an edge to be beveled."""
+        if p0.index < p1.index:
+            key = p0.index, p1.index
+        else:
+            key = p1.index, p0.index
+        self._bevel_edges[key] = weight
 
     @staticmethod
     def _get_key_variable(
@@ -567,7 +587,7 @@ class Keyboard:
             col.out2 = self.mesh.add_point(col.out1.point.ptranslate(far_off))
 
         max_y = max(col.out2.y for col in columns)
-        for col in columns:
+        for idx, col in enumerate(columns):
             col.out2.point.y = max_y
             col.out3 = self.mesh.add_point(Point(col.out2.x, col.out2.y, 0.0))
             col.in2 = self.mesh.add_point(
@@ -584,6 +604,11 @@ class Keyboard:
                     0.0,
                 )
             )
+
+            self._bevel_edge(col.out1, col.out2)
+            if idx + 1 < len(columns):
+                self._bevel_edge(col.out1, columns[idx + 1].out1)
+                self._bevel_edge(col.out2, columns[idx + 1].out2)
 
         return columns
 
@@ -660,6 +685,11 @@ class Keyboard:
                 Point(col.out3.x - self.wall_thickness, col.out3.y, col.out3.z)
             )
 
+            if idx + 1 < len(columns):
+                self._bevel_edge(col.out1, columns[idx + 1].out1)
+
+            self._bevel_edge(col.out0, col.out1)
+
         return columns
 
     def gen_front_wall(self) -> List[WallColumn]:
@@ -730,6 +760,14 @@ class Keyboard:
 
             col.out3 = k.mesh.add_point(Point(col.out2.x, col.out2.y, 0.0))
             col.in3 = k.mesh.add_point(Point(col.in1.x, col.in1.y, 0.0))
+
+        for idx in range(len(columns) - 1):
+            c0 = columns[idx]
+            c1 = columns[idx + 1]
+            self._bevel_edge(c0.out1, c1.out1)
+
+            self._bevel_edge(c0.out0, c1.out0, 0.5)
+            self._bevel_edge(c0.out0, c0.out1)
 
         return columns
 
@@ -876,7 +914,23 @@ class Keyboard:
         # Fill in one gap left where we connected the concave corner
         KeyHole.top_bottom_tri(self.k02.tl, self.k11.bl, self.k02.tr)
 
-        return segment0[:-1] + [ic, oc] + segment2[1:-1]
+        columns = segment0[:-1] + [ic, oc] + segment2[1:-1]
+
+        for idx in range(len(columns) - 1):
+            c0 = columns[idx]
+            c1 = columns[idx + 1]
+            self._bevel_edge(c0.out2, c1.out2)
+            self._bevel_edge(c0.out1, c1.out1, 0.5)
+
+        for col in columns:
+            self._bevel_edge(col.out1, col.out2)
+
+        self._bevel_edge(oc.out3, oc.out2)
+        self._bevel_edge(oc.in3, oc.in2)
+        self._bevel_edge(ic.out3, ic.out2)
+        self._bevel_edge(ic.in3, ic.in2)
+
+        return columns
 
     def _front_right_wall_corner(
         self, front: WallColumn, right: WallColumn
@@ -905,6 +959,14 @@ class Keyboard:
 
         self.add_wall_corner(front, fr, right)
 
+        self._bevel_edge(fr.out3, fr.out2)
+        self._bevel_edge(fr.out2, fr.out1)
+        self._bevel_edge(fr.in3, fr.in2, 0.5)
+        self._bevel_edge(fr.in2, fr.in1, 0.5)
+
+        self._bevel_edge(fr.out1, front.out1)
+        self._bevel_edge(fr.out1, right.out1)
+
     def _back_right_wall_corner(
         self, right: WallColumn, back: WallColumn
     ) -> None:
@@ -931,6 +993,12 @@ class Keyboard:
         )
 
         self.add_wall_corner(right, br, back)
+
+        self._bevel_edge(br.out3, br.out2)
+        self._bevel_edge(br.out2, br.out1)
+        self._bevel_edge(br.out1, right.out1)
+        self._bevel_edge(br.out1, back.out1)
+        self._bevel_edge(br.out2, back.out2)
 
     def _back_left_wall_corner(
         self, back: WallColumn, left_wall: List[WallColumn]
@@ -977,6 +1045,15 @@ class Keyboard:
         self.mesh.add_tri(bl.out1, left.out1, left.out2)
         self.mesh.add_tri(bl.out1, left.out2, bl.out2)
         self.mesh.add_quad(bl.out1, bl.out2, back.out2, back.out1)
+
+        self._bevel_edge(bl.out3, bl.out2)
+        self._bevel_edge(bl.out2, bl.out1)
+
+        self._bevel_edge(bl.out2, back.out2)
+        self._bevel_edge(bl.out1, back.out1)
+
+        self._bevel_edge(bl.out2, left.out2)
+        self._bevel_edge(bl.out1, left.out2)
 
     def gen_thumb_grid(self) -> None:
         """Generate mesh faces for the thumb key hole section.
@@ -1074,7 +1151,7 @@ class Keyboard:
             col.in2 = self.mesh.add_point(Point(col.in1.x, col.in1.y, 0.0))
             return col
 
-        return [
+        columns = [
             column(self.t12.br, self.t12.transform, kh_w, -kh_h, off_b),
             column(self.t12.bl, self.t12.transform, -kh_w, -kh_h, off_b),
             column(self.t02.br, self.t02.transform, kh_w, -kh_h, off_b),
@@ -1088,6 +1165,17 @@ class Keyboard:
             column(self.t10.tl, self.t10.transform, -kh_w, kh_h, off_t),
             column(self.t10.tr, self.t10.transform, kh_w, kh_h, off_t),
         ]
+
+        for idx in range(len(columns) - 1):
+            self._bevel_edge(columns[idx].out1, columns[idx + 1].out1)
+        bl = columns[3]
+        self._bevel_edge(bl.out2, bl.out1)
+        self._bevel_edge(bl.in2, bl.in1, .75)
+        tl = columns[8]
+        self._bevel_edge(tl.out2, tl.out1)
+        self._bevel_edge(tl.in2, tl.in1, .75)
+
+        return columns
 
     def gen_thumb_connect(
         self,
@@ -1111,7 +1199,9 @@ class Keyboard:
         )
         bu2 = self.t20.add_point(KH.outer_w + 4.0, KH.outer_h + 4.0, KH.height)
         bu3_x_offset = 3.0
-        bu3 = self.t10.add_point(KH.outer_w + bu3_x_offset, KH.outer_h + 3.0, KH.height)
+        bu3 = self.t10.add_point(
+            KH.outer_w + bu3_x_offset, KH.outer_h + 3.0, KH.height
+        )
 
         self.mesh.add_quad(
             self.t12.u_br, self.t21.u_br, bu0, thumb_wall[0].out1
@@ -1174,6 +1264,8 @@ class Keyboard:
 
         self.connect_thumb_left(thumb_wall, left_wall, bu4, bl3, c3_in2)
 
+        self._bevel_edge(bu3, c3_out2)
+
     def connect_thumb_front(
         self, thumb_wall: List[ThumbColumn], front_wall: List[WallColumn]
     ) -> None:
@@ -1205,6 +1297,8 @@ class Keyboard:
         self.mesh.add_quad(og, front_wall[0].out3, front_wall[0].in3, ig)
         self.mesh.add_quad(o, front_wall[0].out2, front_wall[0].out3, og)
         self.mesh.add_quad(i, ig, front_wall[0].in3, front_wall[0].in2)
+
+        self._bevel_edge(thumb_wall[0].out1, o)
 
         return o, i
 
@@ -1253,6 +1347,9 @@ class Keyboard:
 
         self.mesh.add_tri(left_wall[-1].in2, bl3, c3_in2)
         self.mesh.add_tri(left_wall[-1].in2, i, bl3)
+
+        self._bevel_edge(thumb_wall[-1].out1, bu4)
+        self._bevel_edge(left_wall[-1].out2, bu4)
 
     def thumb_connect_top(
         self, front_wall: List[WallColumn], left_wall: List[WallColumn]
@@ -1351,10 +1448,38 @@ class Keyboard:
         self.mesh.add_tri(left_wall[-1].out1, c3_out1, left_wall[-1].out2)
         self.mesh.add_tri(left_wall[-1].out2, c3_out1, c3_out2)
 
+        self._bevel_edge(front_wall[0].out1, c0_out1, .5)
+        self._bevel_edge(c0_out1, c1_out1, .5)
+        self._bevel_edge(c1_out1, c2_out1, .5)
+        self._bevel_edge(c2_out1, c3_out1, .5)
+
+        self._bevel_edge(front_wall[0].out1, c0_out2, .5)
+        self._bevel_edge(c0_out2, c1_out2)
+        self._bevel_edge(c1_out2, c2_out2)
+        self._bevel_edge(c2_out2, c3_out2)
+
+        self._bevel_edge(c3_out2, c3_out1)
+
         return (
             (c0_in2, c1_in2, c2_in2, c3_in2),
             (c0_out2, c1_out2, c2_out2, c3_out2),
         )
+
+    def get_bevel_weights(self, edges) -> Dict[int, float]:
+        results: Dict[int, float] = {}
+        for idx, e in enumerate(edges):
+            v0 = e.vertices[0]
+            v1 = e.vertices[1]
+            if v0 < v1:
+                key = v0, v1
+            else:
+                key = v1, v0
+
+            weight = self._bevel_edges.get(key, 0.0)
+            if weight > 0.0:
+                results[idx] = weight
+
+        return results
 
 
 class KeyHole:
@@ -1540,7 +1665,6 @@ class KeyHole:
         tri(u_mid_tr, prev_t, rnub_center_t)
         quad(u_mid_tr, u_mid_br, prev_b, prev_t)
 
-
     def top_edge(self) -> None:
         self.mesh.add_quad(self.u_tr, self.u_tl, self.l_tl, self.l_tr)
 
@@ -1659,12 +1783,5 @@ class ThumbColumn:
 
 def gen_keyboard() -> Mesh:
     kbd = Keyboard()
-    kbd.gen_main_grid()
-    kbd.gen_thumb_grid()
-    kbd.gen_walls()
-
-    if False:
-        kbd.gen_main_grid_edges()
-        kbd.gen_thumb_grid_edges()
-
+    kbd.gen_mesh()
     return kbd.mesh
