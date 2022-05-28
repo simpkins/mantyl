@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from cad import Mesh, Point, Transform
+from cad import Mesh, Point, Transform, intersect_line_and_plane
 
 import math
 from typing import Any, Generator, List, Optional, Tuple
@@ -47,7 +47,9 @@ class Keyboard:
                     matrix[col][row + 1],
                 )
 
-    def _bevel_edge(self, p0: MeshPoint, p1: MeshPoint, weight: float = 1.0) -> None:
+    def _bevel_edge(
+        self, p0: MeshPoint, p1: MeshPoint, weight: float = 1.0
+    ) -> None:
         """Mark that a vertex is along an edge to be beveled."""
         if p0.index < p1.index:
             key = p0.index, p1.index
@@ -605,7 +607,7 @@ class Keyboard:
                 )
             )
 
-            self._bevel_edge(col.out1, col.out2)
+            self._bevel_edge(col.out1, col.out2, 0.5)
             if idx + 1 < len(columns):
                 self._bevel_edge(col.out1, columns[idx + 1].out1)
                 self._bevel_edge(col.out2, columns[idx + 1].out2)
@@ -923,7 +925,7 @@ class Keyboard:
             self._bevel_edge(c0.out1, c1.out1, 0.5)
 
         for col in columns:
-            self._bevel_edge(col.out1, col.out2)
+            self._bevel_edge(col.out1, col.out2, 0.5)
 
         self._bevel_edge(oc.out3, oc.out2)
         self._bevel_edge(oc.in3, oc.in2)
@@ -1118,63 +1120,124 @@ class Keyboard:
 
     def gen_thumb_wall(self) -> List[ThumbColumn]:
         offset = 7.0
+        KH = KeyHole
 
-        kh_w = KeyHole.outer_w
-        kh_h = KeyHole.outer_h
+        # Compute the outer corners
+        br = ThumbColumn()
+        br.out0 = self.t12.u_br
+        br.in0 = self.t12.l_br
+        br.out1 = self.t12.add_point(
+            KH.outer_w, -KH.outer_h - offset, KH.height
+        )
+        br.out2 = self.mesh.add_point(Point(br.out1.x, br.out1.y, 0.0))
 
-        off_b = Point(0.0, -1.0, 0.0)
-        off_l = Point(-1.0, 0.0, 0.0)
-        off_bl = Point(-1.0, -1.0, 0.0)
-        off_tl = Point(-1.0, 1.0, 0.0)
-        off_t = Point(0.0, 1.0, 0.0)
+        bl = ThumbColumn()
+        bl.out0 = self.t02.u_bl
+        bl.in0 = self.t02.l_bl
+        bl.out1 = self.t02.add_point(
+            -KH.outer_w - offset, -KH.outer_h - offset, KH.height
+        )
+        bl.out2 = self.mesh.add_point(Point(bl.out1.x, bl.out1.y, 0.0))
 
-        def column(
-            key_points: Tuple[MeshPoint, MeshPoint],
-            key_tf: Transform,
-            x_off: float,
-            y_off: float,
-            wall_direction: Point,
-        ) -> None:
-            col = ThumbColumn()
-            col.out0 = key_points[0]
-            col.in0 = key_points[1]
+        tl = ThumbColumn()
+        tl.out0 = self.t00.u_tl
+        tl.in0 = self.t00.l_tl
+        tl.out1 = self.t00.add_point(
+            -KH.outer_w - offset, KH.outer_h + offset, KH.height
+        )
+        tl.out2 = self.mesh.add_point(Point(tl.out1.x, tl.out1.y, 0.0))
 
-            upper_rel = Point(x_off, y_off, KeyHole.height) + (
-                wall_direction * offset
+        tr = ThumbColumn()
+        tr.out0 = self.t10.u_tr
+        tr.in0 = self.t10.l_tr
+        tr.out1 = self.t10.add_point(
+            KH.outer_w, KH.outer_h + offset, KH.height
+        )
+        tr.out2 = self.mesh.add_point(Point(tr.out1.x, tr.out1.y, 0.0))
+
+        # Now compute the inner ground corner locations, to maintain a wall
+        # thickness of self.wall_thickness.
+        front_dx = br.out2.x - bl.out2.x
+        front_dy = br.out2.y - bl.out2.y
+        front_delta = (
+            Point(-front_dy, front_dx, 0.0).unit() * self.wall_thickness
+        )
+
+        left_dx = bl.out2.x - tl.out2.x
+        left_dy = bl.out2.y - tl.out2.y
+        left_delta = Point(-left_dy, left_dx, 0.0).unit() * self.wall_thickness
+
+        back_dx = tl.out2.x - tr.out2.x
+        back_dy = tl.out2.y - tr.out2.y
+        back_delta = Point(-back_dy, back_dx, 0.0).unit() * self.wall_thickness
+
+        # Compute the inner ground corners now that we have
+        # the inner wall offsets
+        br.in2 = self.mesh.add_point(br.out2.point + front_delta)
+        bl.in2 = self.mesh.add_point(bl.out2.point + front_delta + left_delta)
+        tl.in2 = self.mesh.add_point(tl.out2.point + back_delta + left_delta)
+        tr.in2 = self.mesh.add_point(tr.out2.point + back_delta)
+
+        def in1_from_in2(in2: Point) -> Point:
+            line = (Point(in2.x, in2.y, 0.0), Point(in2.x, in2.y, 1.0))
+            plane = (
+                self.t00.l_tl.point,
+                self.t00.l_tr.point,
+                self.t00.l_br.point,
             )
-            lower_rel = Point(x_off, y_off, KeyHole.mid_height) + (
-                wall_direction * (offset - self.wall_thickness)
-            )
-            col.out1 = self.mesh.add_point(upper_rel.transform(key_tf))
-            col.in1 = self.mesh.add_point(lower_rel.transform(key_tf))
-            col.out2 = self.mesh.add_point(Point(col.out1.x, col.out1.y, 0.0))
-            col.in2 = self.mesh.add_point(Point(col.in1.x, col.in1.y, 0.0))
-            return col
+            intersect = intersect_line_and_plane(line, plane)
+            if intersect is None:
+                raise Exception("thumb grid is completely vertical")
+            return Point(in2.x, in2.y, intersect.z)
+
+        # Now compute the inner wall top points
+        l_plane = (self.t00.l_tl, self.t00.l_tr, self.t00.l_br)
+        br.in1 = self.mesh.add_point(in1_from_in2(br.in2))
+        bl.in1 = self.mesh.add_point(in1_from_in2(bl.in2))
+        tl.in1 = self.mesh.add_point(in1_from_in2(tl.in2))
+        tr.in1 = self.mesh.add_point(in1_from_in2(tr.in2))
+
+        def make_column(mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], x_off: float, y_off: float, in_delta: Point) -> ThumbColumn:
+            c = ThumbColumn()
+            c.out0 = p0[0]
+            c.in0 = p0[1]
+            c.out1 = mp.add_point(x_off, y_off, KH.height)
+            c.out2 = self.mesh.add_point(Point(c.out1.x, c.out1.y, 0.0))
+            c.in2 = self.mesh.add_point(c.out2.point + in_delta)
+            c.in1 = self.mesh.add_point(in1_from_in2(c.in2))
+            return c
+
+        def front_column(mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], x_off: float) -> ThumbColumn:
+            return make_column(mp, p0, x_off, -KH.outer_h - offset, front_delta)
+
+        def left_column(mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], y_off: float) -> ThumbColumn:
+            return make_column(mp, p0, -KH.outer_w - offset, y_off, left_delta)
+
+        def top_column(mp: MeshPoint, p0: Tuple[MeshPoint, MeshPoint], x_off: float) -> ThumbColumn:
+            return make_column(mp, p0, x_off, KH.outer_h + offset, back_delta)
 
         columns = [
-            column(self.t12.br, self.t12.transform, kh_w, -kh_h, off_b),
-            column(self.t12.bl, self.t12.transform, -kh_w, -kh_h, off_b),
-            column(self.t02.br, self.t02.transform, kh_w, -kh_h, off_b),
-            column(self.t02.bl, self.t02.transform, -kh_w, -kh_h, off_bl),
-            column(self.t02.tl, self.t02.transform, -kh_w, kh_h, off_l),
-            column(self.t01.bl, self.t01.transform, -kh_w, -kh_h, off_l),
-            column(self.t01.tl, self.t01.transform, -kh_w, kh_h, off_l),
-            column(self.t00.bl, self.t00.transform, -kh_w, -kh_h, off_l),
-            column(self.t00.tl, self.t00.transform, -kh_w, kh_h, off_tl),
-            column(self.t00.tr, self.t00.transform, kh_w, kh_h, off_t),
-            column(self.t10.tl, self.t10.transform, -kh_w, kh_h, off_t),
-            column(self.t10.tr, self.t10.transform, kh_w, kh_h, off_t),
+            br,
+            front_column(self.t12, self.t12.bl, -KH.outer_w),
+            front_column(self.t02, self.t02.br, KH.outer_w),
+            bl,
+            left_column(self.t02, self.t02.tl, KH.outer_h),
+            left_column(self.t01, self.t01.bl, -KH.outer_h),
+            left_column(self.t01, self.t01.tl, KH.outer_h),
+            left_column(self.t00, self.t00.bl, -KH.outer_h),
+            tl,
+            top_column(self.t00, self.t00.tr, KH.outer_w),
+            top_column(self.t10, self.t10.tl, -KH.outer_w),
+            tr,
         ]
 
         for idx in range(len(columns) - 1):
             self._bevel_edge(columns[idx].out1, columns[idx + 1].out1)
-        bl = columns[3]
+
         self._bevel_edge(bl.out2, bl.out1)
         self._bevel_edge(bl.in2, bl.in1, .75)
-        tl = columns[8]
         self._bevel_edge(tl.out2, tl.out1)
         self._bevel_edge(tl.in2, tl.in1, .75)
-
         return columns
 
     def gen_thumb_connect(
@@ -1448,12 +1511,12 @@ class Keyboard:
         self.mesh.add_tri(left_wall[-1].out1, c3_out1, left_wall[-1].out2)
         self.mesh.add_tri(left_wall[-1].out2, c3_out1, c3_out2)
 
-        self._bevel_edge(front_wall[0].out1, c0_out1, .5)
-        self._bevel_edge(c0_out1, c1_out1, .5)
-        self._bevel_edge(c1_out1, c2_out1, .5)
-        self._bevel_edge(c2_out1, c3_out1, .5)
+        self._bevel_edge(front_wall[0].out1, c0_out1, 0.5)
+        self._bevel_edge(c0_out1, c1_out1, 0.5)
+        self._bevel_edge(c1_out1, c2_out1, 0.5)
+        self._bevel_edge(c2_out1, c3_out1, 0.5)
 
-        self._bevel_edge(front_wall[0].out1, c0_out2, .5)
+        self._bevel_edge(front_wall[0].out1, c0_out2, 0.5)
         self._bevel_edge(c0_out2, c1_out2)
         self._bevel_edge(c1_out2, c2_out2)
         self._bevel_edge(c2_out2, c3_out2)

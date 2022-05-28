@@ -146,6 +146,10 @@ class Point:
         assert isinstance(n, (float, int))
         return Point(self.x * n, self.y * n, self.z * n)
 
+    def dot(self, p: Point) -> float:
+        """Return the dot product"""
+        return (self.x * p.x) + (self.y * p.y) + (self.z * p.z)
+
 
 class MeshPoint:
     __slots__ = ["mesh", "_index", "point"]
@@ -211,3 +215,25 @@ class Mesh:
         index = len(self.faces)
         self.faces.append((p0.index, p1.index, p2.index, p3.index))
         return index
+
+
+def intersect_line_and_plane(
+    line: Tuple[Point, Point], plane: Tuple[Point, Point, Point]
+) -> Point:
+    # Compute the plane's normal vector
+    da = plane[1] - plane[0]
+    db = plane[2] - plane[0]
+    normal = Point(
+        da.y * db.z - da.z * db.y,
+        da.z * db.x - da.x * db.z,
+        da.x * db.y - da.y * db.x,
+    )
+
+    line_vector = line[1] - line[0]
+    dot = normal.dot(line_vector)
+    if dot == 0.0:
+        return None
+
+    w = line[0] - plane[0]
+    fraction = -normal.dot(w) / dot
+    return line[0] + (line_vector * fraction)
