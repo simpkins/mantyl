@@ -246,6 +246,11 @@ class Shape:
     def project(cls, children: List[Shape]) -> Shape:
         return cls(f"projection(cut = false)", children)
 
+    @classmethod
+    def stl(cls, path: str, convexity: int = 10) -> Shape:
+        # TODO: properly escape the path
+        return cls(f'import("{path}", convexity={convexity})', [])
+
     @staticmethod
     def bool_str(value: bool) -> str:
         return "true" if value else "false"
