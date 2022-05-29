@@ -3,6 +3,10 @@
 # Copyright (c) 2022, Adam Simpkins
 #
 
+"""A script to generate the keyboard mesh in Blender.
+To use, run "blender -P blender.py"
+"""
+
 from __future__ import annotations
 
 import bpy
@@ -71,8 +75,22 @@ def main() -> None:
         region = a.spaces.active.region_3d
         region.view_distance = 350
 
-    # Enter edit mode
-    bpy.ops.object.mode_set(mode="EDIT")
+    # Apply the bevel modifier
+    apply_bevel = True
+    if apply_bevel:
+        bpy.ops.object.modifier_apply(modifier=bevel.name)
+
+        # Enter edit mode
+        bpy.ops.object.mode_set(mode="EDIT")
+
+        # Merge vertices that are close together
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.mesh.remove_doubles()
+        bpy.ops.mesh.select_all(action="DESELECT")
+
+    else:
+        # Enter edit mode
+        bpy.ops.object.mode_set(mode="EDIT")
 
     print("done")
 

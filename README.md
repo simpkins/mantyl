@@ -1,6 +1,22 @@
 # ![Ou Kanji](img/ou.png) Custom concave split keyboard
 
-This is code for my custom keyboard.
+This repository contains code for my custom keyboard.
+
+This includes both modeling code to generate the 3D model, as well as the
+firmware.
+
+# Keyboard Model
+
+The keyboard model is generated programmatically, using a mix of Blender and
+OpenSCAD.
+
+I initially attempted to model the keyboard solely using OpenSCAD, but kept
+running into bugs where OpenSCAD generates bad STL output.  It can't
+seem to handle arbitrary hulls, and will sometimes generate reversed facets and
+normals, resulting in output that cannot be processed for 3D printing.  I
+therefore switched to using pure Python to generate the mesh, and using Blender
+Python APIs to apply bevels.
+
 
 # Dependencies
 
@@ -9,6 +25,7 @@ For the firmware:
 
 For generating the 3D models:
 * [Python](https://www.python.org/)
+* [Blender](https://www.blender.org/)
 * [OpenSCAD](https://openscad.org/)
 
 # Inspiration
