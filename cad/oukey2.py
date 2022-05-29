@@ -602,6 +602,14 @@ class Keyboard:
             back_wall[0].out2, back_wall[0].out1, self._bevel_outer_vert_corner
         )
 
+        # This edge is flat, but blender ends up generating intersecting
+        # faces on the edge it is connected to unless we also enable
+        # beveling on it.
+        self._bevel_edge(right_wall[-3].out1, right_wall[-3].out2, 0.5)
+        # Disable bevel on the closest part of the last back wall column,
+        # otherwise blender ends up generating intersecting faces here too.
+        self._bevel_edge(back_wall[-1].out0, back_wall[-1].out1, 0.0)
+
     def gen_back_wall(self) -> List[WallColumn]:
         u_near_off = 4.0
         l_near_off = 2.0
