@@ -803,7 +803,7 @@ class Keyboard:
     ) -> List[WallColumn]:
         u_near_off = -2.0
         l_near_off = -1.0
-        far_off = Point(-6.0, 0.0, 0.0)
+        far_off = Point(-6.0, 0.0, -2.0)
 
         columns: List[WallColumn] = []
         for col_idx, row_idx in indices:
@@ -890,7 +890,7 @@ class Keyboard:
         oc.in1 = k.add_point(-k.outer_w - 2.0, k.outer_h + 2.0, k.mid_height)
 
         oc.out2 = self.mesh.add_point(
-            Point(bottom_out_x, oc.out1.y + 6.0, oc.out1.z)
+            Point(bottom_out_x, oc.out1.y + 6.0, oc.out1.z - 2.0)
         )
         oc.out3 = self.mesh.add_point(Point(oc.out2.x, oc.out2.y, 0.0))
         oc.in3 = self.mesh.add_point(
@@ -1345,7 +1345,7 @@ class Keyboard:
 
         # Top thumb area face from the thumb grid to the wall
         bu1 = self.t21.add_point(
-            KH.outer_w + 8.0, -KH.outer_h + 2.0, KH.height
+            KH.outer_w + 10.0, -KH.outer_h + 2.0, KH.height
         )
         bu2 = self.t20.add_point(KH.outer_w + 4.0, KH.outer_h + 4.0, KH.height)
         bu3_x_offset = 3.0
@@ -1374,10 +1374,10 @@ class Keyboard:
 
         # Lower thumb area face from the thumb grid to the wall
         bl1 = self.t21.add_point(
-            KH.outer_w + 10.0, -KH.outer_h + 4.0, KH.mid_height
+            KH.outer_w + 14.0, -KH.outer_h + 4.0, KH.mid_height
         )
         bl2 = self.t20.add_point(
-            KH.outer_w + 6.5, KH.outer_h + 5.5, KH.mid_height
+            KH.outer_w + 8.5, KH.outer_h + 5.5, KH.mid_height
         )
 
         # bl3 is connected to the inside of the thumb wall,

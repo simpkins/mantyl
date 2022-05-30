@@ -335,16 +335,16 @@ def do_main() -> None:
 
     # Back left foot
     add_foot(
-        kbd_obj, kbd.bl.out3.x + 0.3, kbd.bl.out3.y - off_45 - 0.3, -45.0, 3.0
+        kbd_obj, kbd.bl.out3.x + 0.3, kbd.bl.out3.y - off_45 - 0.3, -45.0, 5.0
     )
 
     # Front right foot
     add_foot(
         kbd_obj,
-        kbd.fr.out3.x - off_45 - 0.1,
-        kbd.fr.out3.y + off_45 + 0.1,
+        kbd.fr.out3.x - off_45 - 0.2,
+        kbd.fr.out3.y + off_45 + 0.2,
         135.0,
-        2.0,
+        0.0,
     )
 
     # Thumb bottom left foot
