@@ -139,7 +139,9 @@ class Point:
         return Point(self.x + other.x, self.y + other.y, self.z + other.z)
 
     def __sub__(self, other: Point) -> Point:
-        assert isinstance(other, Point)
+        if not isinstance(other, Point):
+            raise Exception(f"other is {type(other)}")
+
         return Point(self.x - other.x, self.y - other.y, self.z - other.z)
 
     def __mul__(self, n: Union[float, int]) -> Point:
@@ -216,6 +218,18 @@ class Mesh:
         index = len(self.faces)
         self.faces.append((p0.index, p1.index, p2.index, p3.index))
         return index
+
+    def transform(self, tf: Transform) -> None:
+        for mp in self.points:
+            mp.point = mp.point.transform(tf)
+
+    def rotate(self, x: float, y: float, z: float) -> None:
+        tf = Transform().rotate(x, y, z)
+        self.transform(tf)
+
+    def translate(self, x: float, y: float, z: float) -> None:
+        tf = Transform().translate(x, y, z)
+        self.transform(tf)
 
 
 def intersect_line_and_plane(

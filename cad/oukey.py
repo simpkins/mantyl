@@ -1333,6 +1333,7 @@ def model_right(
         kbd.key_hole = single_plate(loose=True)
     parts = (
         kbd.key_holes()
+        + kbd.connectors()
         + kbd.thumb_area()
         + kbd.thumb_walls(oled_display=oled_display)
         + kbd.main_walls()

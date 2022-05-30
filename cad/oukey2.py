@@ -44,16 +44,6 @@ class Keyboard:
             self.gen_main_grid_edges()
             self.gen_thumb_grid_edges()
 
-    def add_quad_matrix(self, matrix: List[List[MeshPoint]]) -> None:
-        for col in range(len(matrix) - 1):
-            for row in range(len(matrix[col]) - 1):
-                self.mesh.add_quad(
-                    matrix[col][row],
-                    matrix[col + 1][row],
-                    matrix[col + 1][row + 1],
-                    matrix[col][row + 1],
-                )
-
     def _bevel_edge(
         self, p0: MeshPoint, p1: MeshPoint, weight: float = 1.0
     ) -> None:
@@ -984,6 +974,7 @@ class Keyboard:
         fr.in3 = self.mesh.add_point(
             Point(right.in3.x, front.in3.y, front.in3.z)
         )
+        self.fr = fr
 
         # Move the front inner edge over to share the same edge as the corner
         front.in1 = fr.in1
@@ -1039,6 +1030,7 @@ class Keyboard:
         br.in3 = self.mesh.add_point(
             Point(right.in3.x, back.in3.y, back.in3.z)
         )
+        self.br = br
 
         # Simply move the back and right wall columns over to place them
         # at the back corner.
@@ -1094,6 +1086,7 @@ class Keyboard:
         bl.in2 = self.mesh.add_point(Point(in_x, back.in2.y, back.in2.z))
         bl.out3 = self.mesh.add_point(Point(out_x, back.out3.y, back.out3.z))
         bl.in3 = self.mesh.add_point(Point(in_x, back.in3.y, back.in3.z))
+        self.bl = bl
 
         # The inner wall of back and bl are very close together, which makes
         # it difficult to bevel the inside corner.  Just have the back wall
@@ -1226,6 +1219,11 @@ class Keyboard:
             KH.outer_w, KH.outer_h + offset, KH.height
         )
         tr.out2 = self.mesh.add_point(Point(tr.out1.x, tr.out1.y, 0.0))
+
+        self.thumb_br = br
+        self.thumb_bl = bl
+        self.thumb_tl = tl
+        self.thumb_tr = tr
 
         # Now compute the inner ground corner locations, to maintain a wall
         # thickness of self.wall_thickness.
