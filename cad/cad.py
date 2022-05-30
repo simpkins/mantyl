@@ -207,6 +207,9 @@ class Mesh:
     def add_point(self, point: Point) -> MeshPoint:
         return MeshPoint(self, point=point)
 
+    def add_xyz(self, x: float, y: float, z: float) -> MeshPoint:
+        return self.add_point(Point(x, y, z))
+
     def add_tri(self, p0: MeshPoint, p1: MeshPoint, p2: MeshPoint) -> int:
         index = len(self.faces)
         self.faces.append((p0.index, p1.index, p2.index))
@@ -230,6 +233,11 @@ class Mesh:
     def translate(self, x: float, y: float, z: float) -> None:
         tf = Transform().translate(x, y, z)
         self.transform(tf)
+
+    def mirror_x(self) -> None:
+        for mp in self.points:
+            mp.point.x = -1.0 * mp.x
+        self.faces = [tuple(reversed(face)) for face in self.faces]
 
 
 def intersect_line_and_plane(

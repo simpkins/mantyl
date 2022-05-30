@@ -1500,6 +1500,8 @@ class Keyboard:
         bu4g = self.mesh.add_point(Point(bu4.x, bu4.y, 0.0))
         bl3g = self.mesh.add_point(Point(bl3.x, bl3.y, 0.0))
 
+        self.thumb_tr_connect = og
+
         self.mesh.add_quad(left_wall[-1].out3, left_wall[-1].out2, o, og)
         self.mesh.add_tri(o, left_wall[-1].out2, bu4)
 
