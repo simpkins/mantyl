@@ -16,7 +16,7 @@ import math
 import random
 import os
 import sys
-from typing import List, Union
+from typing import List, Union, Tuple
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -24,7 +24,7 @@ import cad
 import oukey
 
 
-def blender_mesh(name: str, mesh: Mesh) -> bpy.types.Mesh:
+def blender_mesh(name: str, mesh: cad.Mesh) -> bpy.types.Mesh:
     points = [(p.x, p.y, p.z) for p in mesh.points]
     faces = [tuple(reversed(f)) for f in mesh.faces]
 
