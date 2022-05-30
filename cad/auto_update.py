@@ -1,13 +1,16 @@
 """
 Automatically re-run blender.py within Blender whenever it changes.
 
-This is a blender operator that checks blender.py for changes.  It also
-monitors any other modules in this directory that are used by blender.py.
+This is a blender operator that monitors an external script and its
+dependencies for any changes, and automatically re-runs the script any time a
+change is made to any of these files.
+
 This makes it easy to work on the CAD code in an external editor, and have the
 changes automatically reflected in Blender whenever you save the files.
 
-This automatically starts monitoring blender.py when you run it.
-This adds an option to the top-level Edit menu to cancel monitoring.
+This automatically starts monitoring when you first run the script.
+It adds entries to the main Edit menu to allow stopping and re-starting
+monitoring.
 """
 
 from __future__ import annotations
@@ -23,7 +26,18 @@ from typing import Dict, Optional
 _instance: Optional[ScriptMonitorOperator] = None
 
 MONITOR_PATH = "main.py"
-_monitor_modules: Dict[Path, str] = {}
+
+# Additional dependencies to monitor.
+# These should be listed in dependency order: if module A imports module B,
+# B should be listed first in this list.
+#
+# In theory it would be nice to use the modulefinder library to automatically
+# find the dependencies of the script.  Unfortunately modulefinder cannot
+# currently handle numpy: https://bugs.python.org/issue40350
+_DEPENDENCIES: Dict[Path, str] = {
+    (Path("cad.py"), "cad"),
+    (Path("oukey.py"), "oukey"),
+}
 
 
 class ScriptMonitorOperator(bpy.types.Operator):
@@ -75,6 +89,10 @@ class ScriptMonitorOperator(bpy.types.Operator):
             self._abs_path = self._local_dir / MONITOR_PATH
 
         self._timestamps = {}
+        self._monitor_modules = [
+            (self._local_dir / path, mod_name)
+            for path, mod_name in _DEPENDENCIES
+        ]
 
         self.report({"INFO"}, f"monitoring external script {self._abs_path}")
         self._timestamps = self._get_timestamps()
@@ -97,17 +115,15 @@ class ScriptMonitorOperator(bpy.types.Operator):
         self._timestamps = current
 
         # Reload all modules.
-        # Do this twice to make sure that we load the new versions of all modules,
-        # and then we reprocess everything so that if one module uses another, it sees
-        # the new version of its dependency when we reload it the second time.
-        for n in (1, 2):
-            for module_name in _monitor_modules.values():
-                mod = sys.modules[module_name]
-                try:
-                    importlib.reload(mod)
-                except Exception as ex:
-                    self._report_error(f"error reloading {module_name}")
-                    return
+        # This has to be done in the proper order, where modules are reloaded
+        # after any other modules they depend on.
+        for _path, module_name in self._monitor_modules:
+            mod = sys.modules[module_name]
+            try:
+                importlib.reload(mod)
+            except Exception as ex:
+                self._report_error(f"error reloading {module_name}")
+                return
 
         self._timestamps = current
         self.run_script()
@@ -115,7 +131,7 @@ class ScriptMonitorOperator(bpy.types.Operator):
     def _get_timestamps(self) -> Dict[Path, Optional[float]]:
         ts = self._get_timestamp(self._abs_path)
         result = {self._abs_path: ts}
-        for path in _monitor_modules:
+        for path, _mod_name in self._monitor_modules:
             result[path] = self._get_timestamp(path)
         return result
 
@@ -128,36 +144,10 @@ class ScriptMonitorOperator(bpy.types.Operator):
 
     def run_script(self):
         self.report({"INFO"}, f"running {self._abs_path}")
-        modules_pre = set(sys.modules.keys())
-
-        # Run the script
         try:
             self._execute_script()
         except Exception as ex:
             self._report_error(f"error running {self._abs_path}")
-            # Fall through and look for newly imported modules
-            # even after an error.
-
-        # Find local modules that were imported by the script,
-        # and also monitor them for changes.
-        modules_post = set(sys.modules.keys())
-        imported_modules = modules_post - modules_pre
-        for mod_name in imported_modules:
-            mod = sys.modules[mod_name]
-            mod_path = getattr(mod, "__file__", None)
-            if mod_path is None:
-                continue
-
-            path = Path(mod_path)
-            # Python 3.9 has is_relative_to(), but for now we also want to
-            # support Python 3.8.
-            try:
-                path.relative_to(self._local_dir)
-            except ValueError:
-                continue
-
-            self.report({"INFO"}, f"Also monitoring new local module {path}")
-            _monitor_modules[path] = mod_name
 
     def _report_error(self, msg: str) -> None:
         err_str = traceback.format_exc()
