@@ -22,7 +22,7 @@ from typing import Dict, Optional
 
 _instance: Optional[ScriptMonitorOperator] = None
 
-MONITOR_PATH = "blender.py"
+MONITOR_PATH = "main.py"
 _monitor_modules: Dict[Path, str] = {}
 
 
@@ -218,4 +218,4 @@ if __name__ == "__main__":
     register()
 
     # Start the operator
-    bpy.ops.script.external_script_monitor() # path="blender.py")
+    bpy.ops.script.external_script_monitor()

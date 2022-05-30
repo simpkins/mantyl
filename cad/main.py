@@ -21,7 +21,7 @@ from typing import List, Union
 sys.path.insert(0, os.path.dirname(__file__))
 
 import cad
-import oukey2
+import oukey
 
 
 def blender_mesh(name: str, mesh: Mesh) -> bpy.types.Mesh:
@@ -51,7 +51,7 @@ def new_mesh_obj(
     return obj
 
 
-def gen_keyboard(kbd: oukey2.Keyboard) -> bpy.types.Object:
+def gen_keyboard(kbd: oukey.Keyboard) -> bpy.types.Object:
     mesh = blender_mesh("keyboard_mesh", kbd.mesh)
     obj = new_mesh_obj("keyboard", mesh)
 
@@ -319,7 +319,7 @@ def do_main() -> None:
 
     delete_all()
 
-    kbd = oukey2.Keyboard()
+    kbd = oukey.Keyboard()
     kbd.gen_mesh()
 
     kbd_obj = gen_keyboard(kbd)

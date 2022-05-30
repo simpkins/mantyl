@@ -5,557 +5,373 @@
 
 from __future__ import annotations
 
-import argparse
+from cad import Mesh, MeshPoint, Point, Transform, intersect_line_and_plane
+
 import math
-from pathlib import Path
-from typing import List, Tuple, TypeVar
-
-from cad import Mesh, Point, Transform
-from openscad import PosAndNeg, Shape, tri_strip
-from keyboard import (
-    corner_tl,
-    corner_tr,
-    corner_bl,
-    corner_br,
-    dsa_cap,
-    mount_width,
-    mount_height,
-    plate_thickness,
-    single_plate,
-)
-import oukey2
-
-ShapeOrTransform = TypeVar("ShapeOrTransform", Shape, Transform)
-
-dsa_profile_key_height = 7.4
-cap_top_height = plate_thickness + dsa_profile_key_height
-extra_width = 2.5  # extra space between keyhole mounts
-extra_height = 0  # extra space between keyhole mounts
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 
-class WallPost:
-    """
-    WallPost contains point information about a single vertical portion of the
-    outer walls, from one corner of a key hole down to the ground.
-    """
+class Keyboard:
+    def __init__(self):
+        self.wall_thickness = 4.0
 
-    def __init__(
-        self,
-        post: Shape,
-        near_corner: Point,
-        far_corner: Point,
-        highlight: bool = False,
+        self._main_thumb_transform = (
+            Transform()
+            .rotate(0, 0, 40)
+            .rotate(0, 25, 0)
+            .translate(-86, -66, 41)
+        )
+
+        self.mesh = Mesh()
+        self._define_keys()
+
+        self._bevel_edges: Dict[Tuple[int, int], float] = {}
+
+        self._bevel_outer_vert_corner = 1.0
+        self._bevel_inner_vert_corner = 0.75
+        self._bevel_outer_ring = 1.0
+        self._bevel_outer_ring_front = 0.5
+        self._bevel_ring_flat = 0.3
+        self._bevel_ring_flat_front = 0.75
+
+    def gen_mesh(self, gen_walls: bool = True) -> None:
+        self.gen_main_grid()
+        self.gen_thumb_grid()
+
+        if gen_walls:
+            self.gen_walls()
+        else:
+            self.gen_main_grid_edges()
+            self.gen_thumb_grid_edges()
+
+    def _bevel_edge(
+        self, p0: MeshPoint, p1: MeshPoint, weight: float = 1.0
     ) -> None:
-        self.post = post
-        self.near = near_corner
-        self.far = far_corner
-        self.highlight = highlight
+        """Mark that a vertex is along an edge to be beveled."""
+        if p0.index < p1.index:
+            key = p0.index, p1.index
+        else:
+            key = p1.index, p0.index
+        self._bevel_edges[key] = weight
 
-    def ground(self) -> Point:
-        return Point(self.far.x, self.far.y, 0)
+    @staticmethod
+    def _get_key_variable(
+        name: str, keys: List[List[Optional[KeyHole]]], msg: str
+    ) -> KeyHole:
+        try:
+            col = int(name[1])
+            row = int(name[2])
+        except ValueError:
+            raise AttributeError(name)
+        if col < 0 or col > len(keys):
+            raise AttributeError(name)
+        if row < 0 or row > len(keys[col]):
+            raise AttributeError(name)
+        value = keys[col][row]
+        if value is None:
+            raise IndexError(f"invalid {msg} position {name}")
+        return value
 
+    def __getattr__(self, name) -> Any:
+        # Allow the keys to be accessed as kXY.  e.g., k12 is self._keys[1][2]
+        if name.startswith("k") and len(name) == 3:
+            return self._get_key_variable(name, self._keys, "key")
 
-class ThumbWallPost:
-    """
-    WallPost contains point information about a single vertical portion of the
-    outer thumb section walls.
+        # Allow the thumb keys to be accessed as tXY.
+        # e.g., t12 is self._thumb_keys[1][2]
+        if name.startswith("t") and len(name) == 3:
+            return self._get_key_variable(name, self._thumb_keys, "thumb key")
 
-    This is similar to WallPost, but the thumb walls do not have separate near
-    & far corners.  They drop straight to the ground instead of having a taper
-    from the near to far corner.
-    """
-
-    def __init__(
-        self, post: Shape, corner: Point, highlight: bool = False
-    ) -> None:
-        self.post = post
-        self.corner = corner
-        self.highlight = highlight
-
-    def ground(self) -> Point:
-        return Point(self.corner.x, self.corner.y, 0)
-
-
-class MyKeyboard:
-    def __init__(self) -> None:
-        self.num_columns = 6
-        self.num_rows = 6
-        self.key_hole = single_plate()
-
-        self.center_col = 3
-        self.center_row = self.num_rows - 3
-        self.col_curvature = 18.0
-        self.row_curvature = 5.0
-
-        self.row_radius = cap_top_height + (
-            (mount_height + extra_height)
-            / (2 * math.sin(math.radians(self.col_curvature / 2)))
-        )
-        self.col_radius = cap_top_height + (
-            (mount_width + extra_width)
-            / (2 * math.sin(math.radians(self.row_curvature / 2)))
-        )
-        self.col_x_delta = (
-            -1 - math.sin(math.radians(self.row_curvature)) * self.col_radius
-        )
-
-        self.tenting_angle = 15
-        self.keyboard_z_offset: float = 9.0
-
-        # Wall thickness = 2 * wall_radius
-        self.wall_radius = 2
-
-        # Set to true to render the walls transparent grey.  This makes it a
-        # little easier to see and debug positioning of the feet.
-        self.grey_walls = False
+        raise AttributeError(name)
 
     def key_indices(self) -> Generator[Tuple[int, int], None, None]:
-        for column in range(self.num_columns):
-            for row in range(self.num_rows):
-                if row == (self.num_rows - 1) and column == 0:
-                    # Skip the lower inner corner, to make room
-                    # for thumb keys instead.
-                    continue
-                yield (column, row)
+        for row in (2, 3, 4):
+            yield (0, row)
+        for row in range(5):
+            yield (1, row)
+        for col in (2, 3, 4, 5, 6):
+            for row in range(6):
+                yield (col, row)
 
-        # Add an extra inner column of 3 keys
-        yield (-1, 2)
-        yield (-1, 3)
-        yield (-1, 4)
+    def thumb_indices(self) -> Generator[Tuple[int, int], None, None]:
+        for col in range(2):
+            for row in range(3):
+                yield (col, row)
+        yield (2, 0)
+        yield (2, 1)
 
-    def key_positions(self, comment_name: str, shape: Shape) -> List[Shape]:
-        shapes: List[Shape] = []
-        for (column, row) in self.key_indices():
-            hole = self.place_key(shape, column, row).comment(
-                f"{comment_name} (c={column}, r={row})"
+    def _define_keys(self) -> None:
+        self._keys: List[List[Optional[KeyHole]]] = []
+        for col in range(7):
+            self._keys.append([None] * 6)
+        for col, row in self.key_indices():
+            self._keys[col][row] = KeyHole(self.mesh, self._key_tf(col, row))
+
+        self._thumb_keys: List[List[Optional[KeyHole]]] = []
+        for col in range(3):
+            self._thumb_keys.append([None] * 3)
+        for col, row in self.thumb_indices():
+            self._thumb_keys[col][row] = KeyHole(
+                self.mesh, self._thumb_tf(col, row)
             )
-            shapes.append(hole)
 
-        return shapes
-
-    def key_holes(self) -> List[Shape]:
-        return self.key_positions("Key", self.key_hole)
-
-    def key_caps(self) -> Shape:
-        cap = dsa_cap()
-        return Shape.union(self.key_positions("Keycap", cap))
-
-    def key_collisions(self) -> Shape:
-        cap = dsa_cap(include_base=True)
-        shapes: List[Shape] = []
-
-        positions = set(self.key_indices())
-        for column in range(self.num_columns):
-            for row in range(self.num_rows):
-                if (column, row) not in positions:
-                    continue
-
-                for pos in (
-                    (column, row - 1),
-                    (column, row + 1),
-                    (column - 1, row),
-                    (column + 1, row),
-                ):
-                    if pos not in positions:
-                        continue
-                    shapes.append(
-                        Shape.intersection(
-                            [
-                                self.place_key(cap, column, row),
-                                self.place_key(cap, pos[0], pos[1]),
-                            ]
-                        )
-                    )
-
-        return Shape.union(shapes)
-
-    def column_offset(self, column: int) -> Tuple[float, float, float]:
-        if column == 2:
-            return (0.0, 2.82, -4.5)
-        if column >= 4:
-            return (0.0, -12.0, 5.64)
-        return (0.0, 0.0, 0.0)
-
-    def place_key(
-        self, shape: ShapeOrTransform, column: int, row: int
-    ) -> ShapeOrTransform:
+    def _key_tf(self, column: int, row: int) -> Transform:
         if column == 0:
-            return self.place_key_col0(shape, row)
+            return self._key_tf_col0(row)
         elif column == 1:
-            return self.place_key_col1(shape, row)
+            return self._key_tf_col1(row)
         elif column == 2:
-            return self.place_key_col2(shape, row)
+            return self._key_tf_col2(row)
         elif column == 3:
-            return self.place_key_col3(shape, row)
+            return self._key_tf_col3(row)
         elif column == 4:
-            return self.place_key_col4(shape, row)
+            return self._key_tf_col4(row)
         elif column == 5:
-            return self.place_key_col5(shape, row)
-        elif column == -1:
-            return self.place_key_col_extra(shape, row)
+            return self._key_tf_col5(row)
+        elif column == 6:
+            return self._key_tf_col6(row)
         raise Exception("invalid key col, row: ({column}, {row})")
 
-    def place_key_col0(
-        self, shape: ShapeOrTransform, row: int
-    ) -> ShapeOrTransform:
+    def _key_tf_col0(self, row: int) -> Transform:
+        tf = Transform()
         if row == 0:
-            shape = shape.rotate(0, 0, 8)
-            shape = shape.rotate(48, 0, 0)
-            shape = shape.translate(-2, 56, 32)
+            raise Exception("invalid col, row: (-1, {row})")
         elif row == 1:
-            shape = shape.rotate(0, 0, 4)
-            shape = shape.rotate(0, 3, 0)
-            shape = shape.rotate(38, 0, 0)
-            shape = shape.translate(0, 40.5, 18)
+            raise Exception("invalid col, row: (-1, {row})")
         elif row == 2:
-            shape = shape.rotate(12, 0, 0)
-            shape = shape.translate(0, 18, 9)
+            tf = tf.rotate(12, 0, 0)
+            tf = tf.translate(0, 18, 9)
         elif row == 3:
-            shape = shape.rotate(10, 0, 0)
-            shape = shape.translate(0, -1.25, 5)
+            tf = tf.rotate(10, 0, 0)
+            tf = tf.translate(0, -1.25, 5)
         elif row == 4:
-            shape = shape.rotate(0, 0, 0)
-            shape = shape.translate(0, -22, 4)
+            tf = tf.rotate(0, 0, 0)
+            tf = tf.translate(0, -22.15, 4)
+        else:
+            raise Exception("invalid col, row: (-1, {row})")
+
+        tf = tf.rotate(0, 0, 6)
+        tf = tf.rotate(0, 38, 0)
+        tf = tf.translate(-78.5, -3, 58)
+        return tf
+
+    def _key_tf_col1(self, row: int) -> Transform:
+        tf = Transform()
+        if row == 0:
+            tf = tf.rotate(0, 0, 8)
+            tf = tf.rotate(48, 0, 0)
+            tf = tf.translate(-2, 56, 32)
+        elif row == 1:
+            tf = tf.rotate(0, 0, 4)
+            tf = tf.rotate(0, 3, 0)
+            tf = tf.rotate(38, 0, 0)
+            tf = tf.translate(0, 40.5, 18)
+        elif row == 2:
+            tf = tf.rotate(12, 0, 0)
+            tf = tf.translate(0, 18, 9)
+        elif row == 3:
+            tf = tf.rotate(10, 0, 0)
+            tf = tf.translate(0, -1.25, 5)
+        elif row == 4:
+            tf = tf.rotate(0, 0, 0)
+            tf = tf.translate(0, -22, 4)
         else:
             raise Exception("invalid col, row: (0, {row})")
 
-        shape = shape.rotate(0, 0, 5)
-        shape = shape.rotate(0, 29, 0)
-        shape = shape.translate(-60.5, -5, 45)
-        return shape
+        tf = tf.rotate(0, 0, 5)
+        tf = tf.rotate(0, 29, 0)
+        tf = tf.translate(-60.5, -5, 45)
+        return tf
 
-    def place_key_col1(
-        self, shape: ShapeOrTransform, row: int
-    ) -> ShapeOrTransform:
+    def _key_tf_col2(self, row: int) -> Transform:
+        tf = Transform()
         if row == 0:
-            shape = shape.rotate(0, 0, 8)
-            shape = shape.rotate(0, 4, 0)
-            shape = shape.rotate(52, 0, 0)
-            shape = shape.translate(-2, 57, 34)
+            tf = tf.rotate(0, 0, 8)
+            tf = tf.rotate(0, 4, 0)
+            tf = tf.rotate(52, 0, 0)
+            tf = tf.translate(-2, 57, 34)
         elif row == 1:
-            shape = shape.rotate(0, 0, 5)
-            shape = shape.rotate(0, 3, 0)
-            shape = shape.rotate(38, 0, 0)
-            shape = shape.translate(0, 42, 17.5)
+            tf = tf.rotate(0, 0, 5)
+            tf = tf.rotate(0, 3, 0)
+            tf = tf.rotate(38, 0, 0)
+            tf = tf.translate(0, 42, 17.5)
         elif row == 2:
-            shape = shape.rotate(18, 0, 0)
-            shape = shape.translate(0, 20.5, 8)
+            tf = tf.rotate(18, 0, 0)
+            tf = tf.translate(0, 20.5, 8)
         elif row == 3:
-            shape = shape.rotate(6, 0, 0)
-            shape = shape.translate(0, -1.25, 5)
+            tf = tf.rotate(6, 0, 0)
+            tf = tf.translate(0, -1.25, 5)
         elif row == 4:
-            shape = shape.rotate(3, 0, 0)
-            shape = shape.translate(0, -21, 4)
+            tf = tf.rotate(3, 0, 0)
+            tf = tf.translate(0, -21, 4)
         elif row == 5:
-            shape = shape.rotate(-22, 0, 0)
-            shape = shape.translate(0, -44, 8)
+            tf = tf.rotate(-22, 0, 0)
+            tf = tf.translate(0, -44, 8)
         else:
             raise Exception(f"invalid col, row: (1, {row})")
 
-        shape = shape.rotate(0, 0, 5)
-        shape = shape.rotate(0, 28, 0)
-        shape = shape.translate(-43, -5, 35)
-        return shape
+        tf = tf.rotate(0, 0, 5)
+        tf = tf.rotate(0, 28, 0)
+        tf = tf.translate(-43, -5, 35)
+        return tf
 
-    def place_key_col2(
-        self, shape: ShapeOrTransform, row: int
-    ) -> ShapeOrTransform:
+    def _key_tf_col3(self, row: int) -> Transform:
+        tf = Transform()
         if row == 0:
-            shape = shape.rotate(0, 0, 6)
-            shape = shape.rotate(0, 5, 0)
-            shape = shape.rotate(60, 0, 0)
-            shape = shape.translate(-2, 59, 36)
+            tf = tf.rotate(0, 0, 6)
+            tf = tf.rotate(0, 5, 0)
+            tf = tf.rotate(60, 0, 0)
+            tf = tf.translate(-2, 59, 36)
         elif row == 1:
-            shape = shape.rotate(0, 0, 3)
-            shape = shape.rotate(0, 3, 0)
-            shape = shape.rotate(46, 0, 0)
-            shape = shape.translate(0, 45, 18)
+            tf = tf.rotate(0, 0, 3)
+            tf = tf.rotate(0, 3, 0)
+            tf = tf.rotate(46, 0, 0)
+            tf = tf.translate(0, 45, 18)
         elif row == 2:
-            shape = shape.rotate(15, 0, 0)
-            shape = shape.translate(0, 24, 3.25)
+            tf = tf.rotate(15, 0, 0)
+            tf = tf.translate(0, 24, 3.25)
         elif row == 3:
-            shape = shape.rotate(-3, 0, 0)
-            shape = shape.translate(0, 1, 2)
+            tf = tf.rotate(-3, 0, 0)
+            tf = tf.translate(0, 1, 2)
         elif row == 4:
-            shape = shape.rotate(-10, 0, 0)
-            shape = shape.translate(0, -19, 4.5)
+            tf = tf.rotate(-10, 0, 0)
+            tf = tf.translate(0, -19, 4.5)
         elif row == 5:
-            shape = shape.rotate(-30, 0, 0)
-            shape = shape.translate(0, -40.5, 11.5)
+            tf = tf.rotate(-30, 0, 0)
+            tf = tf.translate(0, -40.5, 11.5)
         else:
             raise Exception(f"invalid col, row: (1, {row})")
 
-        shape = shape.rotate(0, 0, 3)
-        shape = shape.rotate(0, 20, 0)
-        shape = shape.translate(-21, -5, 24)
-        return shape
+        tf = tf.rotate(0, 0, 3)
+        tf = tf.rotate(0, 20, 0)
+        tf = tf.translate(-21, -5, 24)
+        return tf
 
-    def place_key_col3(
-        self, shape: ShapeOrTransform, row: int
-    ) -> ShapeOrTransform:
+    def _key_tf_col4(self, row: int) -> Transform:
+        tf = Transform()
         if row == 0:
-            shape = shape.rotate(0, 0, 1)
-            shape = shape.rotate(0, 5, 0)
-            shape = shape.rotate(60, 0, 0)
-            shape = shape.translate(1, 62, 32)
+            tf = tf.rotate(0, 0, 1)
+            tf = tf.rotate(0, 5, 0)
+            tf = tf.rotate(60, 0, 0)
+            tf = tf.translate(1, 62, 32)
         elif row == 1:
-            shape = shape.rotate(0, 0, 0)
-            shape = shape.rotate(0, 3, 0)
-            shape = shape.rotate(44, 0, 0)
-            shape = shape.translate(0, 48.5, 14)
+            tf = tf.rotate(0, 0, 0)
+            tf = tf.rotate(0, 3, 0)
+            tf = tf.rotate(44, 0, 0)
+            tf = tf.translate(0, 48.5, 14)
         elif row == 2:
-            shape = shape.rotate(19, 0, 0)
-            shape = shape.translate(0, 25.5, 2.5)
+            tf = tf.rotate(19, 0, 0)
+            tf = tf.translate(0, 25.5, 2.5)
         elif row == 3:
-            shape = shape.rotate(0, 0, 0)
-            shape = shape.translate(0, 3, 0)
+            tf = tf.rotate(0, 0, 0)
+            tf = tf.translate(0, 3, 0)
         elif row == 4:
-            shape = shape.rotate(-10, 0, 0)
-            shape = shape.translate(0, -19, 2)
+            tf = tf.rotate(-10, 0, 0)
+            tf = tf.translate(0, -19, 2)
         elif row == 5:
-            shape = shape.rotate(-25, 0, 0)
-            shape = shape.translate(0, -40, 9)
+            tf = tf.rotate(-25, 0, 0)
+            tf = tf.translate(0, -40, 9)
         else:
             raise Exception(f"invalid col, row: (1, {row})")
 
-        shape = shape.rotate(0, 0, 2)
-        shape = shape.rotate(0, 8, 0)
-        shape = shape.translate(4, -5, 24)
-        return shape
+        tf = tf.rotate(0, 0, 2)
+        tf = tf.rotate(0, 8, 0)
+        tf = tf.translate(4, -5, 24)
+        return tf
 
-    def place_key_col4(
-        self, shape: ShapeOrTransform, row: int
-    ) -> ShapeOrTransform:
+    def _key_tf_col5(self, row: int) -> Transform:
+        tf = Transform()
         if row == 0:
-            shape = shape.rotate(0, 0, 10)
-            shape = shape.rotate(0, 0, 0)
-            shape = shape.rotate(60, 0, 0)
-            shape = shape.translate(-3, 61, 34)
+            tf = tf.rotate(0, 0, 10)
+            tf = tf.rotate(0, 0, 0)
+            tf = tf.rotate(60, 0, 0)
+            tf = tf.translate(-3, 61, 34)
         elif row == 1:
-            shape = shape.rotate(0, 0, 6)
-            shape = shape.rotate(0, 0, 0)
-            shape = shape.rotate(45, 0, 0)
-            shape = shape.translate(-2, 48, 15)
+            tf = tf.rotate(0, 0, 6)
+            tf = tf.rotate(0, 0, 0)
+            tf = tf.rotate(45, 0, 0)
+            tf = tf.translate(-2, 48, 15)
         elif row == 2:
-            shape = shape.rotate(15, 0, 0)
-            shape = shape.translate(0, 25.25, 3.5)
+            tf = tf.rotate(15, 0, 0)
+            tf = tf.translate(0, 25.25, 3.5)
         elif row == 3:
-            shape = shape.rotate(2, 0, 0)
-            shape = shape.translate(0, 3, 1)
+            tf = tf.rotate(2, 0, 0)
+            tf = tf.translate(0, 3, 1)
         elif row == 4:
-            shape = shape.rotate(-10, 0, 0)
-            shape = shape.translate(0, -19, 2)
+            tf = tf.rotate(-10, 0, 0)
+            tf = tf.translate(0, -19, 2)
         elif row == 5:
-            shape = shape.rotate(0, 0, -2)
-            shape = shape.rotate(-28, 0, 0)
-            shape = shape.translate(0, -41, 9)
+            tf = tf.rotate(0, 0, -2)
+            tf = tf.rotate(-28, 0, 0)
+            tf = tf.translate(0, -41, 9)
         else:
             raise Exception(f"invalid col, row: (1, {row})")
 
-        shape = shape.rotate(0, 0, 1)
-        shape = shape.rotate(0, 15, 0)
-        shape = shape.translate(23.5, -5, 22)
-        return shape
+        tf = tf.rotate(0, 0, 1)
+        tf = tf.rotate(0, 15, 0)
+        tf = tf.translate(23.5, -5, 22)
+        return tf
 
-    def place_key_col5(
-        self, shape: ShapeOrTransform, row: int
-    ) -> ShapeOrTransform:
+    def _key_tf_col6(self, row: int) -> Transform:
+        tf = Transform()
         if row == 0:
-            shape = shape.rotate(0, 0, 2)
-            shape = shape.rotate(0, -5, 0)
-            shape = shape.rotate(60, 0, 0)
-            shape = shape.translate(0, 60, 35)
+            tf = tf.rotate(0, 0, 2)
+            tf = tf.rotate(0, -5, 0)
+            tf = tf.rotate(60, 0, 0)
+            tf = tf.translate(0, 60, 35)
         elif row == 1:
-            shape = shape.rotate(0, 0, 2)
-            shape = shape.rotate(0, 3, 0)
-            shape = shape.rotate(45, 0, 0)
-            shape = shape.translate(-1, 48, 17)
+            tf = tf.rotate(0, 0, 2)
+            tf = tf.rotate(0, 3, 0)
+            tf = tf.rotate(45, 0, 0)
+            tf = tf.translate(-1, 48, 17)
         elif row == 2:
-            shape = shape.rotate(20, 0, 0)
-            shape = shape.translate(0, 28, 4.5)
+            tf = tf.rotate(20, 0, 0)
+            tf = tf.translate(0, 28, 4.5)
         elif row == 3:
-            shape = shape.rotate(3, 0, 0)
-            shape = shape.translate(0, 6, 0.5)
+            tf = tf.rotate(3, 0, 0)
+            tf = tf.translate(0, 6, 0.5)
         elif row == 4:
-            shape = shape.rotate(-10, 0, 0)
-            shape = shape.translate(0, -17, 2)
+            tf = tf.rotate(-10, 0, 0)
+            tf = tf.translate(0, -17, 2)
         elif row == 5:
-            # shape = shape.rotate(0, 0, 0)
-            shape = shape.rotate(-28, 0, 0)
-            shape = shape.translate(1, -39, 10)
+            tf = tf.rotate(-28, 0, 0)
+            tf = tf.translate(1, -39, 10)
         else:
             raise Exception(f"invalid col, row: (1, {row})")
 
-        # shape = shape.rotate(0, 0, 0)
-        shape = shape.rotate(0, 5, 0)
-        shape = shape.translate(47, -5, 19)
-        return shape
+        tf = tf.rotate(0, 5, 0)
+        tf = tf.translate(47, -5, 19)
+        return tf
 
-    def place_key_col_extra(
-        self, shape: ShapeOrTransform, row: int
-    ) -> ShapeOrTransform:
-        if row == 0:
-            raise Exception("invalid col, row: (-1, {row})")
-        elif row == 1:
-            raise Exception("invalid col, row: (-1, {row})")
-        elif row == 2:
-            shape = shape.rotate(12, 0, 0)
-            shape = shape.translate(0, 18, 9)
-        elif row == 3:
-            shape = shape.rotate(10, 0, 0)
-            shape = shape.translate(0, -1.25, 5)
-        elif row == 4:
-            shape = shape.rotate(0, 0, 0)
-            shape = shape.translate(0, -22.15, 4)
-        else:
-            raise Exception("invalid col, row: (-1, {row})")
-
-        shape = shape.rotate(0, 0, 6)
-        shape = shape.rotate(0, 38, 0)
-        shape = shape.translate(-78.5, -3, 58)
-        return shape
-
-    def connectors(self) -> List[Shape]:
-        return (
-            self.horiz_connectors()
-            + self.vert_connectors()
-            + self.corner_connectors()
+    def _thumb_tf(self, col: int, row: int) -> Transform:
+        return self._rel_thumb_tf(col, row).transform(
+            self._main_thumb_transform
         )
 
-    def horiz_connectors(self) -> List[Shape]:
-        result: List[Shape] = []
-        for column in range(self.num_columns - 1):
-            for row in range(self.num_rows):
-                if column == 0 and row == self.num_rows - 1:
-                    # Nothing to connect here: this is open for the thumb
-                    continue
-                result += self.connect_horiz((column, row), (column + 1, row))
-
-        # Extra key column
-        result += tri_strip(
-            self.place_key(corner_bl(), 0, 1),
-            self.place_key(corner_tr(), -1, 2),
-            self.place_key(corner_tl(), 0, 2),
-            self.place_key(corner_br(), -1, 2),
-            self.place_key(corner_bl(), 0, 2),
-            self.place_key(corner_tr(), -1, 3),
-            self.place_key(corner_tl(), 0, 3),
-            self.place_key(corner_br(), -1, 3),
-            self.place_key(corner_bl(), 0, 3),
-            self.place_key(corner_tr(), -1, 4),
-            self.place_key(corner_tl(), 0, 4),
-            self.place_key(corner_br(), -1, 4),
-            self.place_key(corner_bl(), 0, 4),
-        )
-
-        return result
-
-    def vert_connectors(self) -> List[Shape]:
-        result: List[Shape] = []
-        for column in range(self.num_columns):
-            for row in range(self.num_rows - 1):
-                if column == 0 and row == self.num_rows - 2:
-                    # Nothing to connect here: this is open for the thumb
-                    continue
-                result += self.connect_vert((column, row), (column, row + 1))
-
-        # Extra key column
-        result += self.connect_vert((-1, 2), (-1, 3))
-        result += self.connect_vert((-1, 3), (-1, 4))
-
-        return result
-
-    def corner_connectors(self) -> List[Shape]:
-        result: List[Shape] = []
-        for column in range(self.num_columns - 1):
-            for row in range(self.num_rows - 1):
-                if column == 0 and row == self.num_rows - 2:
-                    # Nothing to connect here: this is open for the thumb
-                    continue
-                result += self.connect_corner(
-                    (column, row),
-                    (column, row + 1),
-                    (column + 1, row),
-                    (column + 1, row + 1),
-                )
-
-        # Connect the thumb area
-        result += tri_strip(
-            self.place_key(corner_bl(), 0, self.num_rows - 2),
-            self.place_key(corner_bl(), 1, self.num_rows - 1),
-            self.place_key(corner_br(), 0, self.num_rows - 2),
-            self.place_key(corner_tl(), 1, self.num_rows - 1),
-            self.place_key(corner_bl(), 1, self.num_rows - 2),
-        )
-
-        return result
-
-    def connect_horiz(
-        self, left: Tuple[int, int], right: Tuple[int, int]
-    ) -> List[Shape]:
-        return tri_strip(
-            self.place_key(corner_tl(), right[0], right[1]),
-            self.place_key(corner_tr(), left[0], left[1]),
-            self.place_key(corner_bl(), right[0], right[1]),
-            self.place_key(corner_br(), left[0], left[1]),
-        )
-
-    def connect_vert(
-        self, top: Tuple[int, int], bottom: Tuple[int, int]
-    ) -> List[Shape]:
-        return tri_strip(
-            self.place_key(corner_bl(), top[0], top[1]),
-            self.place_key(corner_br(), top[0], top[1]),
-            self.place_key(corner_tl(), bottom[0], bottom[1]),
-            self.place_key(corner_tr(), bottom[0], bottom[1]),
-        )
-
-    def connect_corner(
-        self,
-        tl: Tuple[int, int],
-        bl: Tuple[int, int],
-        tr: Tuple[int, int],
-        br: Tuple[int, int],
-    ) -> List[Shape]:
-        return tri_strip(
-            self.place_key(corner_br(), tl[0], tl[1]),
-            self.place_key(corner_bl(), tr[0], tr[1]),
-            self.place_key(corner_tr(), bl[0], bl[1]),
-            self.place_key(corner_tl(), br[0], br[1]),
-        )
-
-    def thumb_pos(
-        self,
-        shape: ShapeOrTransform,
-        col: int,
-        row: int,
-        true_pos: bool = False,
-    ) -> ShapeOrTransform:
-        if true_pos:
-            return self.thumb_orientation(self.thumb_pos(shape, col, row))
-
+    def _rel_thumb_tf(self, col: int, row: int) -> Transform:
         offset = 19
         key = (col, row)
+        tf = Transform()
 
         # Left column
         if key == (0, 0):
-            return shape.translate(-offset, offset, 0)
+            return tf.translate(-offset, offset, 0)
         if key == (0, 1):
-            return shape.translate(-offset, 0, 0)
+            return tf.translate(-offset, 0, 0)
         if key == (0, 2):
-            return shape.translate(-offset, -offset, 0)
+            return tf.translate(-offset, -offset, 0)
 
         # Middle column
         if key == (1, 0):
-            return shape.translate(0, offset, 0)
+            return tf.translate(0, offset, 0)
         if key == (1, 1):
-            return shape
+            return tf
         if key == (1, 2):
-            return shape.translate(0, -offset, 0)
+            return tf.translate(0, -offset, 0)
 
         # Right column
         if key == (2, 0):
-            return shape.translate(offset, offset / 2.0, 0)
+            return tf.translate(offset, offset / 2.0, 0)
         if key == (2, 1):
             # I plan to use a 1x1.5 key for this position
             # The bottom end of the other rows is at -offset - (18.415 / 2)
@@ -564,1491 +380,1587 @@ class MyKeyboard:
             len_1x1_5 = len_1x1 * 1.5
             bottom_edge = -offset - (len_1x1 * 0.5)
             y = bottom_edge + (len_1x1_5 * 0.5)
-            return shape.translate(offset, y, 0)
-        if key == (2, 2):
-            raise Exception("todo")
-            # TODO: remove this
-            larger_offset = 24
-            return shape.translate(
-                offset, (offset / 2.0) - (2 * larger_offset), 0
-            )
+            return tf.translate(offset, y, 0)
 
         raise Exception("unknown thumb position")
 
-    def thumb_pos_br(
-        self, shape: ShapeOrTransform, true_pos: bool = False
-    ) -> ShapeOrTransform:
-        """Return the position of the bottom right thumb if the thumb section
-        were actually 3x3 grid.  This is used for computing the connecting mesh
-        around the thumb holes, and for the thumb wall, so that the wall is a
-        straight line at the bottom.
+    def _thumb_br(self) -> Transform:
+        """The position of the thumb bottom-right key hole,
+        if it were a 3x3 grid.
         """
-        if true_pos:
-            return self.thumb_orientation(self.thumb_pos_br(shape))
-
         offset = 19
-        return shape.translate(offset, -offset, 0)
-
-    def thumb_positions_1x1(self, shape: Shape) -> List[Shape]:
-        shapes: List[Shape] = []
-
-        for col in (0, 1):
-            for row in range(3):
-                shapes.append(self.thumb_pos(shape, col, row))
-
-        shapes.append(self.thumb_pos(shape, 2, 0))
-
-        return shapes
-
-    def thumb_positions(self, shape: Shape) -> List[Shape]:
-        return self.thumb_positions_1x1(shape) + [self.thumb_pos(shape, 2, 1)]
-
-    def thumb_orientation(self, shape: Shape) -> Shape:
-        return shape.rotate(0, 0, 40).rotate(0, 25, 0).translate(-86, -66, 41)
-
-    def thumb_connectors(self) -> List[Shape]:
-        result: List[Shape] = []
-
-        # vertical line between columns 0 and 1
-        result += tri_strip(
-            self.thumb_pos(corner_tr(), 0, 0),
-            self.thumb_pos(corner_tl(), 1, 0),
-            self.thumb_pos(corner_br(), 0, 0),
-            self.thumb_pos(corner_bl(), 1, 0),
-            self.thumb_pos(corner_tr(), 0, 1),
-            self.thumb_pos(corner_tl(), 1, 1),
-            self.thumb_pos(corner_br(), 0, 1),
-            self.thumb_pos(corner_bl(), 1, 1),
-            self.thumb_pos(corner_tr(), 0, 2),
-            self.thumb_pos(corner_tl(), 1, 2),
-            self.thumb_pos(corner_br(), 0, 2),
-            self.thumb_pos(corner_bl(), 1, 2),
+        return (
+            Transform()
+            .translate(offset, -offset, 0)
+            .transform(self._main_thumb_transform)
         )
 
-        # vertical line between columns 1 and 2,
-        # plus wrapping around the top and bottoms of column 2
-        result += tri_strip(
-            self.thumb_pos(corner_tr(), 2, 0),
-            self.thumb_pos(corner_tr(), 1, 0),
-            self.thumb_pos(corner_tl(), 2, 0),
-            self.thumb_pos(corner_br(), 1, 2),
-            self.thumb_pos(corner_bl(), 2, 1),
-            self.thumb_pos_br(corner_bl()),
-            self.thumb_pos(corner_br(), 2, 1),
-            self.thumb_pos_br(corner_br()),
+    def gen_main_grid(self) -> None:
+        """Generate mesh faces for the main key hole section.
+        """
+        # All key holes need the inner walls
+        for col, row in self.key_indices():
+            self._keys[col][row].inner_walls()
+
+        # Connections between vertical keys on each column
+        self.k02.join_bottom(self.k03)
+        self.k03.join_bottom(self.k04)
+        for row in range(4):
+            self._keys[1][row].join_bottom(self._keys[1][row + 1])
+        for col in range(2, 7):
+            for row in range(5):
+                self._keys[col][row].join_bottom(self._keys[col][row + 1])
+
+        # Connections between horizontal keys on each row
+        self.k02.join_right(self.k12)
+        self.k03.join_right(self.k13)
+        self.k04.join_right(self.k14)
+        for col in range(1, 6):
+            for row in range(5):
+                self._keys[col][row].join_right(self._keys[col + 1][row])
+        for col in range(2, 6):
+            self._keys[col][5].join_right(self._keys[col + 1][5])
+
+        # Corner connections
+        KeyHole.join_corner(self.k02, self.k12, self.k13, self.k03)
+        KeyHole.join_corner(self.k03, self.k13, self.k14, self.k04)
+        for col in range(1, 6):
+            for row in range(4):
+                KeyHole.join_corner(
+                    self._keys[col][row],
+                    self._keys[col + 1][row],
+                    self._keys[col + 1][row + 1],
+                    self._keys[col][row + 1],
+                )
+        for col in range(2, 6):
+            KeyHole.join_corner(
+                self._keys[col][4],
+                self._keys[col + 1][4],
+                self._keys[col + 1][5],
+                self._keys[col][5],
+            )
+
+        # One slightly unusual corner at the upper-right of k02
+        KeyHole.top_bottom_tri(self.k02.tr, self.k11.bl, self.k12.tl)
+
+        # Extra connector for the thumb area
+        # top
+        KeyHole.top_bottom_tri(self.k14.bl, self.k14.br, self.k24.bl)
+        KeyHole.top_bottom_tri(self.k14.bl, self.k24.bl, self.k25.tl)
+        KeyHole.top_bottom_tri(self.k14.bl, self.k25.tl, self.k25.bl)
+
+    def gen_main_grid_edges(self) -> None:
+        """Close off the edges around the main key grid section.
+
+        Useful if we want to render the main grid section by itself, without
+        normal walls dropping down to the ground.
+        """
+        # Wall on the corner section at the upper right of k02
+        self.mesh.add_quad(
+            self.k11.u_bl, self.k02.u_tr, self.k02.l_tr, self.k11.l_bl
         )
 
-        # horizontal connectors between rows 0 and 1
-        result += tri_strip(
-            self.thumb_pos(corner_bl(), 0, 0),
-            self.thumb_pos(corner_tl(), 0, 1),
-            self.thumb_pos(corner_br(), 1, 0),
-            self.thumb_pos(corner_tr(), 1, 1),
-        )
-        # horizontal connectors between rows 1 and 2
-        result += tri_strip(
-            self.thumb_pos(corner_bl(), 0, 1),
-            self.thumb_pos(corner_tl(), 0, 2),
-            self.thumb_pos(corner_br(), 1, 1),
-            self.thumb_pos(corner_tr(), 1, 2),
-        )
-        # horizontal connectors between rows 0 and 1
-        # for column 2
-        result += tri_strip(
-            self.thumb_pos(corner_bl(), 2, 0),
-            self.thumb_pos(corner_tl(), 2, 1),
-            self.thumb_pos(corner_br(), 2, 0),
-            self.thumb_pos(corner_tr(), 2, 1),
-        )
+        # Left side walls
+        self.k02.left_edge()
+        self.k02.left_edge_bottom(self.k03)
+        self.k03.left_edge()
+        self.k03.left_edge_bottom(self.k04)
+        self.k04.left_edge()
 
-        return result
+        self.k10.left_edge()
+        self.k10.left_edge_bottom(self.k11)
+        self.k11.left_edge()
 
-    def thumb_area(self) -> List[Shape]:
-        shapes: List[Shape] = []
-        shapes += self.thumb_positions(self.key_hole)
-        shapes += self.thumb_connectors()
-        return [self.thumb_orientation(Shape.union(shapes))]
+        # Top walls
+        self.k02.top_edge()
+        for col in range(1, 6):
+            self._keys[col][0].top_edge()
+            self._keys[col][0].top_edge_right(self._keys[col + 1][0])
+        self.k60.top_edge()
 
-    def thumb_connect_wall(self) -> List[Shape]:
-        result: List[Shape] = []
+        # Right walls
+        for row in range(5):
+            self._keys[6][row].right_edge()
+            self._keys[6][row].right_edge_bottom(self._keys[6][row + 1])
+        self.k65.right_edge()
 
-        upper_wall_height = 5
+        # Bottom walls
+        for col in range(2, 6):
+            self._keys[col][5].bottom_edge()
+            self._keys[col][5].bottom_edge_right(self._keys[col + 1][5])
+        self.k04.bottom_edge()
+        self.k04.bottom_edge_right(self.k14)
+        self.k65.bottom_edge()
 
-        corner, ground_corner = self.wall_corners()
-        small_r = self.wall_radius * 0.5
-        small_corner = Shape.sphere(small_r, fn=24)
-
-        left_bl = small_corner.translate(
-            -mount_width / 2 - (small_r * 0.5),
-            -mount_height / 2 - (small_r * 0.5),
-            plate_thickness - small_r,
-        )
-        left_br = small_corner.translate(
-            mount_width / 2 - small_r,
-            -mount_height / 2 - small_r,
-            plate_thickness - small_r,
-        )
-        left_bl_low = left_bl.translate(0, 0, -upper_wall_height)
-        left_br_low = left_br.translate(0, 0, -upper_wall_height)
-        corners: List[Shape] = [
-            self.place_key(left_bl.translate(-2, 0, 0), -1, 4),
-            self.place_key(left_br, -1, 4),
-            self.place_key(left_bl, 0, 4),
-            self.place_key(left_bl, 1, 5),
-        ]
-        low_corners: List[Shape] = [
-            self.place_key(left_bl_low.translate(-2, 0, 0), -1, 4),
-            self.place_key(left_br_low, -1, 4),
-            self.place_key(left_bl_low, 0, 4),
-            self.place_key(left_bl_low, 1, 5),
-        ]
-
-        right_tr = small_corner.translate(
-            mount_width / 2 + (small_r * 0.5) + 4,
-            mount_height / 2 + (small_r * 0.5) + 4,
-            plate_thickness - small_r,
-        )
-        right_br = small_corner.translate(
-            mount_width / 2 + (small_r * 0.5) + 8,
-            -mount_height / 2 - (small_r * 0.5) + 8,
-            plate_thickness - small_r,
-        )
-        thumb_corners: List[Shape] = [
-            corner.ptranslate(self.thumb_posts[-1].corner),
-            self.thumb_pos(right_tr, 2, 0, true_pos=True),
-            self.thumb_pos_br(right_br, true_pos=True),
-            corner.ptranslate(self.thumb_posts[0].corner),
-        ]
-
-        # Gap between upper key holes and the connecting wall
-        result += tri_strip(
-            self.place_key(corner_tl(), -1, 4),
-            corner.ptranslate(self.left_wall_posts[0].near),
-            self.place_key(corner_bl(), -1, 4),
-            corners[0],
-            self.place_key(corner_br(), -1, 4),
-            corners[1],
-            self.place_key(corner_bl(), 0, 4),
-            corners[2],
-            self.place_key(corner_bl(), 1, 5),
-            corners[3],
-            self.place_key(corner_br(), 1, 5),
-            corner.ptranslate(self.front_wall_posts[-1].far),
-        )
-        # Strip from top corners to top-lower corners
-        result += tri_strip(
-            corner.ptranslate(self.left_wall_posts[0].near),
-            corner.ptranslate(self.left_wall_posts[0].far),
-            corners[0],
-            low_corners[0],
-            corners[1],
-            low_corners[1],
-            corners[2],
-            low_corners[2],
-            corners[3],
-            low_corners[3],
-            corner.ptranslate(self.front_wall_posts[-1].far),
-        )
-        # Strip from top-lower corners to thumb corners
-        result += tri_strip(
-            corner.ptranslate(self.left_wall_posts[0].far),
-            thumb_corners[0],
-            low_corners[0],
-            thumb_corners[1],
-            low_corners[1],
-        )
-        result += tri_strip(
-            low_corners[1],
-            thumb_corners[1],
-            low_corners[2],
-            thumb_corners[2],
-            low_corners[3],
-            thumb_corners[3],
-            corner.ptranslate(self.front_wall_posts[-1].far),
+        # Side wall for the thumb connector area
+        self.mesh.add_quad(
+            self.k14.u_bl, self.k25.u_bl, self.k25.l_bl, self.k14.l_bl
         )
 
-        # Connecting wall at top of thumb section
-        result += tri_strip(
-            ground_corner.ptranslate(self.thumb_posts[-1].ground()),
-            ground_corner.ptranslate(self.left_wall_posts[0].ground()),
-            thumb_corners[0],
-            corner.ptranslate(self.left_wall_posts[0].far),
-        )
-        # Connecting wall at bottom-right of thumb section
-        result += tri_strip(
-            ground_corner.ptranslate(self.thumb_posts[0].ground()),
-            ground_corner.ptranslate(self.front_wall_posts[-1].ground()),
-            thumb_corners[-1],
-            corner.ptranslate(self.front_wall_posts[-1].far),
-        )
+    def gen_walls(self) -> None:
+        # Main grid walls
+        front_wall = self.gen_front_wall()
+        right_wall = self.gen_right_wall()
+        back_wall = self.gen_back_wall()
+        left_wall = self.gen_left_wall()
 
-        # Horizontal perimeter between the thumb keys and the connecting wall
-        result += tri_strip(
-            self.thumb_pos(corner_tr(), 1, 0, true_pos=True),
-            thumb_corners[0],
-            self.thumb_pos(corner_tr(), 2, 0, true_pos=True),
-            thumb_corners[1],
-            self.thumb_pos_br(corner_br(), true_pos=True),
-            thumb_corners[2],
-            thumb_corners[3],
-        )
-        return result
+        # The main wall corners
+        # Note that these methods do mutate the walls slightly,
+        # so only call add_wall_faces() after these are done.
+        self._front_right_wall_corner(front_wall[-1], right_wall[0])
+        self._back_right_wall_corner(right_wall[-1], back_wall[0])
+        self._back_left_wall_corner(back_wall[-1], left_wall)
 
-    def thumb_caps(self) -> Shape:
-        parts = self.thumb_positions_1x1(dsa_cap())
-        parts.append(self.thumb_pos(dsa_cap(ratio=1.5), 2, 1))
-        return self.thumb_orientation(Shape.union(parts))
+        self.apply_wall_bevels(front_wall, right_wall, back_wall, left_wall)
 
-    def wall_tl(self, column: int, row: int) -> Transform:
-        tf = Transform().translate(-mount_width / 2, mount_height / 2, 0)
-        tf2 = self.place_key(tf, column, row)
-        return tf2.translate(0, 3, 0)
+        self.add_wall_faces(front_wall)
+        self.add_wall_faces(right_wall)
+        self.add_wall_faces(back_wall)
+        self.add_wall_faces(left_wall)
 
-    def wall_tr(self, column: int, row: int) -> Transform:
-        tf = Transform().translate(mount_width / 2, mount_height / 2, 0)
-        tf2 = self.place_key(tf, column, row)
-        return tf2.translate(0, 5, 0)
+        # Thumb walls
+        thumb_wall = self.gen_thumb_wall()
+        self.add_wall_faces(list(reversed(thumb_wall)))
 
-    def wall_segments(self, posts: List[WallPost]) -> List[Shape]:
-        result: List[Shape] = []
-        for idx in range(1, len(posts)):
-            result += self.wall_segment(posts[idx - 1], posts[idx])
+        # Connections between the thumb area and main grid area
+        self.gen_thumb_connect(thumb_wall, front_wall, left_wall)
 
-        return result
+    def add_wall_faces(
+        self, columns: Union[List[WallColumn], List[ThumbColumn]]
+    ) -> None:
+        for idx in range(len(columns) - 1):
+            col0 = columns[idx].get_rows()
+            col1 = columns[idx + 1].get_rows()
+            for row in range(len(col0) - 1):
+                self.mesh.add_quad(
+                    col0[row], col1[row], col1[row + 1], col0[row + 1]
+                )
 
-    def wall_corners(self) -> Tuple[Shape, Shape]:
-        corner = Shape.sphere(self.wall_radius, fn=24)
-        ground_corner = Shape.sphere(self.wall_radius, fn=24).difference(
-            [
-                Shape.cube(
-                    self.wall_radius * 2,
-                    self.wall_radius * 2,
-                    self.wall_radius * 2,
-                ).translate(0, 0, -self.wall_radius)
-            ]
-        )
-        return corner, ground_corner
-
-    def wall_segment(self, post1: WallPost, post2: WallPost) -> List[Shape]:
-        corner, ground_corner = self.wall_corners()
-
-        ground1 = Point(post1.far.x, post1.far.y, 0)
-        ground2 = Point(post2.far.x, post2.far.y, 0)
-        return [
-            Shape.hull(
-                [
-                    post1.post,
-                    post2.post,
-                    corner.ptranslate(post1.near),
-                    corner.ptranslate(post2.near),
-                ]
-            ).highlight(post1.highlight or post2.highlight),
-            Shape.hull(
-                [
-                    corner.ptranslate(post1.near),
-                    corner.ptranslate(post2.near),
-                    corner.ptranslate(post1.far),
-                    corner.ptranslate(post2.far),
-                ]
-            ).highlight(post1.highlight or post2.highlight),
-            Shape.hull(
-                [
-                    corner.ptranslate(post1.far),
-                    corner.ptranslate(post2.far),
-                    ground_corner.ptranslate(ground1),
-                    ground_corner.ptranslate(ground2),
-                ]
-            ).highlight(post1.highlight or post2.highlight),
-        ]
-
-    def wall_post(
+    def apply_wall_bevels(
         self,
-        column: int,
-        row: int,
-        key_post: Shape,
-        corner_transform: Transform,
-        far_offset: Point,
-        highlight: bool = False,
-    ) -> WallPost:
-        near = self.place_key(corner_transform, column, row).point()
-        far = near.ptranslate(far_offset)
-        post = self.place_key(key_post, column, row)
-        return WallPost(post, near, far, highlight=highlight)
-
-    def wall_left(self) -> List[WallPost]:
-        straight_lower_wall = True
-        straight_upper_wall = False
-
-        # Top left key hole corner
-        left_tl = Transform().translate(
-            -mount_width / 2 - self.wall_radius,
-            mount_height / 2,
-            plate_thickness - self.wall_radius,
-        )
-        # Bottom left key hole corner
-        left_bl = Transform().translate(
-            -mount_width / 2 - self.wall_radius,
-            -mount_height / 2,
-            plate_thickness - self.wall_radius,
-        )
-
-        left_wall_offset = Point(-3.0, 0.0, 0.0)
-        lower_posts: List[WallPost] = [
-            self.wall_post(-1, 4, corner_tl(), left_tl, left_wall_offset),
-            self.wall_post(-1, 3, corner_bl(), left_bl, left_wall_offset),
-            self.wall_post(-1, 3, corner_tl(), left_tl, left_wall_offset),
-            self.wall_post(-1, 2, corner_bl(), left_bl, left_wall_offset),
-            self.wall_post(-1, 2, corner_tl(), left_tl, Point(-3.0, 3.0, 0.0)),
-        ]
-
-        if straight_lower_wall:
-            lower_x = min(post.far.x for post in lower_posts)
-            for post in lower_posts:
-                post.far.x = lower_x
-
-        top_tl = Transform().translate(
-            -mount_width / 2,
-            mount_height / 2 + self.wall_radius,
-            plate_thickness - self.wall_radius,
-        )
-        top_tr = Transform().translate(
-            mount_width / 2,
-            mount_height / 2 + self.wall_radius,
-            plate_thickness - self.wall_radius,
-        )
-        horiz_posts = [
-            self.wall_post(-1, 2, corner_tl(), top_tl, Point(0.0, 3.0, 0.0)),
-            self.wall_post(-1, 2, corner_tr(), top_tr, Point(0.0, 3.0, 0.0)),
-        ]
-
-        upper_posts: List[WallPost] = [
-            self.wall_post(0, 1, corner_bl(), left_bl, Point(-3.0, 0.0, 0.0)),
-            self.wall_post(0, 1, corner_tl(), left_tl, Point(-3.0, 0.0, 0.0)),
-            self.wall_post(0, 0, corner_bl(), left_bl, Point(-3.0, 0.0, 0.0)),
-            self.wall_post(0, 0, corner_tl(), left_tl, Point(-3.0, 0.0, 0.0)),
-        ]
-
-        if straight_upper_wall:
-            upper_x = min(post.far.x for post in upper_posts)
-            for post in upper_posts:
-                post.far.x = upper_x
-
-        # The concave corner between the horizontal wall and upper wall needs
-        # a little tweaking.  Make sure these two posts do not intersect into
-        # the other wall.
-        if horiz_posts[-1].far.x > upper_posts[0].far.x:
-            horiz_posts[-1].far.x = upper_posts[0].far.x
-        if upper_posts[0].far.y < horiz_posts[-1].far.y:
-            upper_posts[0].far.y = horiz_posts[-1].far.y
-
-        return lower_posts + horiz_posts + upper_posts
-
-    def wall_back(self) -> List[WallPost]:
-        # Top left key hole corner
-        top_tl = Transform().translate(
-            -mount_width / 2,
-            mount_height / 2 + self.wall_radius,
-            plate_thickness - self.wall_radius,
-        )
-        # Top right key hole corner
-        top_tr = Transform().translate(
-            mount_width / 2,
-            mount_height / 2 + self.wall_radius,
-            plate_thickness - self.wall_radius,
-        )
-
-        back_wall_offset = Point(0.0, 3.0, -3.0)
-        posts: List[WallPost] = []
-        num_cols = 6
-        first_row = 0
-        for column in range(num_cols):
-            posts.append(
-                self.wall_post(
-                    column, first_row, corner_tl(), top_tl, back_wall_offset
+        front_wall: List[WallColumn],
+        right_wall: List[WallColumn],
+        back_wall: List[WallColumn],
+        left_wall: List[WallColumn],
+    ) -> None:
+        for idx, col in enumerate(front_wall):
+            if idx + 1 < len(front_wall):
+                c1 = front_wall[idx + 1]
+                self._bevel_edge(
+                    col.out0, c1.out0, self._bevel_outer_ring_front
                 )
+                self._bevel_edge(
+                    col.out1, c1.out1, self._bevel_outer_ring_front
+                )
+
+            self._bevel_edge(col.out0, col.out1, self._bevel_ring_flat_front)
+            # The wall between out1 and out2 is already basically flat,
+            # but enabling bevel here eimprovesakes the bevelling between
+            # out0 and out1.
+            self._bevel_edge(col.out1, col.out2, self._bevel_ring_flat_front)
+
+        for idx, col in enumerate(back_wall):
+            self._bevel_edge(col.out0, col.out1, self._bevel_ring_flat)
+            self._bevel_edge(col.out1, col.out2, self._bevel_ring_flat)
+            if idx + 1 < len(back_wall):
+                self._bevel_edge(col.out1, back_wall[idx + 1].out1)
+                self._bevel_edge(col.out2, back_wall[idx + 1].out2)
+
+        for idx, col in enumerate(right_wall):
+            if idx + 1 < len(right_wall):
+                self._bevel_edge(
+                    col.out1, right_wall[idx + 1].out1, self._bevel_outer_ring
+                )
+
+            self._bevel_edge(col.out0, col.out1, self._bevel_ring_flat)
+
+        for idx, col in enumerate(left_wall):
+            self._bevel_edge(col.out1, col.out2, 0.5)
+            if idx + 1 < len(left_wall):
+                c0 = left_wall[idx]
+                c1 = left_wall[idx + 1]
+                self._bevel_edge(c0.out2, c1.out2, self._bevel_outer_ring)
+                self._bevel_edge(c0.out1, c1.out1, self._bevel_ring_flat)
+
+        self._bevel_edge(left_wall[0].out3, left_wall[0].out2)
+
+        # Mark the back right corner edge
+        self._bevel_edge(
+            back_wall[0].out3, back_wall[0].out2, self._bevel_outer_vert_corner
+        )
+        self._bevel_edge(
+            back_wall[0].out2, back_wall[0].out1, self._bevel_outer_vert_corner
+        )
+
+        # This edge is flat, but blender ends up generating intersecting
+        # faces on the edge it is connected to unless we also enable
+        # beveling on it.
+        self._bevel_edge(right_wall[-3].out1, right_wall[-3].out2, 0.5)
+        # Disable bevel on the closest part of the last back wall column,
+        # otherwise blender ends up generating intersecting faces here too.
+        self._bevel_edge(back_wall[-1].out0, back_wall[-1].out1, 0.0)
+
+    def gen_back_wall(self) -> List[WallColumn]:
+        u_near_off = 4.0
+        l_near_off = 2.0
+        far_off = Point(0.0, 6.0, -4.0)
+
+        columns: List[WallColumn] = []
+        for col_idx in range(6, 0, -1):
+            k = self._keys[col_idx][0]
+
+            # Left and right columns for this key hole
+            l = WallColumn()
+            r = WallColumn()
+            columns += [r, l]
+
+            l.out0 = k.u_tl
+            l.in0 = k.l_tl
+            r.out0 = k.u_tr
+            r.in0 = k.l_tr
+
+            l.out1 = k.add_point(-k.outer_w, k.outer_h + u_near_off, k.height)
+            l.in1 = k.add_point(
+                -k.outer_w, k.outer_h + l_near_off, k.mid_height
             )
-            posts.append(
-                self.wall_post(
-                    column, first_row, corner_tr(), top_tr, back_wall_offset
-                )
+            r.out1 = k.add_point(k.outer_w, k.outer_h + u_near_off, k.height)
+            r.in1 = k.add_point(
+                k.outer_w, k.outer_h + l_near_off, k.mid_height
             )
 
-        max_y = max(post.far.y for post in posts)
-        for post in posts:
-            post.far.y = max_y
+        for col in columns:
+            col.out2 = self.mesh.add_point(col.out1.point.ptranslate(far_off))
 
-        return posts
-
-    def wall_right(self) -> List[WallPost]:
-        # Top right key hole corner
-        right_tr = Transform().translate(
-            mount_width / 2 + self.wall_radius,
-            mount_height / 2,
-            plate_thickness - self.wall_radius,
-        )
-        # Bottom right key hole corner
-        right_br = Transform().translate(
-            mount_width / 2 + self.wall_radius,
-            -mount_height / 2,
-            plate_thickness - self.wall_radius,
-        )
-
-        posts: List[WallPost] = []
-        num_rows = 6
-        last_column = 5
-        right_wall_offset = Point(0.0, 0.0, 0.0)
-        for row in range(num_rows):
-            posts.append(
-                self.wall_post(
-                    last_column, row, corner_tr(), right_tr, right_wall_offset
+        max_y = max(col.out2.y for col in columns)
+        for idx, col in enumerate(columns):
+            col.out2.point.y = max_y
+            col.out3 = self.mesh.add_point(Point(col.out2.x, col.out2.y, 0.0))
+            col.in2 = self.mesh.add_point(
+                Point(
+                    col.out2.point.x,
+                    col.out2.point.y - self.wall_thickness,
+                    col.out2.z - 3.0,
                 )
             )
-            posts.append(
-                self.wall_post(
-                    last_column, row, corner_br(), right_br, right_wall_offset
+            col.in3 = self.mesh.add_point(
+                Point(
+                    col.out3.point.x,
+                    col.out3.point.y - self.wall_thickness,
+                    0.0,
                 )
             )
 
-        max_x = max(post.far.x for post in posts)
-        for post in posts:
-            post.far.x = max_x
+        return columns
 
-        return posts
+    def gen_right_wall(self) -> List[WallColumn]:
+        near_off = 4.5
+        far_off = Point(0.6, 0, 0.0)
 
-    def wall_front(self) -> List[WallPost]:
-        # Bottom left key hole corner
-        front_bl = Transform().translate(
-            -mount_width / 2 + (self.wall_radius * 0.5),
-            -mount_height / 2 - self.wall_radius,
-            plate_thickness - self.wall_radius,
-        )
-        # Bottom right key hole corner
-        front_br = Transform().translate(
-            mount_width / 2 + self.wall_radius,
-            -mount_height / 2 - self.wall_radius,
-            plate_thickness - self.wall_radius,
-        )
-        front_br_normal = Transform().translate(
-            mount_width / 2,
-            -mount_height / 2 - self.wall_radius,
-            plate_thickness - self.wall_radius,
-        )
+        columns: List[WallColumn] = []
+        for row in range(5, -1, -1):
+            k = self._keys[6][row]
+            # top and bottom columns
+            b = WallColumn()
+            t = WallColumn()
+            columns += [b, t]
 
+            b.out0 = k.u_br
+            t.out0 = k.u_tr
+            b.in0 = k.l_br
+            t.in0 = k.l_tr
+
+            b.out1 = k.add_point(k.outer_w + near_off, -k.outer_h, k.height)
+            t.out1 = k.add_point(k.outer_w + near_off, k.outer_h, k.height)
+
+            b.in1 = k.add_point(k.outer_w + near_off, -k.outer_h, k.mid_height)
+            t.in1 = k.add_point(k.outer_w + near_off, k.outer_h, k.mid_height)
+
+        far_offset = 10.0
+        max_x = max(col.out1.point.x for col in columns)
+        for idx, col in enumerate(columns):
+            # Set the x values
+            col.out1.point.x = max_x
+            col.in1.point.x = max_x - self.wall_thickness
+
+            # Define out2 values
+            if idx == 0:
+                # At the front edge, just drop straight down
+                col.out2 = k.mesh.add_point(
+                    Point(max_x, col.in1.y, col.in1.z - far_offset)
+                )
+            else:
+                # Compute the normal at this point along the wall,
+                # Then add the far point along the normal
+                p = col.out1
+
+                prev_p = columns[idx - 1].out1
+                p_normal = Point(0, prev_p.z - p.z, p.y - prev_p.y).unit()
+                normal = p_normal
+                if idx + 1 < len(columns):
+                    next_p = columns[idx + 1].out1
+                    n_normal = Point(0, p.z - next_p.z, next_p.y - p.y).unit()
+                    normal += n_normal
+                    # We have added 2 unit normals, so we have to multiply by
+                    # 0.5 to get back to a unit normal
+                    normal *= 0.5 * far_offset
+                    if idx + 2 == len(columns):
+                        # Add a little more here to even some things out
+                        normal *= 1.2
+                else:
+                    # At the back wall we only have 1 unit normal.
+                    # We still want to shrink a bit here, to avoid extending
+                    # past the back wall
+                    normal *= 0.6 * far_offset
+
+                col.out2 = k.mesh.add_point(
+                    Point(max_x - normal.x, p.y - normal.y, p.z - normal.z)
+                )
+
+            # in2, and ground points (out3, in3)
+            col.in2 = k.mesh.add_point(
+                Point(col.out2.x - self.wall_thickness, col.out2.y, col.out2.z)
+            )
+            col.out3 = k.mesh.add_point(Point(col.out2.x, col.out2.y, 0.0))
+            col.in3 = k.mesh.add_point(
+                Point(col.out3.x - self.wall_thickness, col.out3.y, col.out3.z)
+            )
+
+        return columns
+
+    def gen_front_wall(self) -> List[WallColumn]:
+        u_near_off = Point(0.0, -5.0, -2.0)
+        m_near_off = Point(0.0, -0.0, 0.0)
+
+        columns: List[WallColumn] = []
         last_row = 5
-        front_wall_offset = Point(0.0, -1.0, 0.0)
-        posts: List[WallPost] = []
-        posts.append(
-            self.wall_post(
-                5, last_row, corner_br(), front_br_normal, front_wall_offset
-            )
-        )
-        posts.append(
-            self.wall_post(
-                5, last_row, corner_bl(), front_bl, front_wall_offset
-            )
-        )
-        for column in (4, 3, 2, 1):
-            posts.append(
-                self.wall_post(
-                    column, last_row, corner_br(), front_br, front_wall_offset
-                )
-            )
-            posts.append(
-                self.wall_post(
-                    column, last_row, corner_bl(), front_bl, front_wall_offset
-                )
-            )
+        for col_idx in range(2, 7):
+            k = self._keys[col_idx][last_row]
 
-        # We don't want the very last post; we want to end on the right hand
-        # side of column 1 rather than the left.
-        del posts[-1]
+            # Left and right columns for this key hole
+            l = WallColumn()
+            r = WallColumn()
+            columns += [l, r]
 
-        min_y = min(post.far.y for post in posts)
-        for post in posts:
-            post.far.y = min_y
+            l.out0 = k.u_bl
+            r.out0 = k.u_br
+            l.in0 = k.l_bl
+            r.in0 = k.l_br
 
-        return posts
-
-    def thumb_wall_segments(self, posts: List[ThumbWallPost]) -> List[Shape]:
-        corner, ground_corner = self.wall_corners()
-
-        result: List[Shape] = []
-        for idx in range(1, len(posts)):
-            post1 = posts[idx - 1]
-            post2 = posts[idx]
-            ground1 = Point(post1.corner.x, post1.corner.y, 0)
-            ground2 = Point(post2.corner.x, post2.corner.y, 0)
-            result.append(
-                Shape.hull(
-                    [
-                        corner.ptranslate(post1.corner),
-                        ground_corner.ptranslate(ground1),
-                        corner.ptranslate(post2.corner),
-                        ground_corner.ptranslate(ground2),
-                    ]
-                )
+            l.out1 = k.add_point(
+                -k.outer_w + u_near_off.x,
+                -k.outer_h + u_near_off.y,
+                k.height + u_near_off.z,
             )
-            result.append(
-                Shape.hull(
-                    [
-                        post1.post,
-                        post2.post,
-                        corner.ptranslate(post1.corner),
-                        corner.ptranslate(post2.corner),
-                    ]
-                )
+            r.out1 = k.add_point(
+                k.outer_w + u_near_off.x,
+                -k.outer_h + u_near_off.y,
+                k.height + u_near_off.z,
             )
 
-        return result
-
-    def wall_thumb_posts(self) -> List[ThumbWallPost]:
-        posts: List[ThumbWallPost] = []
-
-        def add_post(
-            col: int, row: int, post: Shape, transform: Transform
-        ) -> None:
-            posts.append(
-                ThumbWallPost(
-                    self.thumb_pos(post, col, row, true_pos=True),
-                    self.thumb_pos(transform, col, row, true_pos=True).point(),
-                )
+            l.in1 = k.add_point(
+                -k.outer_w + m_near_off.x,
+                -k.outer_h + m_near_off.y,
+                k.mid_height + m_near_off.z,
+            )
+            r.in1 = k.add_point(
+                k.outer_w + m_near_off.x,
+                -k.outer_h + m_near_off.y,
+                k.mid_height + m_near_off.z,
             )
 
-        # Add some extra offset between the key holes and the wall.  This is
-        # mainly to give some extra room to make soldering the keys easier.
-        wall_offset = 3.0
-        top_left = Transform().translate(
-            -mount_width / 2 - self.wall_radius - wall_offset,
-            mount_height / 2 + self.wall_radius + wall_offset,
-            plate_thickness - self.wall_radius,
-        )
-        top_right = Transform().translate(
-            mount_width / 2 + self.wall_radius + wall_offset,
-            mount_height / 2 + self.wall_radius + wall_offset,
-            plate_thickness - self.wall_radius,
-        )
-        bottom_left = Transform().translate(
-            -mount_width / 2 - self.wall_radius - wall_offset,
-            -mount_height / 2 - self.wall_radius - wall_offset,
-            plate_thickness - self.wall_radius,
-        )
+        # We want the front wall to start at the right-hand side of
+        # key column 2, so drop the left side.
+        del columns[0]
 
-        # Note: wall_extra_len is the extra length needed so that this wall
-        # extends so that it is even with the front wall.  Ideally it would be
-        # nice to calculate this from self.front_wall_posts[-1].far.y
-        wall_extra_len = 18.6
+        min_y = min(col.out1.y for col in columns)
 
-        bottom_right = Transform().translate(
-            mount_width / 2 + self.wall_radius + wall_offset + wall_extra_len,
-            -mount_height / 2 - self.wall_radius - wall_offset,
-            plate_thickness - self.wall_radius,
+        # Also adjust min_y to make sure the inner wall won't hit k25
+        k25_edge = Point(KeyHole.outer_w, -KeyHole.outer_h, 0).transform(
+            self.k25.transform
         )
+        min_y = min(min_y, k25_edge.y - self.wall_thickness - 0.25)
 
-        posts.append(
-            ThumbWallPost(
-                self.thumb_pos_br(corner_br(), true_pos=True),
-                self.thumb_pos_br(bottom_right, true_pos=True).point(),
+        far_offset = 10.0
+        for col in columns:
+            col.out1.point.y = min_y
+            assert min_y + self.wall_thickness <= col.in1.y
+            col.in1.point.y = min_y + self.wall_thickness
+
+            col.out2 = k.mesh.add_point(
+                Point(col.out1.x, col.out1.y, col.out1.z - far_offset)
             )
-        )
-        add_post(0, 2, corner_bl(), bottom_left)
-        add_post(0, 0, corner_tl(), top_left)
-        add_post(1, 0, corner_tr(), top_right)
-
-        return posts
-
-    def thumb_walls(self, oled_display: bool) -> List[Shape]:
-        self.thumb_posts = self.wall_thumb_posts()
-
-        # Thumb area walls
-        wall_segments = self.thumb_wall_segments(self.thumb_posts)
-        neg_parts: List[Shape] = []
-
-        if self.grey_walls:
-            pos_parts: List[Shape] = [Shape.union(wall_segments).grey()]
-        else:
-            pos_parts: List[Shape] = wall_segments
-
-        # OLED holder
-        if oled_display:
-            holder_tf = self.apply_to_wall(
-                self.thumb_posts[2].corner,
-                self.thumb_posts[1].corner,
-                Transform().translate(1.75 * 0.5, 0, 22.5),
-            )
-            holder_neg, holder_pos = joint_holder_parts(
-                self.wall_radius * 2, holder_top=False
-            )
-            neg_parts.append(holder_neg.transform(holder_tf))
-            holder_pos = holder_pos.transform(holder_tf)
-
-        # Add the cable connector cutout
-        cable_holder_neg = mag_conn_holder_parts(
-            self.wall_radius * 2
-        ).translate(0, 0, 4)
-        cable_holder_tf = self.apply_to_wall(
-            self.thumb_posts[3].corner,
-            self.thumb_posts[2].corner,
-            Transform().translate(0, 0, 7.5),
-        )
-        neg_parts.append(cable_holder_neg.transform(cable_holder_tf))
-
-        # Add feet
-        back_left = self.thumb_posts[2].corner
-        back_left_foot = foot(off_x=9, off_y=-0.5)
-        back_left_foot = back_left_foot.translate(back_left.x, back_left.y, 0)
-        pos_parts.append(back_left_foot.pos)
-        neg_parts.append(back_left_foot.neg)
-
-        front_right = self.thumb_posts[1].corner
-        front_right_foot = foot(off_x=1, off_y=10)
-        front_right_foot = front_right_foot.translate(
-            front_right.x, front_right.y, 0
-        )
-        pos_parts.append(front_right_foot.pos)
-        neg_parts.append(front_right_foot.neg)
-
-        result = [Shape.difference(Shape.union(pos_parts), neg_parts)]
-        if oled_display:
-            result.append(holder_pos)
-
-        return result
-
-    def main_walls(self) -> List[Shape]:
-        back_wall_posts = self.wall_back()
-        self.front_wall_posts = self.wall_front()
-        self.left_wall_posts = self.wall_left()
-
-        posts = (
-            self.left_wall_posts
-            + back_wall_posts
-            + self.wall_right()
-            + self.front_wall_posts
-        )
-        main_walls = self.wall_segments(posts)
-
-        if self.grey_walls:
-            pos_parts: List[Shape] = [Shape.union(main_walls).grey()]
-        else:
-            pos_parts: List[Shape] = main_walls
-        neg_parts: List[Shape] = []
-
-        # Feet
-        back_left = back_wall_posts[0].far
-        back_left_foot = foot(off_x=4.2, off_y=-6.8)
-        back_left_foot = back_left_foot.translate(back_left.x, back_left.y, 0)
-        pos_parts.append(back_left_foot.pos)
-        neg_parts.append(back_left_foot.neg)
-
-        back_right = back_wall_posts[-1].far
-        back_right_foot = foot(off_x=-5.2, off_y=-6.8)
-        back_right_foot = back_right_foot.translate(
-            back_right.x, back_right.y, 0
-        )
-        pos_parts.append(back_right_foot.pos)
-        neg_parts.append(back_right_foot.neg)
-
-        front_right = self.front_wall_posts[0].far
-        front_right_foot = foot(off_x=-5.2, off_y=6.8)
-        front_right_foot = front_right_foot.translate(
-            front_right.x, front_right.y, 0
-        )
-        pos_parts.append(front_right_foot.pos)
-        neg_parts.append(front_right_foot.neg)
-
-        left_corner = self.left_wall_posts[4].far
-        left_corner_foot = foot(off_x=7, off_y=-5)
-        left_corner_foot = left_corner_foot.translate(
-            left_corner.x, left_corner.y, 0
-        )
-        pos_parts.append(left_corner_foot.pos)
-        neg_parts.append(left_corner_foot.neg)
-
-        # Screw holes for wrist rest
-        for x, z in [(-20, 5), (20, 5), (-20, 25), (20, 25)]:
-            screw_hole_tf = self.apply_to_wall(
-                self.front_wall_posts[0].far,
-                self.front_wall_posts[-1].far,
-                Transform().translate(x, 0, z),
-            )
-            neg_parts.append(
-                screw_hole_parts(self.wall_radius * 2).transform(screw_hole_tf)
+            col.in2 = k.mesh.add_point(
+                Point(col.in1.x, col.in1.y, col.in1.z - far_offset)
             )
 
-        return [Shape.difference(Shape.union(pos_parts), neg_parts)]
+            col.out3 = k.mesh.add_point(Point(col.out2.x, col.out2.y, 0.0))
+            col.in3 = k.mesh.add_point(Point(col.in1.x, col.in1.y, 0.0))
 
-    def apply_to_wall(
+        return columns
+
+    def _left_wall_helper(
+        self, indices: List[Tuple[int, int]], x_aligned: bool
+    ) -> List[WallColumn]:
+        u_near_off = -2.0
+        l_near_off = -1.0
+        far_off = Point(-6.0, 0.0, 0.0)
+
+        columns: List[WallColumn] = []
+        for col_idx, row_idx in indices:
+            k = self._keys[col_idx][row_idx]
+
+            t = WallColumn()
+            b = WallColumn()
+            columns += [t, b]
+
+            t.out0 = k.u_tl
+            b.out0 = k.u_bl
+            t.in0 = k.l_tl
+            b.in0 = k.l_bl
+
+            t.out1 = k.add_point(-k.outer_w + u_near_off, k.outer_h, k.height)
+            t.in1 = k.add_point(
+                -k.outer_w + l_near_off, k.outer_h, k.mid_height
+            )
+            b.out1 = k.add_point(-k.outer_w + u_near_off, -k.outer_h, k.height)
+            b.in1 = k.add_point(
+                -k.outer_w + l_near_off, -k.outer_h, k.mid_height
+            )
+
+        for col in columns:
+            col.out2 = self.mesh.add_point(col.out1.point.ptranslate(far_off))
+        min_x = min(col.out2.x for col in columns)
+
+        for col in columns:
+            if x_aligned:
+                # Make the line straight on the x axis
+                col.out2.point.x = min_x
+            elif False:
+                # Straighten the wall between the two endpoints,
+                # rather than along the x_axis
+                start = columns[0].out2
+                end = columns[-1].out2
+                fraction = (col.out2.y - start.y) / (start.y - end.y)
+                col.out2.point.x = start.x + fraction * (start.x - end.x)
+
+            col.out3 = self.mesh.add_point(Point(col.out2.x, col.out2.y, 0.0))
+            col.in3 = self.mesh.add_point(
+                Point(col.out3.x + self.wall_thickness, col.out3.y, 0.0)
+            )
+            col.in2 = self.mesh.add_point(
+                Point(col.in3.x, col.in3.y, col.out2.z - 3.0)
+            )
+
+        return columns
+
+    def _left_wall_inner_corner(self) -> WallColumn:
+        ic = WallColumn()
+        k = self.k11
+
+        ic.out0 = k.u_bl
+        ic.in0 = k.l_bl
+
+        ic.out1 = k.add_point(-k.outer_w - 2.0, -k.outer_h + 2.0, k.height)
+        ic.in1 = k.add_point(-k.outer_w - 2.0, -k.outer_h + 2.0, k.mid_height)
+
+        ic.in2 = self.mesh.add_point(
+            Point(ic.in1.x - 0.2, ic.in1.y + 0.2, ic.in1.z)
+        )
+        ic.in3 = self.mesh.add_point(Point(ic.in2.x, ic.in2.y, 0.0))
+
+        ic.out3 = self.mesh.add_point(
+            Point(
+                ic.in3.x - self.wall_thickness,
+                ic.in3.y + self.wall_thickness,
+                0.0,
+            )
+        )
+        ic.out2 = self.mesh.add_point(Point(ic.out3.x, ic.out3.y, ic.out1.z))
+
+        return ic
+
+    def _left_wall_outer_corner(self, bottom_out_x: float) -> WallColumn:
+        oc = WallColumn()
+        k = self.k02
+
+        oc.out0 = k.u_tl
+        oc.in0 = k.l_tl
+
+        oc.out1 = k.add_point(-k.outer_w - 2.0, k.outer_h + 2.0, k.height)
+        oc.in1 = k.add_point(-k.outer_w - 2.0, k.outer_h + 2.0, k.mid_height)
+
+        oc.out2 = self.mesh.add_point(
+            Point(bottom_out_x, oc.out1.y + 6.0, oc.out1.z)
+        )
+        oc.out3 = self.mesh.add_point(Point(oc.out2.x, oc.out2.y, 0.0))
+        oc.in3 = self.mesh.add_point(
+            Point(
+                oc.out3.x + self.wall_thickness,
+                oc.out3.y - self.wall_thickness,
+                0.0,
+            )
+        )
+        oc.in2 = self.mesh.add_point(
+            Point(oc.in3.x, oc.in3.y, oc.out2.z - 4.0)
+        )
+
+        return oc
+
+    def _left_wall_straighten(self, segment: List[WallColumn]) -> None:
+        dx = segment[0].out2.x - segment[-1].out2.x
+        dy = segment[0].out2.y - segment[-1].out2.y
+
+        for idx in range(1, len(segment) - 1):
+            col = segment[idx]
+            fx = (col.out2.x - segment[-1].out2.x) / dx
+            fy = (col.out2.y - segment[-1].out2.y) / dy
+            col.out2.point.x = segment[-1].out2.x + (fy * dx)
+
+            col.out3.point.x = col.out2.x
+            col.in3.point.x = col.out3.x + self.wall_thickness
+            col.in2.point.x = col.in3.x
+
+    def gen_left_wall(self) -> List[WallColumn]:
+        ic = self._left_wall_inner_corner()
+
+        # The top-most vertical segment
+        segment0 = self._left_wall_helper([(1, 0), (1, 1)], x_aligned=False)
+        # The bottom vertical segment
+        segment2 = self._left_wall_helper(
+            [(0, 2), (0, 3), (0, 4)], x_aligned=True
+        )
+
+        oc = self._left_wall_outer_corner(segment2[0].out3.x)
+
+        # The last column of segment0 will be replaced by the inner corner
+        segment0 = segment0[:-1] + [ic]
+
+        # Straighten out segment0 between its first point and the inner corner
+        self._left_wall_straighten(segment0)
+
+        # Fill in one gap left where we connected the concave corner
+        KeyHole.top_bottom_tri(self.k02.tl, self.k11.bl, self.k02.tr)
+
+        columns = segment0[:-1] + [ic, oc] + segment2[1:-1]
+
+        self._bevel_edge(oc.out3, oc.out2, self._bevel_outer_vert_corner)
+        self._bevel_edge(oc.in3, oc.in2, self._bevel_inner_vert_corner)
+        self._bevel_edge(ic.out3, ic.out2, self._bevel_inner_vert_corner)
+        self._bevel_edge(ic.in3, ic.in2, self._bevel_outer_vert_corner)
+
+        return columns
+
+    def _front_right_wall_corner(
+        self, front: WallColumn, right: WallColumn
+    ) -> None:
+        fr = WallColumn()
+        fr.out0 = self.k65.u_bl
+        fr.in0 = self.k65.l_bl
+        fr.out1 = self.mesh.add_point(
+            Point(right.out1.x, front.out1.y, front.out1.z - 0.4)
+        )
+        fr.in1 = self.mesh.add_point(
+            Point(right.in1.x, front.in1.y, front.in1.z)
+        )
+        fr.out2 = self.mesh.add_point(
+            Point(right.out2.x, front.out2.y, front.out2.z)
+        )
+        fr.in2 = self.mesh.add_point(
+            Point(right.in2.x, front.in2.y, front.in2.z)
+        )
+        fr.out3 = self.mesh.add_point(
+            Point(right.out3.x, front.out3.y, front.out3.z)
+        )
+        fr.in3 = self.mesh.add_point(
+            Point(right.in3.x, front.in3.y, front.in3.z)
+        )
+        self.fr = fr
+
+        # Move the front inner edge over to share the same edge as the corner
+        front.in1 = fr.in1
+        front.in2 = fr.in2
+        front.in3 = fr.in3
+
+        self.mesh.add_tri(front.in0, front.in1, right.in1)
+        self.mesh.add_quad(front.in1, front.in2, right.in2, right.in1)
+        self.mesh.add_quad(front.in2, front.in3, right.in3, right.in2)
+        self.mesh.add_quad(front.in3, fr.out3, right.out3, right.in3)
+        self.mesh.add_tri(front.in3, front.out3, fr.out3)
+
+        self.mesh.add_quad(front.out2, fr.out2, fr.out3, front.out3)
+        self.mesh.add_quad(front.out1, fr.out1, fr.out2, front.out2)
+        self.mesh.add_quad(front.out0, right.out1, fr.out1, front.out1)
+        self.mesh.add_quad(fr.out1, right.out1, right.out2, fr.out2)
+        self.mesh.add_quad(fr.out2, right.out2, right.out3, fr.out3)
+
+        self._bevel_edge(fr.out3, fr.out2, self._bevel_outer_vert_corner)
+        self._bevel_edge(fr.out2, fr.out1, self._bevel_outer_vert_corner)
+        self._bevel_edge(fr.in3, fr.in2, self._bevel_inner_vert_corner)
+        self._bevel_edge(fr.in2, fr.in1, self._bevel_inner_vert_corner)
+
+        self._bevel_edge(
+            fr.out1,
+            front.out1,
+            (self._bevel_outer_ring_front + self._bevel_outer_ring) * 0.5,
+        )
+        self._bevel_edge(fr.out1, right.out1, self._bevel_outer_ring)
+
+    def _back_right_wall_corner(
+        self, right: WallColumn, back: WallColumn
+    ) -> None:
+        # Determine the back corner location
+        br = WallColumn()
+        br.out0 = self.k60.u_tr
+        br.in0 = self.k60.l_tr
+        br.out1 = self.mesh.add_point(
+            Point(right.out1.x, back.out1.y, back.out1.z)
+        )
+        br.in1 = self.mesh.add_point(
+            Point(right.in1.x, back.in1.y, back.in1.z)
+        )
+        br.out2 = self.mesh.add_point(
+            Point(right.out2.x, back.out2.y, back.out2.z)
+        )
+        br.in2 = self.mesh.add_point(
+            Point(right.in2.x, back.in2.y, back.in2.z)
+        )
+        br.out3 = self.mesh.add_point(
+            Point(right.out3.x, back.out3.y, back.out3.z)
+        )
+        br.in3 = self.mesh.add_point(
+            Point(right.in3.x, back.in3.y, back.in3.z)
+        )
+        self.br = br
+
+        # Simply move the back and right wall columns over to place them
+        # at the back corner.
+        back.in3 = br.in3
+        back.in2 = br.in2
+        back.in1 = br.in1
+        back.out3 = br.out3
+        back.out2 = br.out2
+        back.out1 = br.out1
+
+        right.in1 = br.in1
+        right.in2 = br.in2
+        right.in3 = br.in3
+        right.out3 = br.out3
+        right.out2 = br.out2
+        right.out1 = br.out1
+
+        self._bevel_edge(right.in3, right.in2, self._bevel_inner_vert_corner)
+
+    def _back_left_wall_corner(
+        self, back: WallColumn, left_wall: List[WallColumn]
+    ) -> None:
+        left = left_wall[0]
+        last_left = left_wall[-1]
+
+        # Make the X position line up with the left wall
+        dx = left.out2.x - last_left.out2.x
+        dy = left.out2.y - last_left.out2.y
+        f = (back.out2.y - last_left.out2.y) / dy
+        out_x = last_left.out2.x + f * dx
+
+        in_x = out_x + 3.0
+        assert in_x < back.in3.x
+
+        # out_x = left.out2.x
+        # in_x = left.in2.x
+
+        bl = WallColumn()
+        bl.out0 = self.k10.u_tl
+        bl.in0 = self.k10.l_tl
+
+        # bl.out1 = self.mesh.add_point(Point(left.out1.x, back.out1.y, back.out1.z))
+        # bl.in1 = self.mesh.add_point(Point(left.in1.x, back.in1.y, back.in1.z))
+        KH = KeyHole
+        bl.out1 = self.k10.add_point(
+            -KH.outer_w - 3.0, KH.outer_h + 3.0, KH.height
+        )
+        bl.in1 = self.k10.add_point(
+            -KH.outer_w - 0.5, KH.outer_h + 2.0, KH.mid_height
+        )
+
+        bl.out2 = self.mesh.add_point(Point(out_x, back.out2.y, back.out2.z))
+        bl.in2 = self.mesh.add_point(Point(in_x, back.in2.y, back.in2.z))
+        bl.out3 = self.mesh.add_point(Point(out_x, back.out3.y, back.out3.z))
+        bl.in3 = self.mesh.add_point(Point(in_x, back.in3.y, back.in3.z))
+        self.bl = bl
+
+        # The inner wall of back and bl are very close together, which makes
+        # it difficult to bevel the inside corner.  Just have the back wall
+        # use our inner edge, rather than having 2 edges close together.
+        back.in1 = bl.in1
+        back.in2 = bl.in2
+        back.in3 = bl.in3
+
+        self.mesh.add_quad(bl.out1, back.out1, back.out0, left.out1)
+        self.mesh.add_quad(bl.out2, back.out2, back.out1, bl.out1)
+        self.mesh.add_tri(bl.out1, left.out1, left.out2)
+        self.mesh.add_tri(bl.out2, bl.out1, left.out2)
+        self.mesh.add_quad(back.out2, bl.out2, bl.out3, back.out3)
+        self.mesh.add_quad(bl.out2, left.out2, left.out3, bl.out3)
+
+        self.mesh.add_quad(back.in2, back.in3, left.in3, left.in2)
+        self.mesh.add_tri(left.in1, back.in2, left.in2)
+        self.mesh.add_tri(back.in1, back.in2, left.in1)
+        self.mesh.add_tri(back.in1, left.in1, back.in0)
+
+        self.mesh.add_tri(back.out3, bl.out3, back.in3)
+        self.mesh.add_quad(back.in3, bl.out3, left.out3, left.in3)
+
+        self._bevel_edge(bl.out3, bl.out2, self._bevel_outer_vert_corner)
+        self._bevel_edge(bl.out2, bl.out1, 0.1)
+        self._bevel_edge(back.out2, back.out1, 0.1)
+
+        self._bevel_edge(bl.in3, bl.in2, self._bevel_inner_vert_corner)
+
+        self._bevel_edge(bl.out2, back.out2, self._bevel_outer_ring)
+        self._bevel_edge(bl.out1, back.out1, self._bevel_outer_ring)
+
+        self._bevel_edge(bl.out2, left.out2, self._bevel_outer_ring)
+        self._bevel_edge(bl.out1, left.out2, self._bevel_outer_ring)
+
+    def gen_thumb_grid(self) -> None:
+        """Generate mesh faces for the thumb key hole section.
+        """
+        for col, row in self.thumb_indices():
+            self._thumb_keys[col][row].inner_walls()
+
+        # Connections between key holes
+        self.t00.join_bottom(self.t01)
+        self.t01.join_bottom(self.t02)
+        self.t10.join_bottom(self.t11)
+        self.t11.join_bottom(self.t12)
+        self.t20.join_bottom(self.t21)
+
+        self.t00.join_right(self.t10)
+        self.t01.join_right(self.t11)
+        self.t02.join_right(self.t12)
+
+        KeyHole.join_corner(self.t00, self.t10, self.t11, self.t01)
+        KeyHole.join_corner(self.t01, self.t11, self.t12, self.t02)
+
+        self.t10.join_right(self.t20)
+        KeyHole.join_corner(self.t10, self.t20, self.t21, self.t11)
+
+        KeyHole.top_bottom_tri(self.t11.tr, self.t21.tl, self.t11.br)
+        KeyHole.top_bottom_tri(self.t11.br, self.t21.tl, self.t12.tr)
+        self.t12.join_right(self.t21)
+
+        KeyHole.top_bottom_tri(self.t10.tr, self.t20.tr, self.t20.tl)
+        KeyHole.top_bottom_tri(self.t21.bl, self.t21.br, self.t12.br)
+
+    def gen_thumb_grid_edges(self) -> None:
+        """Close off the edges around the main key grid section.
+
+        Useful if we want to render the main grid section by itself, without
+        normal walls dropping down to the ground.
+        """
+        self.t00.left_edge()
+        self.t00.left_edge_bottom(self.t01)
+        self.t01.left_edge()
+        self.t01.left_edge_bottom(self.t02)
+        self.t02.left_edge()
+
+        self.t00.top_edge()
+        self.t00.top_edge_right(self.t10)
+        self.t10.top_edge()
+
+        self.t02.bottom_edge()
+        self.t02.bottom_edge_right(self.t12)
+        self.t12.bottom_edge()
+
+        self.t20.right_edge()
+        self.t20.right_edge_bottom(self.t21)
+        self.t21.right_edge()
+
+        self.mesh.add_quad(
+            self.t12.u_br, self.t21.u_br, self.t21.l_br, self.t12.l_br
+        )
+        self.mesh.add_quad(
+            self.t20.u_tr, self.t10.u_tr, self.t10.l_tr, self.t20.l_tr
+        )
+
+    def gen_thumb_wall(self) -> List[ThumbColumn]:
+        offset = 7.0
+        KH = KeyHole
+
+        # Compute the outer corners
+        br = ThumbColumn()
+        br.out0 = self.t12.u_br
+        br.in0 = self.t12.l_br
+        br.out1 = self.t12.add_point(
+            KH.outer_w, -KH.outer_h - offset, KH.height
+        )
+        br.out2 = self.mesh.add_point(Point(br.out1.x, br.out1.y, 0.0))
+
+        bl = ThumbColumn()
+        bl.out0 = self.t02.u_bl
+        bl.in0 = self.t02.l_bl
+        bl.out1 = self.t02.add_point(
+            -KH.outer_w - offset, -KH.outer_h - offset, KH.height
+        )
+        bl.out2 = self.mesh.add_point(Point(bl.out1.x, bl.out1.y, 0.0))
+
+        tl = ThumbColumn()
+        tl.out0 = self.t00.u_tl
+        tl.in0 = self.t00.l_tl
+        tl.out1 = self.t00.add_point(
+            -KH.outer_w - offset, KH.outer_h + offset, KH.height
+        )
+        tl.out2 = self.mesh.add_point(Point(tl.out1.x, tl.out1.y, 0.0))
+
+        tr = ThumbColumn()
+        tr.out0 = self.t10.u_tr
+        tr.in0 = self.t10.l_tr
+        tr.out1 = self.t10.add_point(
+            KH.outer_w, KH.outer_h + offset, KH.height
+        )
+        tr.out2 = self.mesh.add_point(Point(tr.out1.x, tr.out1.y, 0.0))
+
+        self.thumb_br = br
+        self.thumb_bl = bl
+        self.thumb_tl = tl
+        self.thumb_tr = tr
+
+        # Now compute the inner ground corner locations, to maintain a wall
+        # thickness of self.wall_thickness.
+        front_dx = br.out2.x - bl.out2.x
+        front_dy = br.out2.y - bl.out2.y
+        front_delta = (
+            Point(-front_dy, front_dx, 0.0).unit() * self.wall_thickness
+        )
+
+        left_dx = bl.out2.x - tl.out2.x
+        left_dy = bl.out2.y - tl.out2.y
+        left_delta = Point(-left_dy, left_dx, 0.0).unit() * self.wall_thickness
+
+        back_dx = tl.out2.x - tr.out2.x
+        back_dy = tl.out2.y - tr.out2.y
+        back_delta = Point(-back_dy, back_dx, 0.0).unit() * self.wall_thickness
+
+        # Compute the inner ground corners now that we have
+        # the inner wall offsets
+        br.in2 = self.mesh.add_point(br.out2.point + front_delta)
+        bl.in2 = self.mesh.add_point(bl.out2.point + front_delta + left_delta)
+        tl.in2 = self.mesh.add_point(tl.out2.point + back_delta + left_delta)
+        tr.in2 = self.mesh.add_point(tr.out2.point + back_delta)
+
+        # Now compute the inner wall top points
+        l_plane = (self.t00.l_tl, self.t00.l_tr, self.t00.l_br)
+        br.in1 = self.mesh.add_point(self._thumb_lz_from_xy(br.in2.point))
+        bl.in1 = self.mesh.add_point(self._thumb_lz_from_xy(bl.in2.point))
+        tl.in1 = self.mesh.add_point(self._thumb_lz_from_xy(tl.in2.point))
+        tr.in1 = self.mesh.add_point(self._thumb_lz_from_xy(tr.in2.point))
+
+        def make_column(
+            kh: KeyHole,
+            p0: Tuple[MeshPoint, MeshPoint],
+            x_off: float,
+            y_off: float,
+            in_delta: Point,
+        ) -> ThumbColumn:
+            c = ThumbColumn()
+            c.out0 = p0[0]
+            c.in0 = p0[1]
+            c.out1 = kh.add_point(x_off, y_off, KH.height)
+            c.out2 = self.mesh.add_point(Point(c.out1.x, c.out1.y, 0.0))
+            c.in2 = self.mesh.add_point(c.out2.point + in_delta)
+            c.in1 = self.mesh.add_point(self._thumb_lz_from_xy(c.in2.point))
+            return c
+
+        def front_column(
+            kh: KeyHole, p0: Tuple[MeshPoint, MeshPoint], x_off: float
+        ) -> ThumbColumn:
+            return make_column(
+                kh, p0, x_off, -KH.outer_h - offset, front_delta
+            )
+
+        def left_column(
+            kh: KeyHole, p0: Tuple[MeshPoint, MeshPoint], y_off: float
+        ) -> ThumbColumn:
+            return make_column(kh, p0, -KH.outer_w - offset, y_off, left_delta)
+
+        def top_column(
+            kh: KeyHole, p0: Tuple[MeshPoint, MeshPoint], x_off: float
+        ) -> ThumbColumn:
+            return make_column(kh, p0, x_off, KH.outer_h + offset, back_delta)
+
+        columns = [
+            br,
+            front_column(self.t12, self.t12.bl, -KH.outer_w),
+            front_column(self.t02, self.t02.br, KH.outer_w),
+            bl,
+            left_column(self.t02, self.t02.tl, KH.outer_h),
+            left_column(self.t01, self.t01.bl, -KH.outer_h),
+            left_column(self.t01, self.t01.tl, KH.outer_h),
+            left_column(self.t00, self.t00.bl, -KH.outer_h),
+            tl,
+            top_column(self.t00, self.t00.tr, KH.outer_w),
+            top_column(self.t10, self.t10.tl, -KH.outer_w),
+            tr,
+        ]
+
+        for idx in range(len(columns) - 1):
+            self._bevel_edge(
+                columns[idx].out1,
+                columns[idx + 1].out1,
+                self._bevel_outer_ring,
+            )
+
+        self._bevel_edge(bl.out2, bl.out1, self._bevel_outer_vert_corner)
+        self._bevel_edge(bl.in2, bl.in1, self._bevel_inner_vert_corner)
+        self._bevel_edge(tl.out2, tl.out1, self._bevel_outer_vert_corner)
+        self._bevel_edge(tl.in2, tl.in1, self._bevel_inner_vert_corner)
+        return columns
+
+    def _thumb_lz_from_xy(self, in2: Point) -> Point:
+        """Compute the z height of the underside of the thumb area,
+        at the x, y coordinates from the input point.
+        """
+        line = (Point(in2.x, in2.y, 0.0), Point(in2.x, in2.y, 1.0))
+        plane = (self.t00.l_tl.point, self.t00.l_tr.point, self.t00.l_br.point)
+        intersect = intersect_line_and_plane(line, plane)
+        if intersect is None:
+            raise Exception("thumb grid is completely vertical")
+        return Point(in2.x, in2.y, intersect.z)
+
+    def gen_thumb_connect(
         self,
-        post1: Point,
-        post2: Point,
-        initial_tf: Optional[Transform] = None,
-    ) -> Transform:
-        """
-        Return a transform to apply an object to the surface of a wall.
+        thumb_wall: List[ThumbColumn],
+        front_wall: List[WallColumn],
+        left_wall: List[WallColumn],
+    ) -> None:
+        bu0, bl0 = self.connect_thumb_front(thumb_wall, front_wall)
+        (c0_in2, c1_in2, c2_in2, c3_in2), (
+            c0_out2,
+            c1_out2,
+            c2_out2,
+            c3_out2,
+        ) = self.thumb_connect_top(front_wall, left_wall)
 
-        post1 and post2 should be the left and right points of the wall.
-        This only looks at the x and y coordinates, and does not adjust up or
-        down on the z axis.
-        """
-        # Move the object forwards by half the wall thickness so its front
-        # aligns with the front of the wall (assuming its front is along the
-        # y=0 axis).
-        #
-        # Also adjust it along the x axis so that it is centered on the wall
-        # (assuming it starts centered around x = 0)
-        wall_len = math.sqrt(
-            ((post2.y - post1.y) ** 2) + ((post2.x - post1.x) ** 2)
+        KH = KeyHole
+
+        # Top thumb area face from the thumb grid to the wall
+        bu1 = self.t21.add_point(
+            KH.outer_w + 8.0, -KH.outer_h + 2.0, KH.height
         )
-        if initial_tf is None:
-            initial_tf = Transform()
-        translate_tf = initial_tf.translate(
-            wall_len * 0.5, -self.wall_radius, 0.0
+        bu2 = self.t20.add_point(KH.outer_w + 4.0, KH.outer_h + 4.0, KH.height)
+        bu3_x_offset = 3.0
+        bu3 = self.t10.add_point(
+            KH.outer_w + bu3_x_offset, KH.outer_h + 3.0, KH.height
         )
 
-        # Next rotate the object so it is at the same angle to the x axis
-        # as the wall.
-        angle = math.atan2(post2.y - post1.y, post2.x - post1.x)
-        angle_tf = Transform(
-            (
-                (math.cos(angle), -math.sin(angle), 0.0, 0.0),
-                (math.sin(angle), math.cos(angle), 0.0, 0.0),
-                (0.0, 0.0, 1.0, 0.0),
-                (0.0, 0.0, 0.0, 1.0),
-            )
+        self.mesh.add_quad(
+            self.t12.u_br, self.t21.u_br, bu0, thumb_wall[0].out1
+        )
+        self.mesh.add_tri(self.t21.u_br, bu1, bu0)
+        self.mesh.add_tri(self.t21.u_tr, bu1, self.t21.u_br)
+        self.mesh.add_quad(self.t20.u_br, bu2, bu1, self.t21.u_tr)
+        self.mesh.add_tri(self.t20.u_tr, bu2, self.t20.u_br)
+        self.mesh.add_quad(bu3, bu2, self.t20.u_tr, self.t10.u_tr)
+
+        thumb_wall_offset = 7.0
+        bu4 = self.t10.add_point(
+            KH.outer_w + bu3_x_offset,
+            KH.outer_h + thumb_wall_offset,
+            KH.height,
+        )
+        back_wall_delta = thumb_wall[-1].in2.point - thumb_wall[-1].out2.point
+
+        self.mesh.add_quad(bu3, self.t10.u_tr, thumb_wall[-1].out1, bu4)
+
+        # Lower thumb area face from the thumb grid to the wall
+        bl1 = self.t21.add_point(
+            KH.outer_w + 10.0, -KH.outer_h + 4.0, KH.mid_height
+        )
+        bl2 = self.t20.add_point(
+            KH.outer_w + 6.5, KH.outer_h + 5.5, KH.mid_height
         )
 
-        # Finally move the object from the origin so it is at the wall location
-        tf = translate_tf.transform(angle_tf).translate(post1.x, post1.y, 0)
-        return tf
-
-
-def model_right(
-    *,
-    oled_display: bool = False,
-    show_caps: bool = False,
-    show_collisions: bool = False,
-    loose_holes: bool = False,
-) -> Shape:
-    kbd = MyKeyboard()
-    if loose_holes:
-        kbd.key_hole = single_plate(loose=True)
-    parts = (
-        kbd.key_holes()
-        + kbd.connectors()
-        + kbd.thumb_area()
-        + kbd.thumb_walls(oled_display=oled_display)
-        + kbd.main_walls()
-        + kbd.thumb_connect_wall()
-    )
-
-    if show_caps:
-        parts.append(kbd.key_caps().grey())
-        parts.append(kbd.thumb_caps().grey())
-    if show_collisions:
-        parts.append(kbd.key_collisions().highlight())
-
-    return Shape.union(parts)
-
-
-def model_left(
-    *,
-    show_caps: bool = False,
-    show_collisions: bool = False,
-    loose_holes: bool = False,
-) -> Shape:
-    right = model_right(
-        oled_display=True,
-        show_caps=show_caps,
-        show_collisions=show_collisions,
-        loose_holes=loose_holes,
-    )
-    left = right.mirror(1, 0, 0)
-    return left
-
-
-def oled_display() -> Shape:
-    pcb_w = 33
-    pcb_h = 21.65
-    pcb_thickness = 1.57
-
-    display_w = 30
-    display_h = 11.5
-    display_thickness = 1.63
-
-    display_z = pcb_thickness + (display_thickness / 2)
-
-    base = Shape.cube(pcb_w, pcb_h, pcb_thickness).translate(
-        pcb_w / 2, pcb_h / 2, pcb_thickness / 2
-    )
-    display = Shape.cube(display_w, display_h, display_thickness).translate(
-        (pcb_w / 2) - 1, pcb_h / 2, display_z
-    )
-    cable_w = 4.35
-    cable_thickness = pcb_thickness + display_thickness
-    cable = Shape.cube(cable_w, 8.5, cable_thickness).translate(
-        pcb_w - (cable_w / 2) + 1.75, pcb_h / 2, cable_thickness / 2
-    )
-
-    stemma_w = 4.3
-    stemma_h = 6.1
-    stemma_z = 3.0
-    stemma_conn = Shape.cube(stemma_w, stemma_h, stemma_z).translate(
-        stemma_w / 2, pcb_h / 2, -stemma_z / 2.0
-    )
-
-    standoff = Shape.cylinder(h=2, r=2.5 / 2, fn=30).translate(0, 0, 0.98)
-    main = Shape.union([base, display, cable, stemma_conn])
-    return Shape.difference(
-        main,
-        [
-            standoff.translate(2.5, 2.5, 0),
-            standoff.translate(30.5, 2.5, 0),
-            standoff.translate(30.5, 19, 0),
-            standoff.translate(2.5, 19, 0),
-        ],
-    )
-
-
-def sx1509_breakout() -> Shape:
-    standoff = Shape.cylinder(h=2, r=3.302 / 2, fn=30)
-    # Note, the 2 long sides are cut in inside the stand-off holes.
-    # Only 22.87mm wide
-    base = Shape.cube(36.2, 26, 1.57)
-    return Shape.difference(
-        base,
-        [
-            standoff.translate(15.367, 10.287, 0.0),
-            standoff.translate(-15.367, 10.287, 0.0),
-            standoff.translate(-15.367, -10.287, 0.0),
-            standoff.translate(15.367, -10.287, 0.0),
-        ],
-    )
-
-
-def esp32_feather() -> Shape:
-    pcb_w = 51.2
-    pcb_d = 22.8
-    pcb_h = 1.57
-    base = Shape.cube(pcb_w, pcb_d, pcb_h).translate(
-        pcb_w * 0.5, pcb_d * 0.5, pcb_h * 0.5
-    )
-    standoff_big = Shape.cylinder(h=2, r=2.5 / 2, fn=30).translate(0, 0, 0.98)
-
-    return Shape.difference(
-        base,
-        [
-            standoff_big.translate(48.40, 2.5, 0.0),
-            standoff_big.translate(48.40, 19.0 + 1.25, 0.0),
-        ],
-    )
-
-
-def standoff_stud(d: float, offset: float = 0.0) -> Shape:
-    tolerance = d * 0.075
-    r = (d / 2) - tolerance
-
-    pcb_thickness = 1.57
-    lip_r = 0.3
-    lip_h = 0.3
-
-    h = 4
-    cutout_ratio = 0.25
-
-    points: List[Tuple[float, float]] = [(0.0, 0.0)]
-    if offset > 0.0:
-        collar_r = 0.5
-        points += [(r + collar_r, 0.0), (r + collar_r, offset)]
-
-    points += [
-        (r, offset),
-        (r, offset + (pcb_thickness * 0.85)),
-        (r + lip_r, offset + (pcb_thickness + lip_h)),
-        (r * cutout_ratio, offset + h),
-        (0.0, offset + h),
-    ]
-
-    flat = Shape.polygon(points)
-    stud = flat.extrude_rotate(fn=30)
-    cutout = Shape.cube(r * cutout_ratio * 2, r * 4, h).translate(
-        0, 0, (h / 2) + (pcb_thickness * 0.50) + offset
-    )
-    return Shape.difference(stud, [cutout])
-
-
-def oled_holder_parts(wall_thickness: float) -> Tuple[Shape, Shape]:
-    display_w = 32.5
-    display_h = 12.2
-    extra_thickness = 0.1
-    display_thickness = 1.53 + extra_thickness
-
-    pcb_w = 33.5
-    pcb_h = 21.8
-    pcb_thickness = 1.57
-    pcb_tolerance = 0.5
-
-    qt_cable_h = 9
-    qt_cable_cutout_w = 3
-
-    display_cutout = Shape.cube(
-        display_w, display_thickness, display_h
-    ).translate(0, (display_thickness - extra_thickness) / 2, 0)
-    pcb_cutout = Shape.cube(
-        pcb_w + pcb_tolerance, wall_thickness, pcb_h + pcb_tolerance
-    ).translate(0, (wall_thickness / 2) + display_thickness - 0.1, 0)
-    qt_cable_cutout = Shape.cube(
-        qt_cable_cutout_w + extra_thickness, wall_thickness, qt_cable_h
-    ).translate(
-        -(qt_cable_cutout_w + pcb_w) / 2,
-        (wall_thickness / 2) + display_thickness - 0.1,
-        0,
-    )
-
-    header_cutout = Shape.cube(18, wall_thickness, 4).translate(
-        0, (wall_thickness / 2) + 0.8, 2 + (-pcb_h / 2)
-    )
-
-    cutin_w = 2.5
-    cutin_h = 2.0
-    cutin_thickness = display_thickness - 0.1
-    cable_cutin = Shape.cube(cutin_w, cutin_thickness, cutin_h).translate(
-        (display_w - cutin_w) / 2,
-        cutin_thickness / 2,
-        (display_h - cutin_h) / 2.0,
-    )
-
-    oled_cable_h = display_h - cutin_h
-    oled_cable_cutout_w = 2
-    oled_cable_cutout = Shape.difference(
-        Shape.cube(
-            oled_cable_cutout_w + extra_thickness,
-            wall_thickness + extra_thickness,
-            oled_cable_h,
-        ),
-        [
-            Shape.cube(10, 2, oled_cable_h + extra_thickness)
-            .translate(0, -1, 0)
-            .rotate(0, 0, 15)
-            .translate(-1, 1 + (-(2 + wall_thickness) / 2), 0)
-        ],
-    ).translate(
-        (oled_cable_cutout_w + display_w) / 2,
-        (wall_thickness + extra_thickness) / 2,
-        -(cutin_h / 2),
-    )
-
-    stud = (
-        standoff_stud(d=2.5)
-        .rotate(-90, 0, 0)
-        .translate(0, display_thickness - 0.01, 0)
-    )
-    postive_parts = [
-        stud.translate(-14.0, 0, -8.325),
-        stud.translate(14.0, 0, -8.325),
-        stud.translate(14.0, 0, 8.175),
-        stud.translate(-14.0, 0, 8.175),
-        cable_cutin,
-    ]
-
-    cutouts = [
-        display_cutout,
-        pcb_cutout,
-        qt_cable_cutout,
-        oled_cable_cutout,
-        header_cutout,
-    ]
-
-    if False:
-        display = (
-            oled_display()
-            .rotate(90, 0, 0)
-            .highlight()
-            .translate(
-                -pcb_w / 2, pcb_thickness + display_thickness, -pcb_h / 2
-            )
+        # bl3 is connected to the inside of the thumb wall,
+        # so compute its location correctly so that it is exactly
+        # self.wall_thickness away from the outer thumb wall
+        bu5 = self.t10.add_point(
+            KH.outer_w + bu3_x_offset + 6.0,
+            KH.outer_h + thumb_wall_offset,
+            KH.height,
         )
-        postive_parts.append(display)
-
-    return Shape.union(cutouts), Shape.union(postive_parts)
-
-
-def oled_holder() -> Shape:
-    wall_thickness = 4
-    negative_part, postive_part = oled_holder_parts(wall_thickness)
-    wall = (
-        Shape.cube(50, wall_thickness, 30)
-        .translate(0, wall_thickness / 2, 0)
-        .translate(-4, 0, 0)
-    )
-    main = Shape.difference(wall, [negative_part])
-    return Shape.union([main, postive_part])
-
-
-def sx1509_holder_part(
-    wall_thickness: float, stud_offset: float = 3.0, holder_top: bool = True
-) -> Shape:
-    stud = (
-        standoff_stud(d=3.302, offset=stud_offset)
-        .rotate(-90, 0, 0)
-        .translate(0, wall_thickness - 0.01, 0)
-    )
-
-    bracket_d = stud_offset + 2.5
-    bracket_l = 26.0
-    bracket_h = 1.5
-    bracket = (
-        Shape.polygon(
-            [
-                (0.0, 0.0),
-                (stud_offset + 1.8, 0.0),
-                (stud_offset + 1.8, 0.5),
-                (stud_offset + 2.5, 0.0),
-                (stud_offset + 2.5, -bracket_h),
-                (0.0, -bracket_h),
-            ]
+        bl3 = self.mesh.add_point(
+            self._thumb_lz_from_xy(bu5.point + back_wall_delta)
         )
-        .extrude_linear(bracket_l)
-        .rotate(90.0, 0.0, 90.0)
-        .translate(0.0, wall_thickness - 0.01, -18.4)
-    )
 
-    x = 10.287
-    y = 15.367
-    parts = [
-        stud.translate(x, 0.0, y),
-        stud.translate(-x, 0.0, y),
-        stud.translate(-x, 0.0, -y),
-        stud.translate(x, 0.0, -y),
-        bracket,
-    ]
-    if holder_top:
-        parts.append(bracket.mirror(0.0, 0.0, 1.0))
-
-    if False:
-        pcb_thickness = 1.57
-        sx1509 = (
-            sx1509_breakout()
-            .rotate(90, 90, 0)
-            .highlight()
-            .translate(
-                0, (pcb_thickness / 2.0) + wall_thickness + stud_offset, 0
-            )
+        self.mesh.add_quad(
+            self.t12.l_br, thumb_wall[0].in1, bl0, self.t21.l_br
         )
-        parts.append(sx1509)
+        self.mesh.add_tri(self.t21.l_br, bl0, bl1)
+        self.mesh.add_tri(self.t21.l_tr, self.t21.l_br, bl1)
+        self.mesh.add_quad(self.t20.l_br, self.t21.l_tr, bl1, bl2)
+        self.mesh.add_tri(self.t20.l_br, bl2, self.t20.l_tr)
 
-    return Shape.union(parts)
+        self.mesh.add_quad(self.t20.l_tr, bl2, bl3, self.t10.l_tr)
+        self.mesh.add_tri(self.t10.l_tr, bl3, thumb_wall[-1].in1)
+        self.mesh.add_tri(bl2, c3_in2, bl3)
+
+        # Remaining vertical connection walls
+        self.mesh.add_tri(bl0, front_wall[0].in2, c0_in2)
+        self.mesh.add_tri(bl0, c0_in2, bl1)
+        self.mesh.add_tri(bu0, c0_out2, front_wall[0].out2)
+        self.mesh.add_tri(front_wall[0].out2, c0_out2, front_wall[0].out1)
+        self.mesh.add_tri(bu0, bu1, c0_out2)
+
+        self.mesh.add_quad(bl2, bl1, c0_in2, c1_in2)
+        self.mesh.add_tri(bl2, c1_in2, c2_in2)
+        self.mesh.add_tri(bl2, c2_in2, c3_in2)
+
+        self.mesh.add_quad(bu1, bu2, c1_out2, c0_out2)
+        self.mesh.add_tri(bu2, c2_out2, c1_out2)
+        self.mesh.add_tri(bu2, c3_out2, c2_out2)
+        self.mesh.add_tri(bu2, bu3, c3_out2)
+
+        self.mesh.add_quad(bu3, bu4, left_wall[-1].out2, c3_out2)
+
+        self.connect_thumb_left(thumb_wall, left_wall, bu4, bl3, c3_in2)
+
+        self._bevel_edge(bu1, c0_out2)
+        self._bevel_edge(bu2, c2_out2, 0.5)
+        self._bevel_edge(bu3, c3_out2)
+
+        # This is a flat edge, but enabling the bevel here improves the bevel
+        # on the inner corner up the thumb connecting wall
+        self._bevel_edge(bu2, self.t20.u_tr, 0.5)
+
+    def connect_thumb_front(
+        self, thumb_wall: List[ThumbColumn], front_wall: List[WallColumn]
+    ) -> Tuple[MeshPoint, MeshPoint]:
+        def find_y_intersect(
+            p1: MeshPoint, p2: MeshPoint, y: float
+        ) -> MeshPoint:
+            d = p2.point - p1.point
+            f = (y - p2.y) / d.y
+            x = p2.x + f * d.x
+            z = p2.z + f * d.z
+            return self.mesh.add_point(Point(x, y, z))
+
+        # Connect front thumb wall to front wall
+        # Find the intersection point between the two outer walls
+        o = find_y_intersect(
+            thumb_wall[0].out1, thumb_wall[1].out1, front_wall[0].out1.y
+        )
+        og = self.mesh.add_point(Point(o.x, o.y, 0.0))
+
+        # Find the intersection point between the two inner walls
+        i = find_y_intersect(
+            thumb_wall[0].in1, thumb_wall[1].in1, front_wall[0].in1.y
+        )
+        ig = self.mesh.add_point(Point(i.x, i.y, 0.0))
+
+        self.mesh.add_quad(thumb_wall[0].out1, o, og, thumb_wall[0].out2)
+        self.mesh.add_quad(thumb_wall[0].in1, thumb_wall[0].in2, ig, i)
+        self.mesh.add_quad(thumb_wall[0].out2, og, ig, thumb_wall[0].in2)
+        self.mesh.add_quad(og, front_wall[0].out3, front_wall[0].in3, ig)
+        self.mesh.add_quad(o, front_wall[0].out2, front_wall[0].out3, og)
+        self.mesh.add_quad(i, ig, front_wall[0].in3, front_wall[0].in2)
+
+        self._bevel_edge(thumb_wall[0].out1, o, self._bevel_outer_ring)
+        # This edge is flat, but enabling a bevel on it improves how
+        # the beveled edge between the thumb wall joins the front wall.
+        self._bevel_edge(front_wall[0].out2, o, self._bevel_outer_ring)
+
+        return o, i
+
+    def connect_thumb_left(
+        self,
+        thumb_wall: List[ThumbColumn],
+        left_wall: List[WallColumn],
+        bu4: MeshPoint,
+        bl3: MeshPoint,
+        c3_in2: MeshPoint,
+    ) -> None:
+        def find_x_intersect(
+            p1: MeshPoint, p2: MeshPoint, x: float
+        ) -> MeshPoint:
+            d = p2.point - p1.point
+            f = (x - p2.x) / d.x
+            y = p2.y + f * d.y
+            z = p2.z + f * d.z
+            return self.mesh.add_point(Point(x, y, z))
+
+        o = find_x_intersect(
+            thumb_wall[-1].out1, thumb_wall[-2].out1, left_wall[-1].out2.x
+        )
+        og = self.mesh.add_point(Point(o.x, o.y, 0.0))
+        i = find_x_intersect(
+            thumb_wall[-1].in1, thumb_wall[-2].in1, left_wall[-1].in2.x
+        )
+        ig = self.mesh.add_point(Point(i.x, i.y, 0.0))
+
+        bu4g = self.mesh.add_point(Point(bu4.x, bu4.y, 0.0))
+        bl3g = self.mesh.add_point(Point(bl3.x, bl3.y, 0.0))
+
+        self.mesh.add_quad(left_wall[-1].out3, left_wall[-1].out2, o, og)
+        self.mesh.add_tri(o, left_wall[-1].out2, bu4)
+
+        self.mesh.add_quad(og, o, bu4, bu4g)
+        self.mesh.add_quad(bu4g, bu4, thumb_wall[-1].out1, thumb_wall[-1].out2)
+
+        self.mesh.add_quad(thumb_wall[-1].in2, bl3g, bu4g, thumb_wall[-1].out2)
+        self.mesh.add_quad(thumb_wall[-1].in2, thumb_wall[-1].in1, bl3, bl3g)
+        self.mesh.add_quad(bl3g, bl3, i, ig)
+        self.mesh.add_quad(bu4g, bl3g, ig, og)
+        self.mesh.add_quad(og, ig, left_wall[-1].in3, left_wall[-1].out3)
+
+        self.mesh.add_quad(ig, i, left_wall[-1].in2, left_wall[-1].in3)
+
+        self.mesh.add_tri(left_wall[-1].in2, bl3, c3_in2)
+        self.mesh.add_tri(left_wall[-1].in2, i, bl3)
+
+        self._bevel_edge(thumb_wall[-1].out1, bu4)
+        self._bevel_edge(left_wall[-1].out2, bu4)
+
+    def thumb_connect_top(
+        self, front_wall: List[WallColumn], left_wall: List[WallColumn]
+    ) -> Tuple[
+        Tuple[MeshPoint, MeshPoint, MeshPoint, MeshPoint],
+        Tuple[MeshPoint, MeshPoint, MeshPoint, MeshPoint],
+    ]:
+        KH = KeyHole
+        c0_out1 = self.k25.add_point(
+            -KH.outer_w - 1.5, -KH.outer_h - 1.5, KH.height
+        )
+        c0_out2 = self.k25.add_point(
+            -KH.outer_w - 1.5, -KH.outer_h - 1.5, KH.height - 7.0
+        )
+        self.mesh.add_quad(
+            self.k25.u_bl, self.k25.u_br, front_wall[0].out1, c0_out1
+        )
+        self.mesh.add_tri(c0_out1, front_wall[0].out1, c0_out2)
+
+        c0_in1 = self.k25.add_point(
+            -KH.outer_w - 0.25, -KH.outer_h - 0.25, KH.mid_height
+        )
+        c0_in2 = self.k25.add_point(
+            -KH.outer_w - 0.25, -KH.outer_h - 0.25, KH.mid_height - 3.0
+        )
+
+        # The top portion of wall in front of k25
+        self.mesh.add_quad(
+            front_wall[0].in0, self.k25.l_bl, c0_in1, front_wall[0].in1
+        )
+        self.mesh.add_tri(front_wall[0].in1, c0_in1, c0_in2)
+        self.mesh.add_tri(front_wall[0].in1, c0_in2, front_wall[0].in2)
+
+        # The wall down the triangular section between k25 and k14
+        c1_out1 = self.k14.add_point(
+            -KH.outer_w - 1.5, -KH.outer_h - 1.5, KH.height
+        )
+        c1_out2 = self.k14.add_point(
+            -KH.outer_w - 1.5, -KH.outer_h - 1.5, KH.height - 7.0
+        )
+        c1_in1 = self.k14.add_point(
+            -KH.outer_w - 0.25, -KH.outer_h - 0.25, KH.mid_height
+        )
+        c1_in2 = self.k14.add_point(
+            -KH.outer_w - 0.25, -KH.outer_h - 0.25, KH.mid_height - 3.0
+        )
+        self.mesh.add_quad(self.k14.l_bl, c1_in1, c0_in1, self.k25.l_bl)
+        self.mesh.add_quad(c1_in1, c1_in2, c0_in2, c0_in1)
+        self.mesh.add_quad(self.k14.u_bl, self.k25.u_bl, c0_out1, c1_out1)
+        self.mesh.add_quad(c1_out1, c0_out1, c0_out2, c1_out2)
+
+        # The wall down between k14 and k04
+        c2_out1 = self.k04.add_point(
+            KH.outer_w - 1.5, -KH.outer_h - 2.0, KH.height
+        )
+        c2_out2 = self.k04.add_point(
+            KH.outer_w - 1.5, -KH.outer_h - 2.0, KH.height - 7.0
+        )
+        c2_in1 = self.k04.add_point(
+            KH.outer_w - 0.25, -KH.outer_h - 0.50, KH.mid_height
+        )
+        c2_in2 = self.k04.add_point(
+            KH.outer_w - 0.25, -KH.outer_h - 0.50, KH.mid_height - 3.0
+        )
+        self.mesh.add_quad(self.k04.l_br, c2_in1, c1_in1, self.k14.l_bl)
+        self.mesh.add_quad(c2_in1, c2_in2, c1_in2, c1_in1)
+        self.mesh.add_quad(self.k04.u_br, self.k14.u_bl, c1_out1, c2_out1)
+        self.mesh.add_quad(c2_out1, c1_out1, c1_out2, c2_out2)
+
+        # The wall down the front of k04
+        c3_out1 = self.k04.add_point(
+            -KH.outer_w - 2.0, -KH.outer_h - 2.0, KH.height
+        )
+        c3_out2 = self.k04.add_point(
+            -KH.outer_w - 4.0, -KH.outer_h - 3.0, KH.height - 5.0
+        )
+        c3_in1 = self.k04.add_point(
+            -KH.outer_w - 0.5, -KH.outer_h - 0.50, KH.mid_height
+        )
+        c3_in2 = self.k04.add_point(
+            -KH.outer_w - 1.5, -KH.outer_h - 0.50, KH.mid_height - 3.0
+        )
+        self.mesh.add_quad(self.k04.l_bl, c3_in1, c2_in1, self.k04.l_br)
+        self.mesh.add_quad(c3_in1, c3_in2, c2_in2, c2_in1)
+        self.mesh.add_quad(self.k04.u_bl, self.k04.u_br, c2_out1, c3_out1)
+        self.mesh.add_quad(c3_out1, c2_out1, c2_out2, c3_out2)
+
+        # The wall to the left of k04
+        # This section is a little irregular
+        self.mesh.add_quad(
+            self.k04.l_tl, left_wall[-1].in1, c3_in1, self.k04.l_bl
+        )
+        self.mesh.add_tri(left_wall[-1].in1, left_wall[-1].in2, c3_in1)
+        self.mesh.add_tri(left_wall[-1].in2, c3_in2, c3_in1)
+
+        self.mesh.add_quad(
+            self.k04.u_tl, self.k04.u_bl, c3_out1, left_wall[-1].out1
+        )
+        self.mesh.add_quad(
+            left_wall[-1].out1, c3_out1, c3_out2, left_wall[-1].out2
+        )
+
+        self._bevel_edge(front_wall[0].out1, c0_out1, 0.5)
+        self._bevel_edge(c0_out1, c1_out1, 0.5)
+        self._bevel_edge(c1_out1, c2_out1, 0.5)
+        self._bevel_edge(c2_out1, c3_out1, 0.5)
+
+        self._bevel_edge(front_wall[0].out1, c0_out2, 0.5)
+        self._bevel_edge(c0_out2, c1_out2)
+        self._bevel_edge(c1_out2, c2_out2)
+        self._bevel_edge(c2_out2, c3_out2)
+
+        self._bevel_edge(c3_out2, c3_out1)
+        self._bevel_edge(left_wall[-1].out2, c3_out2)
+        self._bevel_edge(left_wall[-1].out1, c3_out1)
+
+        self._bevel_edge(c0_out2, c0_out1, 0.5)
+        self._bevel_edge(c1_out2, c1_out1, 0.5)
+        self._bevel_edge(c2_out2, c2_out1, 0.5)
+
+        return (
+            (c0_in2, c1_in2, c2_in2, c3_in2),
+            (c0_out2, c1_out2, c2_out2, c3_out2),
+        )
+
+    def get_bevel_weights(self, edges) -> Dict[int, float]:
+        results: Dict[int, float] = {}
+        for idx, e in enumerate(edges):
+            v0 = e.vertices[0]
+            v1 = e.vertices[1]
+            if v0 < v1:
+                key = v0, v1
+            else:
+                key = v1, v0
+
+            weight = self._bevel_edges.get(key, 0.0)
+            if weight > 0.0:
+                results[idx] = weight
+
+        return results
 
 
-def sx1509_holder() -> Shape:
-    wall_thickness = 4
-    part = sx1509_holder_part(wall_thickness)
+class KeyHole:
+    keyswitch_width: float = 14.4
+    keyswitch_height: float = 14.4
+    keywell_wall_width = 1.5
+    web_thickness = 3.5
 
-    wall = Shape.difference(
-        Shape.cube(28, wall_thickness, 38),
-        [Shape.cube(18, wall_thickness * 1.1, 26)],
-    ).translate(0, wall_thickness / 2, 0)
-    return Shape.union([wall, part])
+    height: float = 4.0
+    inner_w: float = keyswitch_width * 0.5
+    outer_w: float = inner_w + keywell_wall_width
+    inner_h = keyswitch_height * 0.5
+    outer_h = inner_h + keywell_wall_width
+
+    # The height of the connecting mesh between key holes
+    mid_height = height - web_thickness
+
+    def __init__(self, mesh: Mesh, transform: Transform) -> None:
+        self.mesh = mesh
+        self.transform = transform
+
+        outer_w = self.outer_w
+        outer_h = self.outer_h
+
+        # Upper outer points.
+        # These are the main connection points used externally for the walls
+        self.u_bl = self.add_point(-outer_w, -outer_h, self.height)
+        self.u_br = self.add_point(outer_w, -outer_h, self.height)
+        self.u_tr = self.add_point(outer_w, outer_h, self.height)
+        self.u_tl = self.add_point(-outer_w, outer_h, self.height)
+
+        # Lower outer points.
+        # These are also connection points used externally,
+        # for the underside of the walls
+        self.l_bl = self.add_point(-outer_w, -outer_h, self.mid_height)
+        self.l_br = self.add_point(outer_w, -outer_h, self.mid_height)
+        self.l_tr = self.add_point(outer_w, outer_h, self.mid_height)
+        self.l_tl = self.add_point(-outer_w, outer_h, self.mid_height)
+
+    @property
+    def tl(self) -> Tuple[MeshPoint, MeshPoint]:
+        return (self.u_tl, self.l_tl)
+
+    @property
+    def tr(self) -> Tuple[MeshPoint, MeshPoint]:
+        return (self.u_tr, self.l_tr)
+
+    @property
+    def bl(self) -> Tuple[MeshPoint, MeshPoint]:
+        return (self.u_bl, self.l_bl)
+
+    @property
+    def br(self) -> Tuple[MeshPoint, MeshPoint]:
+        return (self.u_br, self.l_br)
+
+    def add_point(self, x: float, y: float, z: float) -> MeshPoint:
+        p = Point(x, y, z).transform(self.transform)
+        return self.mesh.add_point(p)
+
+    def inner_walls(self) -> None:
+        quad = self.mesh.add_quad
+        tri = self.mesh.add_tri
+
+        outer_w = self.outer_w
+        outer_h = self.outer_h
+        inner_w = self.inner_w
+        inner_h = self.inner_h
+
+        nub_h = 2.75 * 0.5
+        nub_r = 1
+
+        # Upper inner points
+        u_in_bl = self.add_point(-inner_w, -inner_h, self.height)
+        u_in_br = self.add_point(inner_w, -inner_h, self.height)
+        u_in_tr = self.add_point(inner_w, inner_h, self.height)
+        u_in_tl = self.add_point(-inner_w, inner_h, self.height)
+
+        # Bottom-most inner points.
+        # The bottom-most points extend slightly below the "lower" points
+        # used for connections to the walls.
+        b_in_bl = self.add_point(-inner_w, -inner_h, 0.0)
+        b_in_br = self.add_point(inner_w, -inner_h, 0.0)
+        b_in_tr = self.add_point(inner_w, inner_h, 0.0)
+        b_in_tl = self.add_point(-inner_w, inner_h, 0.0)
+
+        # Bottom-most outer points
+        b_out_bl = self.add_point(-outer_w, -outer_h, 0.0)
+        b_out_br = self.add_point(outer_w, -outer_h, 0.0)
+        b_out_tr = self.add_point(outer_w, outer_h, 0.0)
+        b_out_tl = self.add_point(-outer_w, outer_h, 0.0)
+
+        # Bottom section
+        quad(u_in_bl, b_in_bl, b_in_br, u_in_br)
+        quad(u_in_bl, u_in_br, self.u_br, self.u_bl)
+        quad(b_in_bl, b_out_bl, b_out_br, b_in_br)
+        quad(b_out_bl, self.l_bl, self.l_br, b_out_br)
+
+        # Top section
+        quad(u_in_tr, b_in_tr, b_in_tl, u_in_tl)
+        quad(u_in_tr, u_in_tl, self.u_tl, self.u_tr)
+        quad(b_in_tr, b_out_tr, b_out_tl, b_in_tl)
+        quad(b_out_tr, self.l_tr, self.l_tl, b_out_tl)
+
+        # Left section, except for the nub
+        u_mid_bl = self.add_point(-inner_w, -nub_h, self.height)
+        u_mid_tl = self.add_point(-inner_w, nub_h, self.height)
+        b_mid_bl = self.add_point(-inner_w, -nub_h, 0)
+        b_mid_tl = self.add_point(-inner_w, nub_h, 0)
+        lnub_center_b = self.add_point(-inner_w, -nub_h, nub_r)
+        lnub_center_t = self.add_point(-inner_w, nub_h, nub_r)
+
+        quad(self.u_bl, self.u_tl, u_mid_tl, u_mid_bl)
+        tri(self.u_bl, u_mid_bl, u_in_bl)
+        tri(u_mid_tl, self.u_tl, u_in_tl)
+        quad(b_out_tl, b_out_bl, b_mid_bl, b_mid_tl)
+        tri(b_out_bl, b_in_bl, b_mid_bl)
+        tri(b_out_tl, b_mid_tl, b_in_tl)
+        quad(b_out_tl, self.l_tl, self.l_bl, b_out_bl)
+        quad(u_in_bl, lnub_center_b, b_mid_bl, b_in_bl)
+        tri(u_in_bl, u_mid_bl, lnub_center_b)
+        quad(lnub_center_t, u_in_tl, b_in_tl, b_mid_tl)
+        tri(u_mid_tl, u_in_tl, lnub_center_t)
+
+        # Right section, except for the nub
+        u_mid_br = self.add_point(inner_w, -nub_h, self.height)
+        u_mid_tr = self.add_point(inner_w, nub_h, self.height)
+        b_mid_br = self.add_point(inner_w, -nub_h, 0)
+        b_mid_tr = self.add_point(inner_w, nub_h, 0)
+        rnub_center_b = self.add_point(inner_w, -nub_h, nub_r)
+        rnub_center_t = self.add_point(inner_w, nub_h, nub_r)
+
+        quad(self.u_br, u_mid_br, u_mid_tr, self.u_tr)
+        tri(self.u_br, u_in_br, u_mid_br)
+        tri(u_mid_tr, u_in_tr, self.u_tr)
+        quad(b_out_br, b_out_tr, b_mid_tr, b_mid_br)
+        tri(b_out_br, b_mid_br, b_in_br)
+        tri(b_mid_tr, b_out_tr, b_in_tr)
+        quad(b_out_br, self.l_br, self.l_tr, b_out_tr)
+        quad(u_in_tr, rnub_center_t, b_mid_tr, b_in_tr)
+        tri(u_in_tr, u_mid_tr, rnub_center_t)
+        quad(rnub_center_b, u_in_br, b_in_br, b_mid_br)
+        tri(u_mid_br, u_in_br, rnub_center_b)
+
+        # The left nub
+        prev_b = b_mid_bl
+        prev_t = b_mid_tl
+        for angle in range(0, 110, 12):
+            rad = math.radians(angle)
+            x = math.sin(rad) * nub_r
+            z = nub_r - (nub_r * math.cos(rad))
+            b = self.add_point(-inner_w + x, -nub_h, z)
+            t = self.add_point(-inner_w + x, nub_h, z)
+
+            tri(lnub_center_b, b, prev_b)
+            tri(lnub_center_t, prev_t, t)
+            quad(prev_b, b, t, prev_t)
+
+            prev_b = b
+            prev_t = t
+
+        tri(u_mid_bl, prev_b, lnub_center_b)
+        tri(u_mid_tl, lnub_center_t, prev_t)
+        quad(u_mid_bl, u_mid_tl, prev_t, prev_b)
+
+        # The right nub
+        prev_b = b_mid_br
+        prev_t = b_mid_tr
+        for angle in range(0, 110, 12):
+            rad = math.radians(angle)
+            x = math.sin(rad) * nub_r
+            z = nub_r - (nub_r * math.cos(rad))
+            b = self.add_point(inner_w - x, -nub_h, z)
+            t = self.add_point(inner_w - x, nub_h, z)
+
+            tri(rnub_center_b, prev_b, b)
+            tri(rnub_center_t, t, prev_t)
+            quad(t, b, prev_b, prev_t)
+
+            prev_b = b
+            prev_t = t
+
+        tri(u_mid_br, rnub_center_b, prev_b)
+        tri(u_mid_tr, prev_t, rnub_center_t)
+        quad(u_mid_tr, u_mid_br, prev_b, prev_t)
+
+    def top_edge(self) -> None:
+        self.mesh.add_quad(self.u_tr, self.u_tl, self.l_tl, self.l_tr)
+
+    def top_edge_right(self, kh: KeyHole) -> None:
+        self.mesh.add_quad(kh.u_tl, self.u_tr, self.l_tr, kh.l_tl)
+
+    def bottom_edge(self) -> None:
+        self.mesh.add_quad(self.u_bl, self.u_br, self.l_br, self.l_bl)
+
+    def bottom_edge_right(self, kh: KeyHole) -> None:
+        self.mesh.add_quad(self.u_br, kh.u_bl, kh.l_bl, self.l_br)
+
+    def left_edge(self) -> None:
+        self.mesh.add_quad(self.u_tl, self.u_bl, self.l_bl, self.l_tl)
+
+    def right_edge(self) -> None:
+        self.mesh.add_quad(self.u_br, self.u_tr, self.l_tr, self.l_br)
+
+    def join_bottom(self, kh: KeyHole) -> None:
+        # Join this key hole to one below it
+        KeyHole.top_bottom_quad(self.bl, self.br, kh.tr, kh.tl)
+
+    def left_edge_bottom(self, kh: KeyHole) -> None:
+        self.mesh.add_quad(self.u_bl, kh.u_tl, kh.l_tl, self.l_bl)
+
+    def right_edge_bottom(self, kh: KeyHole) -> None:
+        self.mesh.add_quad(kh.u_tr, self.u_br, self.l_br, kh.l_tr)
+
+    def join_right(self, kh: KeyHole) -> None:
+        KeyHole.top_bottom_quad(self.tr, kh.tl, kh.bl, self.br)
+
+    @staticmethod
+    def join_corner(
+        tl: KeyHole, tr: KeyHole, br: KeyHole, bl: KeyHole
+    ) -> None:
+        KeyHole.top_bottom_quad(tl.br, tr.bl, br.tl, bl.tr)
+
+    @staticmethod
+    def top_bottom_tri(
+        p0: Tuple[MeshPoint, MeshPoint],
+        p1: Tuple[MeshPoint, MeshPoint],
+        p2: Tuple[MeshPoint, MeshPoint],
+    ) -> None:
+        mesh = p0[0].mesh
+        mesh.add_tri(p0[0], p1[0], p2[0])
+        mesh.add_tri(p2[1], p1[1], p0[1])
+
+    @staticmethod
+    def top_bottom_quad(
+        p0: Tuple[MeshPoint, MeshPoint],
+        p1: Tuple[MeshPoint, MeshPoint],
+        p2: Tuple[MeshPoint, MeshPoint],
+        p3: Tuple[MeshPoint, MeshPoint],
+    ) -> None:
+        mesh = p0[0].mesh
+        mesh.add_quad(p0[0], p1[0], p2[0], p3[0])
+        mesh.add_quad(p3[1], p2[1], p1[1], p0[1])
 
 
-def joint_holder_parts(
-    wall_thickness: float, holder_top: bool = True
-) -> Tuple[Shape, Shape]:
-    """Return (neg_part, pos_part)"""
-    wall = (
-        Shape.cube(50, wall_thickness, 48)
-        .translate(0, wall_thickness / 2, 0)
-        .translate(-4, 0, 0)
-    )
-
-    sx1509_part = sx1509_holder_part(
-        wall_thickness, stud_offset=5.0, holder_top=holder_top
-    )
-    oled_neg_part, oled_pos_part = oled_holder_parts(wall_thickness)
-    return oled_neg_part, Shape.union([sx1509_part, oled_pos_part])
-
-
-def joint_holder() -> Shape:
-    wall_thickness = 4
-    wall = (
-        Shape.cube(50, wall_thickness, 48)
-        .translate(0, wall_thickness / 2, 0)
-        .translate(-4, 0, 0)
-    )
-
-    neg_part, pos_part = joint_holder_parts(wall_thickness)
-    return Shape.union([Shape.difference(wall, [neg_part]), pos_part])
-
-
-def idc_header() -> Shape:
-    body_h = 8.6
-    main = Shape.cube(28.0, 8.5, body_h)
-    inner = Shape.cube(25.9, 6.4, body_h).translate(0.0, 0.0, 2.25)
-    edge_cutout1 = Shape.cube(4.0, 3.3, body_h).translate(
-        12.945 + 2.0, 0.0, -2.10
-    )
-    edge_cutout2 = Shape.cube(4.0, 3.3, body_h).translate(
-        -12.945 - 2.0, 0.0, -2.10
-    )
-
-    body = Shape.difference(
-        main, [inner, edge_cutout1, edge_cutout2]
-    ).translate(0.0, 0.0, body_h / 2.0)
-
-    pin_h = 11.25
-    pin_pitch = 2.54
-    pin_z = (pin_h / 2) - 4.0
-    pin = Shape.cube(0.64, 0.64, pin_h)
-    parts = [body]
-    for y in (0.5, -0.5):
-        for n in range(8):
-            p = pin.translate(pin_pitch * (n - 3.5), pin_pitch * y, pin_z)
-            parts.append(p)
-
-    return Shape.union(parts)
-
-
-def idc_header_holder_parts(wall_thickness: float) -> Shape:
-    offset = 6.0
-
-    header_w = 28.0
-    header_d = 8.5
-    header_h = 8.6
-
-    base_w = 4.0
-    base_d = 12.0
-    nub_d = (base_d - header_d) / 2.0
-    nub_h = 6.0
-    nub_tolerance = 0.1
-
-    nub = Shape.cube(base_w, nub_d - nub_tolerance, nub_h)
-    nub_l = nub.translate(
-        0.0, nub_tolerance + (base_d - nub_d) / 2.0, offset + (nub_h / 2.0)
-    )
-    nub_r = nub.translate(
-        0.0,
-        -1.0 * (nub_tolerance + (base_d - nub_d) / 2.0),
-        offset + (nub_h / 2.0),
-    )
-
-    clip_outline = Shape.polygon(
-        [
-            (1.0, offset),
-            (2.0, offset),
-            (2.0, offset + 5.0),
-            (0.0, offset + 2.3),
-            (1.0, offset + 2.3),
-        ]
-    )
-    clip = clip_outline.extrude_linear(3.0).rotate(90.0, 0.0, 0.0)
-
-    base = Shape.union(
-        [
-            Shape.cube(base_w, base_d, offset).translate(
-                0.0, 0.0, offset / 2.0
-            ),
-            nub_l,
-            nub_r,
-            clip,
-        ]
-    )
-
-    left = base.translate((header_w - base_w) / 2.0, 0.0, 0.0)
-    right = left.mirror(1.0, 0.0, 0.0)
-
-    parts = [left, right]
-
-    if False:
-        parts.append(idc_header().translate(0.0, 0.0, offset).highlight())
-
-    return (
-        Shape.union(parts)
-        .rotate(-90, 0, 0)
-        .translate(0.0, wall_thickness - 0.1, 0.0)
-    )
-
-
-def idc_header_holder() -> Shape:
-    wall_thickness = 4
-    holder = idc_header_holder_parts(wall_thickness)
-
-    wall = Shape.cube(30, wall_thickness, 15).translate(
-        0, wall_thickness / 2, 0
-    )
-    return Shape.union([wall, holder])
-
-
-def foot(off_x: float = 0.0, off_y: float = 0.0, h: float = 15.0) -> PosAndNeg:
-    wall_thickness = 4.0
-    top_r = wall_thickness * 0.5
-
-    # Actual foot dimensions are about
-    # 12.5mm in diameter (6.25mm radius)
-    # and about 3.6mm tall
-
-    inner_r = 6.5
-    outer_r = inner_r + 2.0
-    base_h = 1.25
-    recess = 2.75
-    fn = 30.0
-
-    t = 0.01
-    bottom = Shape.cylinder(h=base_h + recess, r=outer_r, fn=fn).translate(
-        off_x, off_y, (base_h + recess) * 0.5
-    )
-    recess = Shape.cylinder(h=(recess + t), r=inner_r, fn=fn).translate(
-        off_x, off_y, (recess * 0.5) - t
-    )
-    if h > base_h:
-        top = Shape.sphere(top_r, fn=fn).translate(0, 0, h - top_r)
-        return PosAndNeg(Shape.hull([bottom, top]), recess)
-    else:
-        return PosAndNeg(bottom, recess)
-
-
-def mag_conn() -> Shape:
-    """Holder for a 5-pin magnetic connector:
-    https://www.adafruit.com/product/5413
+class WallColumn:
+    """A class representing a vertical column of points in the main grid walls.
     """
-    w = 20.1
-    h = 4.25
-    d = 4.05
 
-    flange_d = 0.75
-    flange_offset = 2.25
+    __slots__ = ["out0", "out1", "out2", "out3", "in0", "in1", "in2", "in3"]
 
-    fn = 30
+    def __init__(self) -> None:
+        # Outer wall points, from the top of the wall to the bottom
+        self.out0: Optional[MeshPoint] = None
+        self.out1: Optional[MeshPoint] = None
+        self.out2: Optional[MeshPoint] = None
+        self.out3: Optional[MeshPoint] = None
+        # Inner wall points, from the top of the wall to the bottom
+        self.in0: Optional[MeshPoint] = None
+        self.in1: Optional[MeshPoint] = None
+        self.in2: Optional[MeshPoint] = None
+        self.in3: Optional[MeshPoint] = None
 
-    core_r = h * 0.5
-    core_cyl = Shape.cylinder(h=d, r=core_r, fn=fn).rotate(90.0, 0.0, 0.0)
-    core = Shape.hull(
-        [
-            core_cyl.translate(core_r - (w * 0.5), d * 0.5, 0.0),
-            core_cyl.translate((w * 0.5) - core_r, d * 0.5, 0.0),
+    def get_rows(self) -> List[MeshPoint]:
+        rows = [
+            self.out0,
+            self.out1,
+            self.out2,
+            self.out3,
+            self.in3,
+            self.in2,
+            self.in1,
+            self.in0,
         ]
-    )
-    flange = Shape.cube(w, flange_d, h).translate(
-        0.0, (flange_d * 0.5) + flange_offset, 0.0
-    )
-    return Shape.union([core, flange])
+        for p in rows:
+            assert p is not None
+        return rows
 
 
-def mag_conn_holder_parts(wall_thickness: float) -> Shape:
-    d = wall_thickness * 1.1
+class ThumbColumn:
+    """A class representing a vertical column of points in the thumb walls.
+    """
 
-    w = 20.6
-    # If printing the holder face down, h = 4.5 is a good value.
-    # However, if printing vertically with support needed to hold up the top
-    # of the opening, then this value needs to be a little bit bigger.
-    h = 4.8
+    __slots__ = ["out0", "out1", "out2", "out3", "in0", "in1", "in2", "in3"]
 
-    flange_d = 0.90
-    flange_cutout_d = wall_thickness
-    flange_offset = 2.25
+    def __init__(self) -> None:
+        # Outer wall points, from the top of the wall to the bottom
+        self.out0: Optional[MeshPoint] = None
+        self.out1: Optional[MeshPoint] = None
+        self.out2: Optional[MeshPoint] = None
+        # Inner wall points, from the top of the wall to the bottom
+        self.in0: Optional[MeshPoint] = None
+        self.in1: Optional[MeshPoint] = None
+        self.in2: Optional[MeshPoint] = None
 
-    fn = 30
-    t = 0.01
-
-    core_r = h * 0.5
-    core_cyl = (
-        Shape.cylinder(h=d, r=core_r, fn=fn)
-        .rotate(90.0, 0.0, 0.0)
-        .translate(0.0, -t, 0.0)
-    )
-    core = Shape.hull(
-        [
-            core_cyl.translate(core_r - (w * 0.5), d * 0.5, 0.0),
-            core_cyl.translate((w * 0.5) - core_r, d * 0.5, 0.0),
-        ]
-    )
-    flange = Shape.cube(w, flange_cutout_d, h).translate(
-        0.0, (flange_cutout_d * 0.5) + flange_offset, 0.0
-    )
-
-    nub_h = 0.5  # how much the nub sticks out to hold the connector
-    nub_w = 0.75
-    nub_d = 0.75
-    nub = Shape.polygon(
-        [(0.0, 0.0), (nub_h, 0.0), (nub_h * 0.5, nub_d), (0.0, nub_d)]
-    ).extrude_linear(nub_w)
-    nub_bottom = nub.mirror(1.0, 0.0, 0.0)
-    nub_offset_d = flange_d + flange_offset - t
-    nubbed_flange = Shape.difference(
-        flange,
-        [
-            nub_bottom.translate(
-                w * 0.5 + t, nub_offset_d, ((h - nub_w) * 0.5) + t
-            ),
-            nub_bottom.translate(
-                w * 0.5 + t, nub_offset_d, -((h - nub_w) * 0.5) - t
-            ),
-            nub.translate(-w * 0.5 - t, nub_offset_d, ((h - nub_w) * 0.5) + t),
-            nub.translate(
-                -w * 0.5 - t, nub_offset_d, -((h - nub_w) * 0.5) - t
-            ),
-        ],
-    )
-    return Shape.union([core, nubbed_flange])
+    def get_rows(self) -> List[MeshPoint]:
+        rows = [self.out0, self.out1, self.out2, self.in2, self.in1, self.in0]
+        for p in rows:
+            assert p is not None
+        return rows
 
 
-def mag_conn_holder() -> Shape:
-    wall_thickness = 4.0
-    negative_part = mag_conn_holder_parts(wall_thickness)
-    wall = Shape.cube(28, wall_thickness, 10).translate(
-        0, wall_thickness / 2, 0
-    )
-    return Shape.difference(wall, [negative_part])
-
-
-def micro_usb_holder_parts() -> Shape:
-    sy = 1.0
-    w = 3.85
-    h = 2.6
-    bx = 2.85
-
-    vertical_mount = True
-    if vertical_mount:
-        # When printing vertically, we need to add a little extra tolerance
-        # in the height
-        sy += 0.1
-        h += 0.3
-
-    points: List[Tuple[float, float]] = [
-        (0, 0),
-        (bx, 0),
-        (w, sy),
-        (w, h - 0.4),
-        (w - 0.3, h),
-        (w - 1, h),
-        (w - 1, h + 0.2),
-        (w - 2, h + 0.2),
-        (w - 2, h),
-        (0, h),
-    ]
-    all_points = points[:] + list((-x, y) for x, y in reversed(points))
-
-    flare_l = 0.4
-    flare = (
-        Shape.polygon(all_points)
-        .translate(0.0, h * -0.5, 0.0)
-        .extrude_linear(flare_l, scale=1.2)
-        .translate(0, 0, 2.3 + (flare_l * 0.5))
-    )
-    main = (
-        Shape.polygon(all_points)
-        .extrude_linear(4.601)
-        .translate(0, -h * 0.5, 0)
-    )
-    return (
-        Shape.union([main, flare])
-        .rotate(90.0, 0.0, 0.0)
-        .translate(0, 2.3 + flare_l - 0.01, 0)
-    )
-
-
-def micro_usb_holder() -> Shape:
-    wall_thickness = 4.0
-    negative_part = micro_usb_holder_parts()
-    wall = Shape.cube(12, wall_thickness, 8).translate(
-        0, wall_thickness / 2, 0
-    )
-
-    return Shape.difference(wall, [negative_part])
-
-
-def screw_hole_parts(wall_thickness: float) -> Shape:
-    r = 1.8
-    return (
-        Shape.cylinder(h=wall_thickness * 1.1, r=r, fn=15)
-        .rotate(90, 0, 0)
-        .translate(0, wall_thickness * 0.5, 0)
-    )
-
-
-def screw_hole_test() -> Shape:
-    wall_thickness = 4.0
-    negative_part = screw_hole_parts(wall_thickness)
-    wall = Shape.cube(8, wall_thickness, 8).translate(0, wall_thickness / 2, 0)
-
-    return Shape.difference(wall, [negative_part])
-
-
-def keycaps() -> Shape:
-    import keyboard
-
-    return Shape.union(
-        [
-            keyboard.dsa_cap().translate(-50, 0, 0),
-            keyboard.dsa_cap(1.25).translate(-25, 0, 0),
-            keyboard.dsa_cap(1.5).translate(0, 0, 0),
-            keyboard.dsa_cap(1.75).translate(25, 0, 0),
-            keyboard.dsa_cap(2.0).translate(50, 0, 0),
-        ]
-    )
-
-
-def write_shape(shape: Shape, path: Path) -> None:
-    path.write_text(shape.to_str())
-
-
-def kbd2_test() -> Shape:
-    mesh = oukey2.gen_keyboard()
-    return Shape.polyhedron_from_mesh(mesh, convexivity=20)
-
-
-def key_hole_test() -> Shape:
-    mesh = Mesh()
-    kh = oukey2.KeyHole(mesh, Transform())
-    kh.inner_walls()
-
-    mesh.add_quad(kh.u_bl, kh.u_br, kh.l_br, kh.l_bl)
-    mesh.add_quad(kh.u_tl, kh.u_bl, kh.l_bl, kh.l_tl)
-    mesh.add_quad(kh.u_tr, kh.u_tl, kh.l_tl, kh.l_tr)
-    mesh.add_quad(kh.u_br, kh.u_tr, kh.l_tr, kh.l_br)
-    return Shape.polyhedron_from_mesh(mesh)
-
-
-def orig_key_hole_test() -> Shape:
-    return single_plate()
-
-
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--show-keycaps", action="store_true")
-    ap.add_argument("--show-collisions", action="store_true")
-    ap.add_argument("--loose-keyholes", action="store_true")
-    args = ap.parse_args()
-
-    out_dir = Path("_out")
-    out_dir.mkdir(exist_ok=True)
-
-    write_shape(
-        model_right(
-            show_caps=args.show_keycaps,
-            show_collisions=args.show_collisions,
-            loose_holes=args.loose_keyholes,
-        ),
-        out_dir / "right.scad",
-    )
-    write_shape(
-        model_left(
-            show_caps=args.show_keycaps,
-            show_collisions=args.show_collisions,
-            loose_holes=args.loose_keyholes,
-        ),
-        out_dir / "left.scad",
-    )
-
-    # Component debugging
-    write_shape(kbd2_test(), out_dir / "kbd2.scad")
-    write_shape(key_hole_test(), out_dir / "key_hole.scad")
-    write_shape(orig_key_hole_test(), out_dir / "orig_key_hole.scad")
-    write_shape(sx1509_holder(), out_dir / "sx1509_holder.scad")
-    write_shape(oled_holder(), out_dir / "oled_holder.scad")
-    write_shape(joint_holder(), out_dir / "joint_holder.scad")
-    write_shape(idc_header_holder(), out_dir / "header_holder.scad")
-    write_shape(mag_conn_holder(), out_dir / "mag_conn_holder.scad")
-    write_shape(micro_usb_holder(), out_dir / "micro_usb_holder.scad")
-    write_shape(screw_hole_test(), out_dir / "screw_hole.scad")
-    write_shape(keycaps(), out_dir / "keycaps.scad")
-
-
-if __name__ == "__main__":
-    main()
+def gen_keyboard() -> Mesh:
+    kbd = Keyboard()
+    kbd.gen_mesh()
+    return kbd.mesh
