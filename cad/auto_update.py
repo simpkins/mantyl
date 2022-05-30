@@ -5,6 +5,9 @@ This is a blender operator that checks blender.py for changes.  It also
 monitors any other modules in this directory that are used by blender.py.
 This makes it easy to work on the CAD code in an external editor, and have the
 changes automatically reflected in Blender whenever you save the files.
+
+This automatically starts monitoring blender.py when you run it.
+This adds an option to the top-level Edit menu to cancel monitoring.
 """
 
 from __future__ import annotations
@@ -20,6 +23,7 @@ from typing import Dict, Optional
 _instance: Optional[ScriptMonitorOperator] = None
 
 MONITOR_PATH = "blender.py"
+_monitor_modules: Dict[Path, str] = {}
 
 
 class ScriptMonitorOperator(bpy.types.Operator):
@@ -37,7 +41,11 @@ class ScriptMonitorOperator(bpy.types.Operator):
     _local_dir: Path
     _abs_path: Path
     _timestamps: Dict[Path, Optional[float]]
-    _monitor_modules: Dict[Path, str]
+
+    @classmethod
+    def poll(cls, context):
+        global _instance
+        return _instance is None
 
     def modal(self, context, event):
         if event.type != "TIMER":
@@ -67,7 +75,6 @@ class ScriptMonitorOperator(bpy.types.Operator):
             self._abs_path = self._local_dir / MONITOR_PATH
 
         self._timestamps = {}
-        self._monitor_modules = {}
 
         self.report({"INFO"}, f"monitoring external script {self._abs_path}")
         self._timestamps = self._get_timestamps()
@@ -94,7 +101,7 @@ class ScriptMonitorOperator(bpy.types.Operator):
         # and then we reprocess everything so that if one module uses another, it sees
         # the new version of its dependency when we reload it the second time.
         for n in (1, 2):
-            for module_name in self._monitor_modules.values():
+            for module_name in _monitor_modules.values():
                 mod = sys.modules[module_name]
                 try:
                     importlib.reload(mod)
@@ -108,7 +115,7 @@ class ScriptMonitorOperator(bpy.types.Operator):
     def _get_timestamps(self) -> Dict[Path, Optional[float]]:
         ts = self._get_timestamp(self._abs_path)
         result = {self._abs_path: ts}
-        for path in self._monitor_modules:
+        for path in _monitor_modules:
             result[path] = self._get_timestamp(path)
         return result
 
@@ -150,7 +157,7 @@ class ScriptMonitorOperator(bpy.types.Operator):
                 continue
 
             self.report({"INFO"}, f"Also monitoring new local module {path}")
-            self._monitor_modules[path] = mod_name
+            _monitor_modules[path] = mod_name
 
     def _report_error(self, msg: str) -> None:
         err_str = traceback.format_exc()
@@ -197,14 +204,14 @@ def menu_func(self, context):
 def register():
     bpy.utils.register_class(ScriptMonitorOperator)
     bpy.utils.register_class(CancelMonitorOperator)
-    bpy.types.VIEW3D_MT_view.append(menu_func)
+    bpy.types.TOPBAR_MT_edit.append(menu_func)
 
 
 # Register and add to the "view" menu (required to also use F3 search "Modal Timer Operator" for quick access)
 def unregister():
     bpy.utils.unregister_class(ScriptMonitorOperator)
     bpy.utils.unregister_class(CancelMonitorOperator)
-    bpy.types.VIEW3D_MT_view.remove(menu_func)
+    bpy.types.TOPBAR_MT_edit.remove(menu_func)
 
 
 if __name__ == "__main__":
