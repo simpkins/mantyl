@@ -1,3 +1,12 @@
+"""
+Automatically re-run blender.py within Blender whenever it changes.
+
+This is a blender operator that checks blender.py for changes.  It also
+monitors any other modules in this directory that are used by blender.py.
+This makes it easy to work on the CAD code in an external editor, and have the
+changes automatically reflected in Blender whenever you save the files.
+"""
+
 from __future__ import annotations
 
 import bpy
