@@ -230,7 +230,7 @@ def union(
 
 def foot_meshes(
     x: float, y: float, angle: float, phase: float
-) -> Tuple[cad.mesh, cad.mesh]:
+) -> Tuple[cad.Mesh, cad.Mesh]:
     neg_mesh = Foot.foot_mesh_neg(phase)
     pos_mesh = Foot.foot_mesh_pos(phase)
     pos_mesh.translate(Foot.outer_r, 0.0, 0.0)
@@ -306,17 +306,7 @@ def _get_foot_angle(x: float, y: float) -> float:
         return 180.0 + math.degrees(math.atan(y / x))
 
 
-def do_main() -> None:
-    print("=" * 60)
-    print("Generating keyboard...")
-
-    delete_all()
-
-    kbd = oukey.Keyboard()
-    kbd.gen_mesh()
-
-    kbd_obj = gen_keyboard(kbd)
-
+def add_feet(kbd: oukey.Keyboard, kbd_obj: bpy.types.Object) -> None:
     # When placing the foot angled 45 degrees in a right angle corner, we want
     # to add this amount to the x and y directions so that it is tangent to the
     # walls
@@ -378,6 +368,19 @@ def do_main() -> None:
 
     bpy.ops.object.mode_set(mode="EDIT")
     print("done")
+
+
+def do_main() -> None:
+    print("=" * 60)
+    print("Generating keyboard...")
+
+    delete_all()
+
+    kbd = oukey.Keyboard()
+    kbd.gen_mesh()
+
+    kbd_obj = gen_keyboard(kbd)
+    add_feet(kbd, kbd_obj)
 
 
 def command_line_main() -> None:
