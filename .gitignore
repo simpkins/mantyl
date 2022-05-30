@@ -1,3 +1,2 @@
-/cad/_out
-__pycache__
+_*
 .mypy_cache
