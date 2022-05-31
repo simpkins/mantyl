@@ -464,6 +464,11 @@ class I2cCutout:
         back_bl = mesh.add_xyz(-half_w, cls.back_y, -half_h)
         back_br = mesh.add_xyz(half_w, cls.back_y, -half_h)
 
+        back_tlo = mesh.add_xyz(left_orig.x, cls.back_y, half_h)
+        back_tro = mesh.add_xyz(right_orig.x, cls.back_y, half_h)
+        back_blo = mesh.add_xyz(left_orig.x, cls.back_y, -half_h)
+        back_bro = mesh.add_xyz(right_orig.x, cls.back_y, -half_h)
+
         fn = 16
         for n in range(fn + 1):
             angle = (180.0 / fn) * n
@@ -541,13 +546,28 @@ class I2cCutout:
         )
 
         # Back outer wall
-        mesh.add_quad(back_tl, back_tr, inner_tr, inner_tl)
-        mesh.add_quad(back_tr, back_br, inner_br, inner_tr)
-        mesh.add_quad(back_br, back_bl, inner_bl, inner_br)
-        mesh.add_quad(back_bl, back_tl, inner_tl, inner_bl)
+        left_inner_mid = left_inner_points[len(left_inner_points) // 2]
+        mesh.add_tri(back_tl, inner_tl, left_inner_mid)
+        mesh.add_tri(back_bl, left_inner_mid, inner_bl)
+        mesh.add_tri(back_tl, left_inner_mid, back_bl)
+
+        right_inner_mid = right_inner_points[len(right_inner_points) // 2]
+        mesh.add_tri(back_tr, right_inner_mid, inner_tr)
+        mesh.add_tri(back_br, inner_br, right_inner_mid)
+        mesh.add_tri(back_tr, back_br, right_inner_mid)
+
+        mesh.add_quad(back_tl, back_tlo, left_inner_points[0], inner_tl)
+        mesh.add_quad(back_tlo, back_tro, right_inner_points[0], left_inner_points[0])
+        mesh.add_quad(back_tro, back_tr, inner_tr, right_inner_points[0])
+
+        mesh.add_quad(inner_bl, left_inner_points[-1], back_blo, back_bl)
+        mesh.add_quad(left_inner_points[-1], right_inner_points[-1], back_bro, back_blo)
+        mesh.add_quad(right_inner_points[-1], inner_br, back_br, back_bro)
 
         # Back face wall
-        mesh.add_quad(back_tr, back_tl, back_bl, back_br)
+        mesh.add_quad(back_tr, back_tro, back_bro, back_br)
+        mesh.add_quad(back_tro, back_tlo, back_blo, back_bro)
+        mesh.add_quad(back_tlo, back_tl, back_bl, back_blo)
 
         return new_mesh_obj("i2c_cutout", mesh)
 
