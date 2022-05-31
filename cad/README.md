@@ -41,6 +41,19 @@ faces.
 
 # Other Notes
 
+## Units
+
+My scripts are written with the units in millimeters.  Historically this was
+because I initially developed the keyboard model in OpenSCAD rather than
+Blender, which uses units in millimeters rather than meters.
+
+However, using millimeters works nicely in practice for Blender too: this
+avoids having to scale the units by 1000 when exporting to an STL file, as 3D
+print software generally assumes the STL units are in millimeters, while
+Blender emits the units as meters by default.
+
+## OpenSCAD
+
 I initially attempted to build the keyboard model using OpenSCAD.  However, it
 unfortunately has many more problems than Blender with generating bad geometry
 after performing hull, union, and difference operations on objects in arbitrary
