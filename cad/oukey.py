@@ -504,6 +504,8 @@ class Keyboard:
         back_wall = self.gen_back_wall()
         left_wall = self.gen_left_wall()
 
+        self.fl = front_wall[0]
+
         # The main wall corners
         # Note that these methods do mutate the walls slightly,
         # so only call add_wall_faces() after these are done.
@@ -1450,6 +1452,7 @@ class Keyboard:
             thumb_wall[0].out1, thumb_wall[1].out1, front_wall[0].out1.y
         )
         og = self.mesh.add_point(Point(o.x, o.y, 0.0))
+        self.thumb_br_connect = og
 
         # Find the intersection point between the two inner walls
         i = find_y_intersect(
