@@ -6,7 +6,7 @@
 #include <array>
 #include <cstdint>
 
-namespace ocb {
+namespace mtl {
 
 enum class Location : uint8_t {
   LeftMain = 1,
@@ -262,4 +262,4 @@ private:
       }}};
 };
 
-} // namespace ocb
+} // namespace mtl

@@ -4,7 +4,7 @@
 #include <chrono>
 #include <esp_sleep.h>
 
-namespace ntpclock {
+namespace mtl {
 
 inline void set_sleep_timer_wakeup(std::chrono::microseconds us) {
   // esp_sleep_enable_timer_wakeup() takes the time duration as microseconds.
@@ -12,4 +12,4 @@ inline void set_sleep_timer_wakeup(std::chrono::microseconds us) {
   esp_sleep_enable_timer_wakeup(us.count());
 }
 
-} // namespace ntpclock
+} // namespace mtl

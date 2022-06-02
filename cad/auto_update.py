@@ -36,7 +36,7 @@ MONITOR_PATH = "main.py"
 # currently handle numpy: https://bugs.python.org/issue40350
 _DEPENDENCIES: Dict[Path, str] = {
     (Path("cad.py"), "cad"),
-    (Path("oukey.py"), "oukey"),
+    (Path("mantyl.py"), "mantyl"),
 }
 
 

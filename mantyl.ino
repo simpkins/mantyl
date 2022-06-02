@@ -3,10 +3,10 @@
 
 #include <memory>
 
-static std::unique_ptr<ocb::App> app;
+static std::unique_ptr<mtl::App> app;
 
 void setup() {
-  app = std::make_unique<ocb::App>();
+  app = std::make_unique<mtl::App>();
   app->setup();
 }
 

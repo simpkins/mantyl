@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace ocb {
+namespace mtl {
 
 /*
  * Keyboard code definitions:
@@ -148,4 +148,4 @@ enum class HidKeyCode : uint8_t {
     RightGui = 231,
 };
 
-} // namespace ocb
+} // namespace mtl

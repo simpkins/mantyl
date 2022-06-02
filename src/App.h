@@ -6,7 +6,7 @@
 
 #include <string_view>
 
-namespace ocb {
+namespace mtl {
 
 class App {
 public:
@@ -39,4 +39,4 @@ private:
   uint32_t counter_{0};
 };
 
-} // namespace ocb
+} // namespace mtl

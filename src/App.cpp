@@ -3,7 +3,7 @@
 
 #include "esp_util.h"
 
-namespace ocb {
+namespace mtl {
 
 App::App() : display_(kScreenWidth, kScreenHeight, &Wire, kResetPin) {}
 
@@ -14,7 +14,7 @@ void App::setup() {
   if(!display_.begin(SSD1306_SWITCHCAPVCC, kScreenAddress)) {
     Serial.println(F("display initialization failed"));
     // Go to deep sleep for 30 seconds.  When we wake up setup() will restart
-    ntpclock::set_sleep_timer_wakeup(std::chrono::seconds{30});
+    mtl::set_sleep_timer_wakeup(std::chrono::seconds{30});
     esp_deep_sleep_start();
   }
 
@@ -56,4 +56,4 @@ void App::writeMsg(std::string_view msg) {
   display_.display();
 }
 
-} // namespace ocb
+} // namespace mtl

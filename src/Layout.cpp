@@ -1,7 +1,7 @@
 // Copyright (c) 2022, Adam Simpkins
 #include "Layout.h"
 
-namespace ocb {
+namespace mtl {
 
 void KbdV1::qwertyKeymap() {
     using Hid = HidKeyCode;
@@ -265,4 +265,4 @@ void KbdV1::gamingKeymap() {
     addMap(RT21, Hid::Space);
 }
 
-} // namespace ocb
+} // namespace mtl

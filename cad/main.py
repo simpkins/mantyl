@@ -22,7 +22,7 @@ from typing import List, Union, Tuple
 sys.path.insert(0, os.path.dirname(__file__))
 
 import cad
-import oukey
+import mantyl
 
 
 def blender_mesh(name: str, mesh: cad.Mesh) -> bpy.types.Mesh:
@@ -52,7 +52,7 @@ def new_mesh_obj(
     return obj
 
 
-def gen_keyboard(kbd: oukey.Keyboard) -> bpy.types.Object:
+def gen_keyboard(kbd: mantyl.Keyboard) -> bpy.types.Object:
     mesh = blender_mesh("keyboard_mesh", kbd.mesh)
     obj = new_mesh_obj("keyboard", mesh)
 
@@ -353,7 +353,7 @@ def _get_foot_angle(x: float, y: float) -> float:
         return 180.0 + math.degrees(math.atan(y / x))
 
 
-def add_feet(kbd: oukey.Keyboard, kbd_obj: bpy.types.Object) -> None:
+def add_feet(kbd: mantyl.Keyboard, kbd_obj: bpy.types.Object) -> None:
     # When placing the foot angled 45 degrees in a right angle corner, we want
     # to add this amount to the x and y directions so that it is tangent to the
     # walls
@@ -632,7 +632,7 @@ class I2cCutout:
         return main
 
 
-def add_i2c_connector(kbd: oukey.Keyboard, kbd_obj: bpy.types.Object) -> None:
+def add_i2c_connector(kbd: mantyl.Keyboard, kbd_obj: bpy.types.Object) -> None:
     i2c_cutout = I2cCutout.gen()
 
     x_off = 0.0
@@ -644,7 +644,7 @@ def add_i2c_connector(kbd: oukey.Keyboard, kbd_obj: bpy.types.Object) -> None:
     difference(kbd_obj, i2c_cutout)
 
 
-def gen_screw_hole(kbd: oukey.Keyboard) -> bpy.types.Object:
+def gen_screw_hole(kbd: mantyl.Keyboard) -> bpy.types.Object:
     # Big enough to fit a US #6 screw
     mesh = cad.Mesh()
     front_y = -1.0
@@ -680,14 +680,14 @@ def gen_screw_hole(kbd: oukey.Keyboard) -> bpy.types.Object:
 
 
 def add_screw_hole(
-    kbd: oukey.Keyboard, kbd_obj: bpy.types.Object, x: float, z: float
+    kbd: mantyl.Keyboard, kbd_obj: bpy.types.Object, x: float, z: float
 ) -> None:
     screw_hole = gen_screw_hole(kbd)
     apply_to_wall(screw_hole, kbd.fl.out2, kbd.fr.out2, x=x, z=z)
     difference(kbd_obj, screw_hole)
 
 
-def add_screw_holes(kbd: oukey.Keyboard, kbd_obj: bpy.types.Object) -> None:
+def add_screw_holes(kbd: mantyl.Keyboard, kbd_obj: bpy.types.Object) -> None:
     x_spacing = 40
     add_screw_hole(kbd, kbd_obj, x=-x_spacing * 0.5, z=10)
     add_screw_hole(kbd, kbd_obj, x=x_spacing * 0.5, z=10)
@@ -709,7 +709,7 @@ def do_main() -> None:
 
     delete_all()
 
-    kbd = oukey.Keyboard()
+    kbd = mantyl.Keyboard()
     kbd.gen_mesh()
 
     kbd_obj = gen_keyboard(kbd)
