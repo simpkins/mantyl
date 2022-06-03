@@ -1,6 +1,8 @@
 // Copyright (c) 2022, Adam Simpkins
 #pragma once
 
+#include "Display.h"
+
 #include <Adafruit_SSD1306.h>
 #include <SparkFunSX1509.h>
 
@@ -35,6 +37,7 @@ private:
   static constexpr uint8_t kKeypadDebounceTimeMS = 1;
 
   Adafruit_SSD1306 display_;
+  Display disp_;
   SX1509 leftIO_;
   uint32_t counter_{0};
 };
