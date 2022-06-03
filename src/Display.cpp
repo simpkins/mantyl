@@ -36,19 +36,14 @@ bool Display::begin() {
                      Command::SetDisplayClockDiv,
                      0x80_u8, // reset oscillator frequence and divide ratio
                      Command::SetMultiplex,
-                     static_cast<uint8_t>(height_ - 1),
+                     static_cast<uint8_t>(canvas_.height() - 1),
                      Command::SetDisplayOffset,
                      0x0_u8,
                      static_cast<uint8_t>(Command::SetStartLine | 0x0),
                      Command::ChargePump,
                      charge_pump,
-#if USE_GFX_CANVAS
-                     Command::SetMemoryMode,
-                     0x01_u8, // vertical addressing mode
-#else
                      Command::SetMemoryMode,
                      0x00_u8, // horizontal addressing mode
-#endif
                      static_cast<uint8_t>(Command::SegRemap | 0x1),
                      Command::ComScanDec,
                      Command::SetComPins,
@@ -70,51 +65,33 @@ bool Display::begin() {
 }
 
 void Display::clearDisplayBuffer() {
-#if USE_GFX_CANVAS
   canvas_.fillScreen(0);
-#else
-  memset(buffer_.get(), 0, buffer_size());
-#endif
 }
 
 bool Display::draw_pixel(uint16_t x, uint16_t y, bool on) {
-  if (x >= width_) {
+  if (x >= canvas_.width()) {
     return false;
   }
-  if (y >= height_) {
+  if (y >= canvas_.height()) {
     return false;
   }
-#if USE_GFX_CANVAS
-  canvas_.drawPixel(y, x, on ? 1 : 0);
-#else
-  const auto [idx, bit] = get_pixel_idx(x, y);
-  if (on) {
-    buffer_[idx] |= bit;
-  } else {
-    buffer_[idx] &= ~bit;
-  }
-#endif
+  canvas_.drawPixel(x, y, on ? 1 : 0);
   return true;
 }
 
 bool Display::get_pixel(uint16_t x, uint16_t y) const {
-  if (x >= width_) {
+  if (x >= canvas_.width()) {
     throw std::range_error("x out of bounds");
   }
-  if (y >= height_) {
+  if (y >= canvas_.height()) {
     throw std::range_error("y out of bounds");
   }
-#if USE_GFX_CANVAS
-  return canvas_.getPixel(y, x);
-#else
-  const auto [idx, bit] = get_pixel_idx(x, y);
-  return (buffer_[idx] & bit);
-#endif
+  return canvas_.get_pixel(x, y);
 }
 
 bool Display::flush() {
-  uint8_t const page_end = (height_ + 7) / 8;
-  uint8_t const col_end = width_ - 1;
+  uint8_t const page_end = (canvas_.height() + 7) / 8;
+  uint8_t const col_end = canvas_.width() - 1;
   if (!send_commands(Command::SetPageAddr,
                      0_u8,     // start
                      page_end, // end
@@ -125,12 +102,8 @@ bool Display::flush() {
     return false;
   }
 
-  auto count = buffer_size();
-#if USE_GFX_CANVAS
-  const uint8_t *ptr = canvas_.getBuffer();
-#else
-  const uint8_t *ptr = buffer_.get();
-#endif
+  auto count = canvas_.buffer_size();
+  const uint8_t *ptr = canvas_.get_buffer();
 
   while (count > 0) {
     wire_->beginTransmission(addr_);

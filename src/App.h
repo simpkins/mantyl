@@ -3,7 +3,6 @@
 
 #include "Display.h"
 
-#include <Adafruit_SSD1306.h>
 #include <SparkFunSX1509.h>
 
 #include <string_view>
@@ -21,6 +20,7 @@ private:
   App &operator=(App const &) = delete;
 
   void writeMsg(std::string_view msg);
+  void flushDisplay();
 
   static constexpr int kSerialBaudRate = 115200;
 
@@ -36,8 +36,7 @@ private:
   static constexpr uint8_t kKeypadScanTimeMS = 2;
   static constexpr uint8_t kKeypadDebounceTimeMS = 1;
 
-  Adafruit_SSD1306 display_;
-  Display disp_;
+  Display display_;
   SX1509 leftIO_;
   uint32_t counter_{0};
 };
