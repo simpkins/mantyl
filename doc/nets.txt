@@ -11,3 +11,7 @@ ground: esp32_gnd, oled_gnd, sx1509_gnd, trrs_ring2
 v: esp32_3v, trrs_tip, oled_vin, sx1509_3v, rscl_2, rsda_2
 sda: esp32_sda, rsda_1, trrs_ring1, oled_sda, sx1509_sda
 scl: esp32_scl, rscl_1, trrs_sleeve, oled_scl, sx1509_scl
+
+
+Cable pin-out:
+  INT SCL VCC SDA GND
