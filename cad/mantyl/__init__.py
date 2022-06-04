@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from cad import Mesh, MeshPoint, Point, Transform, intersect_line_and_plane
+from .cad import Mesh, MeshPoint, Point, Transform, intersect_line_and_plane
 
 import math
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union

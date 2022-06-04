@@ -21,7 +21,7 @@ from typing import List, Union, Tuple
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-import cad
+import mantyl.cad as cad
 import mantyl
 
 
