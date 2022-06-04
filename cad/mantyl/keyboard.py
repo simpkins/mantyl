@@ -5,10 +5,13 @@
 
 from __future__ import annotations
 
-from .cad import Mesh, MeshPoint, Point, Transform, intersect_line_and_plane
-
 import math
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+
+import bpy
+
+from .blender_util import blender_mesh, new_mesh_obj
+from .cad import Mesh, MeshPoint, Point, Transform, intersect_line_and_plane
 
 
 class Keyboard:
@@ -1963,3 +1966,42 @@ class ThumbColumn:
         for p in rows:
             assert p is not None
         return rows
+
+
+def gen_keyboard(kbd: Keyboard) -> bpy.types.Object:
+    mesh = blender_mesh("keyboard_mesh", kbd.mesh)
+    obj = new_mesh_obj("keyboard", mesh)
+
+    # Deselect all vertices in the mesh
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="DESELECT")
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    # Set bevel weights on the edges
+    edge_weights = kbd.get_bevel_weights(mesh.edges)
+    mesh.use_customdata_edge_bevel = True
+    for edge_idx, weight in edge_weights.items():
+        e = mesh.edges[edge_idx]
+        e.bevel_weight = weight
+
+    # Add a bevel modifier
+    bevel = obj.modifiers.new(name="BevelCorners", type="BEVEL")
+    bevel.width = 2.0
+    bevel.limit_method = "WEIGHT"
+    bevel.segments = 8
+
+    # Apply the bevel modifier
+    apply_bevel = True
+    if apply_bevel:
+        bpy.ops.object.modifier_apply(modifier=bevel.name)
+
+        # Enter edit mode
+        bpy.ops.object.mode_set(mode="EDIT")
+
+        # Merge vertices that are close together
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.mesh.remove_doubles()
+        bpy.ops.mesh.select_all(action="DESELECT")
+
+    bpy.ops.object.mode_set(mode="OBJECT")
+    return obj

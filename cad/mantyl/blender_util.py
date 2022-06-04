@@ -5,10 +5,13 @@
 
 from __future__ import annotations
 
+import math
 import random
 from typing import Union
 
 import bpy
+import bmesh
+import mathutils
 
 from . import cad
 
@@ -24,7 +27,7 @@ def blender_mesh(name: str, mesh: cad.Mesh) -> bpy.types.Mesh:
     points = [(p.x, p.y, p.z) for p in mesh.points]
     faces = [tuple(reversed(f)) for f in mesh.faces]
 
-    blender_mesh = bpy.data.meshes.new("keyboard_mesh")
+    blender_mesh = bpy.data.meshes.new(name)
     blender_mesh.from_pydata(points, edges=[], faces=faces)
     blender_mesh.update()
     return blender_mesh
@@ -101,3 +104,49 @@ def union(
     obj1: bpy.types.Object, obj2: bpy.types.Object, apply_mod: bool = True
 ) -> None:
     boolean_op(obj1, obj2, "UNION", apply_mod=apply_mod)
+
+
+def apply_to_wall(
+    obj: bpy.types.Object,
+    left: cad.Point,
+    right: cad.Point,
+    x: float = 0.0,
+    z: float = 0.0,
+) -> None:
+    """Move the object on the X and Y axes so that it is centered on the
+    wall between the left and right wall endpoints.
+
+    The face of the object should be on the Y axis (this face will be aligned
+    on the wall), and it should be centered on the X axis in order to end up
+    centered on the wall.
+    """
+    wall_len = math.sqrt(((right.y - left.y) ** 2) + ((right.x - left.x) ** 2))
+    angle = math.atan2(right.y - left.y, right.x - left.x)
+
+    bm = bmesh.new()
+    try:
+        bm.from_mesh(obj.data)
+
+        # Move the object along the x axis so it ends up centered on the wall.
+        # This assumes the object starts centered around the origin.
+        #
+        # Also apply any extra X and Z translation supplied by the caller.
+        bmesh.ops.translate(
+            bm, verts=bm.verts, vec=(x + wall_len * 0.5, 0.0, z)
+        )
+
+        # Next rotate the object so it is at the same angle to the x axis
+        # as the wall.
+        bmesh.ops.rotate(
+            bm,
+            verts=bm.verts,
+            cent=(0.0, 0.0, 0.0),
+            matrix=mathutils.Matrix.Rotation(angle, 3, "Z"),
+        )
+
+        # Finally move the object from the origin so it is at the wall location
+        bmesh.ops.translate(bm, verts=bm.verts, vec=(left.x, left.y, 0.0))
+
+        bm.to_mesh(obj.data)
+    finally:
+        bm.free()

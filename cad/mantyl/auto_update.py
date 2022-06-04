@@ -35,8 +35,13 @@ MONITOR_PATH = "main.py"
 # find the dependencies of the script.  Unfortunately modulefinder cannot
 # currently handle numpy: https://bugs.python.org/issue40350
 _DEPENDENCIES: Dict[Path, str] = {
-    (Path("cad.py"), "cad"),
-    (Path("mantyl.py"), "mantyl"),
+    (Path("mantyl/cad.py"), "mantyl.cad"),
+    (Path("mantyl/blender_util.py"), "mantyl.blender_util"),
+    (Path("mantyl/keyboard.py"), "mantyl.keyboard"),
+    (Path("mantyl/foot.py"), "mantyl.foot"),
+    (Path("mantyl/i2c_conn.py"), "mantyl.i2c_conn"),
+    (Path("mantyl/screw_holes.py"), "mantyl.screw_holes"),
+    (Path("mantyl/kbd_halves.py"), "mantyl.kbd_halves"),
 }
 
 
