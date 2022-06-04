@@ -1963,9 +1963,3 @@ class ThumbColumn:
         for p in rows:
             assert p is not None
         return rows
-
-
-def gen_keyboard() -> Mesh:
-    kbd = Keyboard()
-    kbd.gen_mesh()
-    return kbd.mesh
