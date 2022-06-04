@@ -99,6 +99,7 @@ bool Display::flush() {
                      0_u8,   // start
                      col_end // end
                      )) {
+    Serial.println("display addr set failed");
     return false;
   }
 
@@ -112,6 +113,7 @@ bool Display::flush() {
         std::min(count, static_cast<size_t>(I2C_BUFFER_LENGTH - 1));
     wire_->write(ptr, write_len);
     if (wire_->endTransmission() != 0) {
+      Serial.println("display data transmission failed");
       return false;
     }
     ptr += write_len;

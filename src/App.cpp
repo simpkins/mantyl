@@ -10,11 +10,11 @@ App::App() : display_{Display::adafruit128x32(&Wire, kScreenAddress)} {}
 void App::setup() {
   Serial.begin(kSerialBaudRate);
 
-  Serial.println(F("mantyl init"));
-  if(!display_.begin()) {
-    Serial.println(F("display initialization failed"));
+  Serial.println("mantyl init");
+  if (!display_.begin()) {
+    Serial.println("display initialization failed");
   } else {
-    Serial.println(F("display initialization success!"));
+    Serial.println("display initialization success!");
   }
 
   display_.clearDisplayBuffer();
@@ -24,16 +24,17 @@ void App::setup() {
   display_.canvas().cp437(true);         // Use full 256 char 'Code Page 437' font
   flushDisplay();
   writeMsg("init");
+  flushDisplay();
 
-#if 0
   if (!leftIO_.begin(kSX1509AddressLeft)) {
-    writeMsg("io init failed");
+    // writeMsg("io init failed");
+    Serial.println("io init failed");
+  } else {
+      // writeMsg("io init success");
+      Serial.println("io init success");
+      leftIO_.keypad(kLeftRows, kLeftCols, kKeypadSleepTimeMS, kKeypadScanTimeMS,
+                     kKeypadDebounceTimeMS);
   }
-
-  writeMsg("io init success");
-  leftIO_.keypad(kLeftRows, kLeftCols, kKeypadSleepTimeMS, kKeypadScanTimeMS,
-                 kKeypadDebounceTimeMS);
-#endif
 }
 
 void App::loop() {
@@ -43,12 +44,10 @@ void App::loop() {
   display_.canvas().print("loop: ");
   display_.canvas().print(counter_);
 
-#if 0
   display_.canvas().setCursor(0, 8);
   display_.canvas().print("keys: ");
   unsigned int keyData = leftIO_.readKeypad();
   display_.canvas().print(keyData, HEX);
-#endif
 
   flushDisplay();
   delay(50);
@@ -63,9 +62,7 @@ void App::writeMsg(std::string_view msg) {
 
 void App::flushDisplay() {
   if (!display_.flush()) {
-    Serial.println(F("display flush failed"));
-  } else {
-    Serial.println(F("display flush succeeded"));
+    Serial.println("display flush failed");
   }
 }
 
