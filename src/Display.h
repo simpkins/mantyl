@@ -1,7 +1,7 @@
 // Copyright (c) 2022, Adam Simpkins
 #pragma once
 
-#include "SD1306Canvas.h"
+#include "SSD1306Canvas.h"
 
 #include <Wire.h>
 
@@ -37,10 +37,10 @@ public:
 
   [[nodiscard]] bool flush();
 
-  SD1306Canvas& canvas() {
+  SSD1306Canvas& canvas() {
     return canvas_;
   }
-  const SD1306Canvas& canvas() const {
+  const SSD1306Canvas& canvas() const {
     return canvas_;
   }
 
@@ -117,7 +117,7 @@ private:
   bool external_vcc_{false};
   uint8_t com_pin_flags_{0};
   uint8_t contrast_{0};
-  SD1306Canvas canvas_;
+  SSD1306Canvas canvas_;
 };
 
 } // namespace mtl

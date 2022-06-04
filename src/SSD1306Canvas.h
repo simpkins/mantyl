@@ -17,10 +17,10 @@ namespace mtl {
  * by rows.  The SD1306 stores data column-wise: each byte is one chunk of
  * column data, 8 rows high.
  */
-class SD1306Canvas : public Adafruit_GFX {
+class SSD1306Canvas : public Adafruit_GFX {
 public:
-  SD1306Canvas(uint8_t w, uint8_t h);
-  ~SD1306Canvas();
+  SSD1306Canvas(uint8_t w, uint8_t h);
+  ~SSD1306Canvas();
 
   bool get_pixel(uint8_t x, uint8_t y) const;
 
