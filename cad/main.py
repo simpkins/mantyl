@@ -16,20 +16,12 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from mantyl.blender_util import delete_all
-from mantyl.kbd_halves import right_half
+from mantyl import auto_update
 
 
 def do_main() -> None:
-    print("=" * 60)
-    print("Generating keyboard...")
-
-    delete_all()
-
-    right_half()
-
-    bpy.ops.object.mode_set(mode="EDIT")
-    print("done")
+    auto_update.register()
+    bpy.ops.script.external_function_monitor(function="mantyl.main.regenerate")
 
 
 def command_line_main() -> None:
