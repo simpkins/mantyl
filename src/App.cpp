@@ -5,7 +5,9 @@
 
 namespace mtl {
 
-App::App() : display_{Display::adafruit128x32(&Wire, kScreenAddress)} {}
+App::App()
+    : display_{Display::adafruit128x32(&Wire, kScreenAddress)},
+      leftIO_{&Wire, kSX1509AddressLeft} {}
 
 void App::setup() {
   Serial.begin(kSerialBaudRate);
@@ -26,14 +28,13 @@ void App::setup() {
   writeMsg("init");
   flushDisplay();
 
-  if (!leftIO_.begin(kSX1509AddressLeft)) {
+  if (!leftIO_.begin()) {
     // writeMsg("io init failed");
     Serial.println("io init failed");
   } else {
-      // writeMsg("io init success");
-      Serial.println("io init success");
-      leftIO_.keypad(kLeftRows, kLeftCols, kKeypadSleepTimeMS, kKeypadScanTimeMS,
-                     kKeypadDebounceTimeMS);
+    // writeMsg("io init success");
+    Serial.println("io init success");
+    leftIO_.configure_keypad(kLeftRows, kLeftCols);
   }
 }
 
@@ -46,8 +47,8 @@ void App::loop() {
 
   display_.canvas().setCursor(0, 8);
   display_.canvas().print("keys: ");
-  unsigned int keyData = leftIO_.readKeypad();
-  display_.canvas().print(keyData, HEX);
+  const auto key_data = leftIO_.read_keypad();
+  display_.canvas().print(key_data, HEX);
 
   flushDisplay();
   delay(50);

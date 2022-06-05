@@ -2,8 +2,7 @@
 #pragma once
 
 #include "Display.h"
-
-#include <SparkFunSX1509.h>
+#include "SX1509Keypad.h"
 
 #include <string_view>
 
@@ -37,7 +36,7 @@ private:
   static constexpr uint8_t kKeypadDebounceTimeMS = 1;
 
   Display display_;
-  SX1509 leftIO_;
+  SX1509Keypad leftIO_;
   uint32_t counter_{0};
 };
 

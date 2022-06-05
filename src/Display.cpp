@@ -1,18 +1,12 @@
 // Copyright (c) 2022, Adam Simpkins
+
 #include "Display.h"
 
+#include "literals.h"
+
 #include <array>
-#include <stdexcept>
 
 namespace mtl {
-
-// Custom literal for an explicit uint8_t value (rather than int)
-constexpr uint8_t operator"" _u8(unsigned long long int value) {
-  if (value > 0xff) {
-    throw std::range_error("invalid uint8_t literal");
-  }
-  return value;
-}
 
 Display Display::adafruit128x32(TwoWire* wire, uint8_t addr) {
   return Display(wire,
