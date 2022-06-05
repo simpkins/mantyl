@@ -34,7 +34,7 @@ MONITOR_PATH = "main.py"
 # In theory it would be nice to use the modulefinder library to automatically
 # find the dependencies of the script.  Unfortunately modulefinder cannot
 # currently handle numpy: https://bugs.python.org/issue40350
-_DEPENDENCIES: Dict[Path, str] = {
+_DEPENDENCIES: List[Tuple[Path, str]] = [
     (Path("mantyl/cad.py"), "mantyl.cad"),
     (Path("mantyl/blender_util.py"), "mantyl.blender_util"),
     (Path("mantyl/keyboard.py"), "mantyl.keyboard"),
@@ -43,7 +43,7 @@ _DEPENDENCIES: Dict[Path, str] = {
     (Path("mantyl/screw_holes.py"), "mantyl.screw_holes"),
     (Path("mantyl/kbd_halves.py"), "mantyl.kbd_halves"),
     (Path("mantyl/main.py"), "mantyl.main"),
-}
+]
 
 
 class MonitorOperatorBase(bpy.types.Operator):
@@ -138,9 +138,12 @@ class MonitorOperatorBase(bpy.types.Operator):
         return s.st_mtime
 
     def on_change(self):
+        print("=" * 60, file=sys.stderr)
+        print(f"Running {self._name}...", file=sys.stderr)
         self.report({"INFO"}, f"running {self._name}")
         try:
             self._run()
+            print(f"Finished {self._name}")
         except Exception as ex:
             self._report_error(f"error running {self._name}")
 

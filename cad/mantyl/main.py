@@ -10,11 +10,7 @@ from .kbd_halves import right_half
 
 
 def regenerate() -> None:
-    print("=" * 60)
-    print("Generating keyboard...")
-
     delete_all()
     right_half()
 
     bpy.ops.object.mode_set(mode="EDIT")
-    print("done")
