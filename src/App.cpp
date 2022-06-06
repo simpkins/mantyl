@@ -36,6 +36,8 @@ void App::setup() {
     Serial.println("io init success");
     leftIO_.configure_keypad(kLeftRows, kLeftCols);
   }
+
+  pinMode(21, INPUT_PULLUP);
 }
 
 void App::loop() {
@@ -44,6 +46,11 @@ void App::loop() {
   display_.canvas().setCursor(0, 0);
   display_.canvas().print("loop: ");
   display_.canvas().print(counter_);
+
+  display_.canvas().setCursor(0, 16);
+  display_.canvas().print("int: ");
+  const auto gpio = digitalRead(21);
+  display_.canvas().print(gpio, HEX);
 
   display_.canvas().setCursor(0, 8);
   display_.canvas().print("keys: ");
