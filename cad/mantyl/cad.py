@@ -260,3 +260,61 @@ def intersect_line_and_plane(
     w = line[0] - plane[0]
     fraction = -normal.dot(w) / dot
     return line[0] + (line_vector * fraction)
+
+
+def cube(x: float, y: float, z: float) -> Mesh:
+    hx = x * 0.5
+    hy = y * 0.5
+    hz = z * 0.5
+
+    mesh = Mesh()
+    b_tl = mesh.add_xyz(-hx, hy, -hz)
+    b_tr = mesh.add_xyz(hx, hy, -hz)
+    b_br = mesh.add_xyz(hx, -hy, -hz)
+    b_bl = mesh.add_xyz(-hx, -hy, -hz)
+
+    t_tl = mesh.add_xyz(-hx, hy, hz)
+    t_tr = mesh.add_xyz(hx, hy, hz)
+    t_br = mesh.add_xyz(hx, -hy, hz)
+    t_bl = mesh.add_xyz(-hx, -hy, hz)
+
+    mesh.add_quad(b_tl, b_bl, b_br, b_tr)
+    mesh.add_quad(t_tl, t_tr, t_br, t_bl)
+    mesh.add_quad(t_br, t_tr, b_tr, b_br)
+    mesh.add_quad(t_bl, t_br, b_br, b_bl)
+    mesh.add_quad(t_tl, t_bl, b_bl, b_tl)
+    mesh.add_quad(t_tr, t_tl, b_tl, b_tr)
+
+    return mesh
+
+
+def cylinder(r: float, h: float, fn: int = 24) -> Mesh:
+    top_z = h * 0.5
+    bottom_z = -h * 0.5
+
+    mesh = Mesh()
+    top_center = mesh.add_xyz(0.0, 0.0, top_z)
+    bottom_center = mesh.add_xyz(0.0, 0.0, bottom_z)
+    top_points: List[MeshPoint] = []
+    bottom_points: List[MeshPoint] = []
+
+    for n in range(fn):
+        angle = (360.0 / fn) * n
+        rad = math.radians(angle)
+
+        circle_x = math.sin(rad) * r
+        circle_y = math.cos(rad) * r
+
+        top_points.append(mesh.add_xyz(circle_x, circle_y, top_z))
+        bottom_points.append(mesh.add_xyz(circle_x, circle_y, bottom_z))
+
+    for idx, fp in enumerate(top_points):
+        # Note: this intentionally wraps around to -1 when idx == 0
+        prev_f = top_points[idx - 1]
+        prev_b = bottom_points[idx - 1]
+
+        mesh.add_tri(top_center, prev_f, fp)
+        mesh.add_tri(bottom_center, bottom_points[idx], prev_b)
+        mesh.add_quad(prev_f, prev_b, bottom_points[idx], fp)
+
+    return mesh
