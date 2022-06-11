@@ -176,3 +176,10 @@ class TransformContext:
 
     def translate(self, x: float, y: float, z: float) -> None:
         bmesh.ops.translate(self.bmesh, verts=self.bmesh.verts, vec=(x, y, z))
+
+
+def set_shading_mode(mode: str) -> None:
+    for area in bpy.context.workspace.screens[0].areas:
+        for space in area.spaces:
+            if space.type == "VIEW_3D":
+                space.shading.type = mode
