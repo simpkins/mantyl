@@ -29,8 +29,8 @@ private:
   static constexpr uint8_t kScreenAddress = 0x3c;
 
   static constexpr uint8_t kSX1509AddressLeft = 0x3e;
-  static constexpr uint8_t kLeftRows = 3;
-  static constexpr uint8_t kLeftCols = 2;
+  static constexpr uint8_t kLeftRows = 8;
+  static constexpr uint8_t kLeftCols = 8;
   static constexpr uint16_t kKeypadSleepTimeMS = 256;
   static constexpr uint8_t kKeypadScanTimeMS = 2;
   static constexpr uint8_t kKeypadDebounceTimeMS = 1;
