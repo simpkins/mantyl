@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Union
+from typing import Optional, Type, Union
+from types import TracebackType
 
 import bpy
 import bmesh
@@ -123,30 +124,55 @@ def apply_to_wall(
     wall_len = math.sqrt(((right.y - left.y) ** 2) + ((right.x - left.x) ** 2))
     angle = math.atan2(right.y - left.y, right.x - left.x)
 
-    bm = bmesh.new()
-    try:
-        bm.from_mesh(obj.data)
-
+    with TransformContext(obj) as ctx:
         # Move the object along the x axis so it ends up centered on the wall.
         # This assumes the object starts centered around the origin.
         #
         # Also apply any extra X and Z translation supplied by the caller.
-        bmesh.ops.translate(
-            bm, verts=bm.verts, vec=(x + wall_len * 0.5, 0.0, z)
-        )
+        ctx.translate(x + wall_len * 0.5, 0.0, z)
 
         # Next rotate the object so it is at the same angle to the x axis
         # as the wall.
-        bmesh.ops.rotate(
-            bm,
-            verts=bm.verts,
-            cent=(0.0, 0.0, 0.0),
-            matrix=mathutils.Matrix.Rotation(angle, 3, "Z"),
-        )
+        ctx.rotate(math.degrees(angle), "Z")
 
         # Finally move the object from the origin so it is at the wall location
-        bmesh.ops.translate(bm, verts=bm.verts, vec=(left.x, left.y, 0.0))
+        ctx.translate(left.x, left.y, 0.0)
 
-        bm.to_mesh(obj.data)
-    finally:
-        bm.free()
+
+class TransformContext:
+    def __init__(self, obj: bpy.types.Object) -> None:
+        self.obj = obj
+        self.bmesh = bmesh.new()
+        self.bmesh.from_mesh(obj.data)
+
+    def __enter__(self) -> TransformContext:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        if exc_value is None:
+            self.bmesh.to_mesh(self.obj.data)
+        self.bmesh.free()
+
+    def rotate(
+        self,
+        angle: float,
+        axis: str,
+        center: Optional[Tuple[float, float, float]] = None,
+    ) -> None:
+        if center is None:
+            center = (0.0, 0.0, 0.0)
+
+        bmesh.ops.rotate(
+            self.bmesh,
+            verts=self.bmesh.verts,
+            cent=center,
+            matrix=mathutils.Matrix.Rotation(math.radians(angle), 3, axis),
+        )
+
+    def translate(self, x: float, y: float, z: float) -> None:
+        bmesh.ops.translate(self.bmesh, verts=self.bmesh.verts, vec=(x, y, z))
