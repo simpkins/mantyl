@@ -31,30 +31,49 @@ def blender_cylinder(
     return blender_util.new_mesh_obj(name, mesh)
 
 
-class TopClip:
+class SocketParams:
     thickness = 1.0
     socket_h = 2.0
+
+    left_x = -5.3
+
+    top_z = -thickness
+    bottom_z = -thickness - socket_h
 
     lip_bottom_h = socket_h + 0.05
     lip_tip_bottom_h = socket_h + 0.134
     lip_tip_top_h = lip_tip_bottom_h + 0.1
     lip_top_h = 2.55
-
-    top_z = -thickness
-    bottom_z = -thickness - socket_h
     lip_bottom_z = -thickness - socket_h - 0.55
 
+    diode_x = 8.0
+    diode_y = -6.55
+
+    diode_w = 2.1
+    diode_h = 3.9
+
+
+    def assign_params_to(self, obj) -> None:
+        for name in dir(SocketParams):
+            if name.startswith("__"):
+                continue
+            setattr(obj, name, getattr(self, name))
+
+
+class TopClip:
     arc_x = 0.4
     arc_r = 1.8
     edge_y = -2.8
 
-    left_x = -5.3
     mid0_x = arc_x - 0.2
+    right_x = 6.2
 
     def __init__(self, mesh: cad.Mesh) -> None:
         self.mesh = mesh
         self.b_arc_points: List[cad.MeshPoint] = []
         self.t_arc_points: List[cad.MeshPoint] = []
+
+        SocketParams().assign_params_to(self)
 
     def gen(self) -> None:
         self.gen_arc()
@@ -128,12 +147,11 @@ class TopClip:
             self.m0_tr, self.t_arc_points[0], self.b_arc_points[0], self.m0_mr
         )
 
-        right_x = 7.7
         right_y = self.edge_y + self.arc_r
-        self.r_tl = self.mesh.add_xyz(right_x, 0.0, self.top_z)
-        self.r_tr = self.mesh.add_xyz(right_x, right_y, self.top_z)
-        self.r_mr = self.mesh.add_xyz(right_x, right_y, self.bottom_z)
-        self.r_ml = self.mesh.add_xyz(right_x, 0, self.bottom_z)
+        self.r_tl = self.mesh.add_xyz(self.right_x, 0.0, self.top_z)
+        self.r_tr = self.mesh.add_xyz(self.right_x, right_y, self.top_z)
+        self.r_mr = self.mesh.add_xyz(self.right_x, right_y, self.bottom_z)
+        self.r_ml = self.mesh.add_xyz(self.right_x, 0, self.bottom_z)
 
         # right face
         self.mesh.add_quad(self.r_tr, self.r_tl, self.r_ml, self.r_mr)
@@ -235,20 +253,6 @@ class TopClip:
 
 
 class BottomClip:
-    thickness = 1.0
-    socket_h = 2.0
-
-    diode_x = 8.0
-    diode_y = -6.55
-
-    diode_w = 2.0
-    diode_h = 3.9
-
-    top_z = -thickness
-    bottom_z = -thickness - socket_h
-    lip_bottom_z = -thickness - socket_h - 0.55
-
-    left_x = -5.3
     l_y = -7.0
     r_y = -9.0
 
@@ -256,6 +260,8 @@ class BottomClip:
         self.mesh = mesh
         self.b_arc_points: List[cad.MeshPoint] = []
         self.t_arc_points: List[cad.MeshPoint] = []
+
+        SocketParams().assign_params_to(self)
 
     def gen(self) -> None:
         self.gen_arc()
@@ -450,20 +456,81 @@ class BottomClip:
         self.mesh.add_quad(self.l_bl, self.m_bl, self.m_lip2, self.l_lip2)
 
 
+class DiodeClip:
+    top_y = -9.0
+    right_x = 9.9
+
+    def __init__(self, mesh: cad.Mesh) -> None:
+        self.mesh = mesh
+        SocketParams().assign_params_to(self)
+
+    def gen(self) -> None:
+        m1_y = self.diode_y - (self.diode_h * 0.5)
+        m2_y = self.diode_y + (self.diode_h * 0.5)
+        b_y = m2_y + 0.5
+        m_x = self.diode_x + (self.diode_w * 0.5)
+        left_x = self.diode_x + 0.3
+
+        b_tl = self.mesh.add_xyz(left_x, self.top_y, self.bottom_z)
+        t_tl = self.mesh.add_xyz(left_x, self.top_y, self.top_z)
+
+        b_l0 = self.mesh.add_xyz(left_x, m1_y, self.bottom_z)
+        t_l0 = self.mesh.add_xyz(left_x, m1_y, self.top_z)
+
+        b_l1 = self.mesh.add_xyz(m_x, m1_y, self.bottom_z)
+        t_l1 = self.mesh.add_xyz(m_x, m1_y, self.top_z)
+
+        b_l2 = self.mesh.add_xyz(m_x, m2_y, self.bottom_z)
+        t_l2 = self.mesh.add_xyz(m_x, m2_y, self.top_z)
+
+        b_l3 = self.mesh.add_xyz(left_x, m2_y, self.bottom_z)
+        t_l3 = self.mesh.add_xyz(left_x, m2_y, self.top_z)
+
+        b_tr = self.mesh.add_xyz(self.right_x, self.top_y, self.bottom_z)
+        t_tr = self.mesh.add_xyz(self.right_x, self.top_y, self.top_z)
+
+        b_br = self.mesh.add_xyz(self.right_x, b_y, self.bottom_z)
+        t_br = self.mesh.add_xyz(self.right_x, b_y, self.top_z)
+
+        b_bl = self.mesh.add_xyz(left_x, b_y, self.bottom_z)
+        t_bl = self.mesh.add_xyz(left_x, b_y, self.top_z)
+
+        # Vertical walls
+        self.mesh.add_quad(b_tl, b_l0, t_l0, t_tl)
+        self.mesh.add_quad(b_tr, b_tl, t_tl, t_tr)
+        self.mesh.add_quad(b_br, b_tr, t_tr, t_br)
+        self.mesh.add_quad(b_bl, b_br, t_br, t_bl)
+        self.mesh.add_quad(b_l3, b_bl, t_bl, t_l3)
+        self.mesh.add_quad(b_l2, b_l3, t_l3, t_l2)
+        self.mesh.add_quad(b_l1, b_l2, t_l2, t_l1)
+        self.mesh.add_quad(b_l0, b_l1, t_l1, t_l0)
+
+        # Top and bottom
+        self.mesh.add_quad(b_tl, b_tr, b_l1, b_l0)
+        self.mesh.add_quad(t_l0, t_l1, t_tr, t_tl)
+
+        self.mesh.add_quad(b_l1, b_tr, b_br, b_l2)
+        self.mesh.add_quad(t_l2, t_br, t_tr, t_l1)
+
+        self.mesh.add_quad(b_l2, b_br, b_bl, b_l3)
+        self.mesh.add_quad(t_l3, t_bl, t_br, t_l2)
+
+
 class SocketHolder:
     def top_clip(self) -> bpy.types.Object:
         mesh = cad.Mesh()
-        top = TopClip(mesh)
-        top.gen()
-
+        TopClip(mesh).gen()
         return blender_util.new_mesh_obj("clip_top", mesh)
 
     def bottom_clip(self) -> bpy.types.Object:
         mesh = cad.Mesh()
-        top = BottomClip(mesh)
-        top.gen()
-
+        BottomClip(mesh).gen()
         return blender_util.new_mesh_obj("clip_bottom", mesh)
+
+    def diode_clip(self) -> bpy.types.Object:
+        mesh = cad.Mesh()
+        DiodeClip(mesh).gen()
+        return blender_util.new_mesh_obj("clip_diode", mesh)
 
 
 def clip_bottom_main() -> bpy.types.Object:
@@ -530,7 +597,7 @@ def clip_bottom_main() -> bpy.types.Object:
 
 
 def socket_holder_obj() -> bpy.types.Object:
-    width = 11.7
+    width = 15.2
     height = 18.0
     thickness = 1.0
 
@@ -545,6 +612,8 @@ def socket_holder_obj() -> bpy.types.Object:
     blender_util.union(obj, top_clip)
     bottom_clip = SocketHolder().bottom_clip()
     blender_util.union(obj, bottom_clip)
+    diode_clip = SocketHolder().diode_clip()
+    blender_util.union(obj, diode_clip)
 
     # Cut-outs for the switch legs
     leg_r_cutout = blender_cylinder(r=1.6, h=8, fn=85)
