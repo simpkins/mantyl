@@ -115,8 +115,7 @@ class Point:
         return self.to_transform().transform(tf).point()
 
     def unit(self) -> Point:
-        """Treating this point as a vector, return a new vector of length 1.0
-        """
+        """Treating this point as a vector, return a new vector of length 1.0"""
         length = math.sqrt(
             (self.x * self.x) + (self.y * self.y) + (self.z * self.z)
         )
@@ -288,9 +287,17 @@ def cube(x: float, y: float, z: float) -> Mesh:
     return mesh
 
 
-def cylinder(r: float, h: float, fn: int = 24) -> Mesh:
+def cylinder(
+    r: float, h: float, fn: int = 24, rotation: float = 360.0
+) -> Mesh:
     top_z = h * 0.5
     bottom_z = -h * 0.5
+
+    if rotation >= 360.0:
+        rotation = 360.0
+        end = fn
+    else:
+        end = fn + 1
 
     mesh = Mesh()
     top_center = mesh.add_xyz(0.0, 0.0, top_z)
@@ -298,8 +305,8 @@ def cylinder(r: float, h: float, fn: int = 24) -> Mesh:
     top_points: List[MeshPoint] = []
     bottom_points: List[MeshPoint] = []
 
-    for n in range(fn):
-        angle = (360.0 / fn) * n
+    for n in range(end):
+        angle = (rotation / fn) * n
         rad = math.radians(angle)
 
         circle_x = math.sin(rad) * r
@@ -308,13 +315,27 @@ def cylinder(r: float, h: float, fn: int = 24) -> Mesh:
         top_points.append(mesh.add_xyz(circle_x, circle_y, top_z))
         bottom_points.append(mesh.add_xyz(circle_x, circle_y, bottom_z))
 
-    for idx, fp in enumerate(top_points):
+    for idx in range(1, len(top_points)):
         # Note: this intentionally wraps around to -1 when idx == 0
         prev_f = top_points[idx - 1]
         prev_b = bottom_points[idx - 1]
 
-        mesh.add_tri(top_center, prev_f, fp)
+        mesh.add_tri(top_center, prev_f, top_points[idx])
         mesh.add_tri(bottom_center, bottom_points[idx], prev_b)
-        mesh.add_quad(prev_f, prev_b, bottom_points[idx], fp)
+        mesh.add_quad(prev_f, prev_b, bottom_points[idx], top_points[idx])
+
+    if rotation >= 360.0:
+        mesh.add_tri(top_center, top_points[-1], top_points[0])
+        mesh.add_tri(bottom_center, bottom_points[0], bottom_points[-1])
+        mesh.add_quad(
+            top_points[-1], bottom_points[-1], bottom_points[0], top_points[0]
+        )
+    else:
+        mesh.add_quad(
+            top_center, bottom_center, bottom_points[0], top_points[0]
+        )
+        mesh.add_quad(
+            top_center, top_points[-1], bottom_points[-1], bottom_center
+        )
 
     return mesh
