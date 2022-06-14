@@ -12,8 +12,9 @@ from .key_socket_holder import socket_holder
 
 def regenerate() -> None:
     delete_all()
-    #kbd_halves.right_half()
+    # kbd_halves.right_half()
     kbd_halves.right_socket_grid()
+    # socket_holder()
 
     bpy.ops.object.mode_set(mode="EDIT")
     # blender_util.set_shading_mode("WIREFRAME")

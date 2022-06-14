@@ -254,7 +254,7 @@ class TopClip:
 
 class BottomClip:
     l_y = -7.0
-    r_y = -9.0
+    r_y = -8.7
 
     def __init__(self, mesh: cad.Mesh) -> None:
         self.mesh = mesh
@@ -320,13 +320,13 @@ class BottomClip:
 
         self.mesh.add_quad(self.l_tr, self.m0_tr, self.m0_mr, self.l_mr)
 
-        m_x = self.diode_x - (self.diode_w * 0.5)
-        m1_y = self.diode_y - (self.diode_h * 0.5)
-        m2_y = self.diode_y + (self.diode_h * 0.5)
-        m1 = self.mesh.add_xyz(m_x, m1_y, self.bottom_z)
-        t1 = self.mesh.add_xyz(m_x, m1_y, self.top_z)
-        m2 = self.mesh.add_xyz(m_x, m2_y, self.bottom_z)
-        t2 = self.mesh.add_xyz(m_x, m2_y, self.top_z)
+        r_x = self.b_arc_points[-1].x + 0.6
+        self.r_mr = self.mesh.add_xyz(r_x, self.r_y, self.bottom_z)
+        self.r_tr = self.mesh.add_xyz(r_x, self.r_y, self.top_z)
+
+        b_y = self.b_arc_points[-1].y
+        self.r_ml = self.mesh.add_xyz(r_x, b_y, self.bottom_z)
+        self.r_tl = self.mesh.add_xyz(r_x, b_y, self.top_z)
 
         for n in range(8):
             self.mesh.add_tri(
@@ -338,64 +338,28 @@ class BottomClip:
 
         for n in range(8, 16):
             self.mesh.add_tri(
-                m1, self.b_arc_points[n + 1], self.b_arc_points[n]
+                self.r_mr, self.b_arc_points[n + 1], self.b_arc_points[n]
             )
             self.mesh.add_tri(
-                t1, self.t_arc_points[n], self.t_arc_points[n + 1]
+                self.r_tr, self.t_arc_points[n], self.t_arc_points[n + 1]
             )
 
         for n in range(16, len(self.b_arc_points) - 1):
             self.mesh.add_tri(
-                m2, self.b_arc_points[n + 1], self.b_arc_points[n]
+                self.r_ml, self.b_arc_points[n + 1], self.b_arc_points[n]
             )
             self.mesh.add_tri(
-                t2, self.t_arc_points[n], self.t_arc_points[n + 1]
+                self.r_tl, self.t_arc_points[n], self.t_arc_points[n + 1]
             )
 
-        self.mesh.add_tri(self.m0_mr, m1, self.b_arc_points[8])
-        self.mesh.add_tri(self.m0_tr, self.t_arc_points[8], t1)
-        self.mesh.add_tri(m1, m2, self.b_arc_points[16])
-        self.mesh.add_tri(t1, self.t_arc_points[16], t2)
+        self.mesh.add_tri(self.m0_mr, self.r_mr, self.b_arc_points[8])
+        self.mesh.add_tri(self.m0_tr, self.t_arc_points[8], self.r_tr)
+        self.mesh.add_tri(self.r_mr, self.r_ml, self.b_arc_points[16])
+        self.mesh.add_tri(self.r_tr, self.t_arc_points[16], self.r_tl)
 
-        br0 = self.mesh.add_xyz(self.diode_x - 0.3, self.r_y, self.bottom_z)
-        tr0 = self.mesh.add_xyz(self.diode_x - 0.3, self.r_y, self.top_z)
-        br1 = self.mesh.add_xyz(self.diode_x - 0.3, m1_y, self.bottom_z)
-        tr1 = self.mesh.add_xyz(self.diode_x - 0.3, m1_y, self.top_z)
-
-        br2 = self.mesh.add_xyz(self.diode_x - 0.3, m2_y, self.bottom_z)
-        tr2 = self.mesh.add_xyz(self.diode_x - 0.3, m2_y, self.top_z)
-
-        l2_y = self.diode_y + (self.diode_h * 0.5) + 0.5
-        br3 = self.mesh.add_xyz(self.diode_x - 0.3, l2_y, self.bottom_z)
-        tr3 = self.mesh.add_xyz(self.diode_x - 0.3, l2_y, self.top_z)
-
-        br4 = self.mesh.add_xyz(self.b_arc_points[-1].x, l2_y, self.bottom_z)
-        tr4 = self.mesh.add_xyz(self.t_arc_points[-1].x, l2_y, self.top_z)
-
-        self.mesh.add_tri(br0, m1, self.m0_mr)
-        self.mesh.add_tri(tr0, self.m0_tr, t1)
-        self.mesh.add_tri(br0, br1, m1)
-        self.mesh.add_tri(tr0, t1, tr1)
-
-        self.mesh.add_quad(br0, self.m0_mr, self.m0_tr, tr0)
-        self.mesh.add_quad(br1, br0, tr0, tr1)
-
-        self.mesh.add_quad(m1, br1, tr1, t1)
-        self.mesh.add_quad(m2, m1, t1, t2)
-
-        self.mesh.add_quad(br2, m2, t2, tr2)
-        self.mesh.add_quad(br3, br2, tr2, tr3)
-        self.mesh.add_quad(br4, br3, tr3, tr4)
-        self.mesh.add_quad(
-            self.b_arc_points[-1], br4, tr4, self.t_arc_points[-1]
-        )
-
-        self.mesh.add_tri(self.b_arc_points[-1], m2, br4)
-        self.mesh.add_tri(self.t_arc_points[-1], tr4, t2)
-        self.mesh.add_tri(br4, m2, br3)
-        self.mesh.add_tri(tr4, tr3, t2)
-        self.mesh.add_tri(m2, br2, br3)
-        self.mesh.add_tri(t2, tr3, tr2)
+        self.mesh.add_quad(self.b_arc_points[-1], self.r_ml, self.r_tl, self.t_arc_points[-1])
+        self.mesh.add_quad(self.r_ml, self.r_mr, self.r_tr, self.r_tl)
+        self.mesh.add_quad(self.r_mr, self.m0_mr, self.m0_tr, self.r_tr)
 
         # Remaining missing top face
         self.mesh.add_quad(
@@ -457,12 +421,14 @@ class BottomClip:
 
 
 class DiodeClip:
-    top_y = -9.0
-    right_x = 9.9
-
     def __init__(self, mesh: cad.Mesh) -> None:
         self.mesh = mesh
         SocketParams().assign_params_to(self)
+
+        self.diode_x = -6.35
+        self.diode_y = 0.5
+        self.top_y = self.diode_y - (self.diode_h * 0.5) - 0.5
+        self.right_x = self.diode_x + 1.9
 
     def gen(self) -> None:
         m1_y = self.diode_y - (self.diode_h * 0.5)
@@ -527,10 +493,58 @@ class SocketHolder:
         BottomClip(mesh).gen()
         return blender_util.new_mesh_obj("clip_bottom", mesh)
 
-    def diode_clip(self) -> bpy.types.Object:
+    def diode_clip_right(self) -> bpy.types.Object:
         mesh = cad.Mesh()
         DiodeClip(mesh).gen()
         return blender_util.new_mesh_obj("clip_diode", mesh)
+
+    def diode_clip_left(self) -> bpy.types.Object:
+        mesh = cad.Mesh()
+        clip = DiodeClip(mesh)
+        clip.gen()
+        obj = blender_util.new_mesh_obj("clip_diode", mesh)
+        with blender_util.TransformContext(obj) as ctx:
+            ctx.rotate(180, "Z", center=(clip.diode_x, clip.diode_y, 0.0))
+        return obj
+
+    def base_plate(self) -> bpy.types.Object:
+        params = SocketParams()
+        dz = -params.thickness * 0.5
+        full_size = 17.4
+
+        w = 14.9
+        h = 6
+        obj = blender_cube(w, h, params.thickness, name="socket_holder")
+        with blender_util.TransformContext(obj) as ctx:
+            dx = (-full_size * 0.5) + (w * 0.5)
+            dy = -2.8 + (h * 0.5)
+            ctx.translate(dx, dy, dz)
+
+        w = 11.5
+        vert = blender_cube(w, full_size, params.thickness, name="vert")
+        with blender_util.TransformContext(vert) as ctx:
+            dx = -5.3 + (w * 0.5)
+            ctx.translate(dx, 0, -params.thickness * 0.5)
+
+        w = 0.6
+        h = 3.7
+        upper_r = blender_cube(w, h, params.thickness, name="upper_right")
+        with blender_util.TransformContext(upper_r) as ctx:
+            dx = 6.2 + (w * 0.5)
+            dy = (-full_size * 0.5) + (h * 0.5)
+            ctx.translate(dx, dy, -params.thickness * 0.5)
+
+        h = 6
+        horiz = blender_cube(full_size, h, params.thickness, name="horiz")
+        with blender_util.TransformContext(horiz) as ctx:
+            dy = -1 + (h * 0.5)
+            ctx.translate(0, dy, -params.thickness * 0.5)
+
+        blender_util.union(obj, vert)
+        blender_util.union(obj, upper_r)
+        blender_util.union(obj, horiz)
+
+        return obj
 
 
 def clip_bottom_main() -> bpy.types.Object:
@@ -597,23 +611,23 @@ def clip_bottom_main() -> bpy.types.Object:
 
 
 def socket_holder() -> bpy.types.Object:
-    width = 15.2
+    width = 14.0
     height = 18.0
     thickness = 1.0
 
     left_x = -5.3
 
     # Base
-    obj = blender_cube(width, height, thickness, name="socket_holder")
-    with blender_util.TransformContext(obj) as ctx:
-        ctx.translate(left_x + (width * 0.5), 0, -thickness * 0.5)
+    obj = SocketHolder().base_plate()
 
     top_clip = SocketHolder().top_clip()
     blender_util.union(obj, top_clip)
     bottom_clip = SocketHolder().bottom_clip()
     blender_util.union(obj, bottom_clip)
-    diode_clip = SocketHolder().diode_clip()
-    blender_util.union(obj, diode_clip)
+    diode_clip_right = SocketHolder().diode_clip_right()
+    blender_util.union(obj, diode_clip_right)
+    diode_clip_left = SocketHolder().diode_clip_left()
+    blender_util.union(obj, diode_clip_left)
 
     # Cut-outs for the switch legs
     leg_r_cutout = blender_cylinder(r=1.6, h=8, fn=85)
