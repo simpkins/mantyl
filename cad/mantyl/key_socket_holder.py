@@ -596,7 +596,7 @@ def clip_bottom_main() -> bpy.types.Object:
     return obj
 
 
-def socket_holder_obj() -> bpy.types.Object:
+def socket_holder() -> bpy.types.Object:
     width = 15.2
     height = 18.0
     thickness = 1.0
@@ -633,8 +633,3 @@ def socket_holder_obj() -> bpy.types.Object:
     blender_util.difference(obj, main_cutout)
 
     return obj
-
-
-def socket_holder() -> bpy.types.Object:
-    obj = socket_holder_obj()
-    bpy.context.view_layer.objects.active = obj

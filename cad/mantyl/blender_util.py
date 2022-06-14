@@ -177,6 +177,10 @@ class TransformContext:
     def translate(self, x: float, y: float, z: float) -> None:
         bmesh.ops.translate(self.bmesh, verts=self.bmesh.verts, vec=(x, y, z))
 
+    def transform(self, tf: cad.Transform) -> None:
+        matrix = mathutils.Matrix(tf._data)
+        bmesh.ops.transform(self.bmesh, verts=self.bmesh.verts, matrix=matrix)
+
 
 def set_shading_mode(mode: str) -> None:
     for area in bpy.context.workspace.screens[0].areas:
