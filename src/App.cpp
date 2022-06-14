@@ -15,6 +15,8 @@ void App::setup() {
   Serial.println("mantyl init");
   if (!display_.begin()) {
     Serial.println("display initialization failed");
+    set_sleep_timer_wakeup(std::chrono::seconds{10});
+    esp_deep_sleep_start();
   } else {
     Serial.println("display initialization success!");
   }
