@@ -611,9 +611,7 @@ def clip_bottom_main() -> bpy.types.Object:
 
 
 def socket_holder() -> bpy.types.Object:
-    width = 14.0
-    height = 18.0
-    thickness = 1.0
+    thickness = SocketParams.thickness
 
     left_x = -5.3
 
