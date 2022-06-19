@@ -447,9 +447,10 @@ class DiodeClip:
         self.mesh = mesh
         SocketParams().assign_params_to(self)
 
+        self.top_wall_thickness = 0.75
         self.diode_x = -6.35
         self.diode_y = 0.5
-        self.top_y = self.diode_y - (self.diode_h * 0.5) - 0.5
+        self.top_y = self.diode_y - (self.diode_h * 0.5) - self.top_wall_thickness
         self.right_x = self.diode_x + 1.9
         self.top_z = self.z_clip_top
         self.bottom_z = self.z_clip_bottom
@@ -457,7 +458,7 @@ class DiodeClip:
     def gen(self) -> None:
         m1_y = self.diode_y - (self.diode_h * 0.5)
         m2_y = self.diode_y + (self.diode_h * 0.5)
-        b_y = m2_y + 0.5
+        b_y = m2_y + self.top_wall_thickness
         m_x = self.diode_x + (self.diode_w * 0.5)
         x_mid_left = self.diode_x + 0.3
 
