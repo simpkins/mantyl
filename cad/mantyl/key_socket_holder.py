@@ -45,10 +45,18 @@ class SocketParams:
     thickness = 1.0
     socket_h = 2.0
 
-    left_x = -5.3
+    full_size = 17.4
+    x_left = -full_size * 0.5
+    x_right = full_size * 0.5
+    x_mid_left = -5.3
+    x_mid_right = 6.2
+    y_top = full_size * 0.5
+    y_bottom = -full_size * 0.5
+    z_top = 0.0
+    z_bottom = -thickness
 
-    top_z = -thickness
-    bottom_z = -thickness - socket_h
+    z_clip_top = -thickness
+    z_clip_bottom = -thickness - socket_h
 
     lip_bottom_h = socket_h + 0.05
     lip_tip_bottom_h = socket_h + 0.134
@@ -75,7 +83,6 @@ class TopClip:
     edge_y = -2.8
 
     mid0_x = arc_x - 0.2
-    right_x = 6.2
 
     def __init__(self, mesh: cad.Mesh) -> None:
         self.mesh = mesh
@@ -83,6 +90,8 @@ class TopClip:
         self.t_arc_points: List[cad.MeshPoint] = []
 
         SocketParams().assign_params_to(self)
+        self.top_z = self.z_clip_top
+        self.bottom_z = self.z_clip_bottom
 
     def gen(self) -> None:
         self.gen_arc()
@@ -136,10 +145,12 @@ class TopClip:
             )
 
     def gen_block(self) -> None:
-        self.l_tl = self.mesh.add_xyz(self.left_x, 0.0, self.top_z)
-        self.l_tr = self.mesh.add_xyz(self.left_x, self.edge_y, self.top_z)
-        self.l_mr = self.mesh.add_xyz(self.left_x, self.edge_y, self.bottom_z)
-        self.l_ml = self.mesh.add_xyz(self.left_x, 0, self.bottom_z)
+        self.l_tl = self.mesh.add_xyz(self.x_mid_left, 0.0, self.top_z)
+        self.l_tr = self.mesh.add_xyz(self.x_mid_left, self.edge_y, self.top_z)
+        self.l_mr = self.mesh.add_xyz(
+            self.x_mid_left, self.edge_y, self.bottom_z
+        )
+        self.l_ml = self.mesh.add_xyz(self.x_mid_left, 0, self.bottom_z)
 
         self.m0_tl = self.mesh.add_xyz(self.mid0_x, 0.0, self.top_z)
         self.m0_tr = self.mesh.add_xyz(self.mid0_x, self.edge_y, self.top_z)
@@ -157,10 +168,10 @@ class TopClip:
         )
 
         right_y = self.edge_y + self.arc_r
-        self.r_tl = self.mesh.add_xyz(self.right_x, 0.0, self.top_z)
-        self.r_tr = self.mesh.add_xyz(self.right_x, right_y, self.top_z)
-        self.r_mr = self.mesh.add_xyz(self.right_x, right_y, self.bottom_z)
-        self.r_ml = self.mesh.add_xyz(self.right_x, 0, self.bottom_z)
+        self.r_tl = self.mesh.add_xyz(self.x_mid_right, 0.0, self.top_z)
+        self.r_tr = self.mesh.add_xyz(self.x_mid_right, right_y, self.top_z)
+        self.r_mr = self.mesh.add_xyz(self.x_mid_right, right_y, self.bottom_z)
+        self.r_ml = self.mesh.add_xyz(self.x_mid_right, 0, self.bottom_z)
 
         # right face
         self.mesh.add_quad(self.r_tr, self.r_tl, self.r_ml, self.r_mr)
@@ -215,22 +226,22 @@ class TopClip:
         )
         self.m0_bl = self.mesh.add_xyz(self.mid0_x, 0, self.lip_bottom_z)
         self.l_br = self.mesh.add_xyz(
-            self.left_x, lip_bottom_y, self.lip_bottom_z
+            self.x_mid_left, lip_bottom_y, self.lip_bottom_z
         )
-        self.l_bl = self.mesh.add_xyz(self.left_x, 0, self.lip_bottom_z)
+        self.l_bl = self.mesh.add_xyz(self.x_mid_left, 0, self.lip_bottom_z)
 
         self.mesh.add_quad(self.l_bl, self.l_br, self.m0_br, self.m0_bl)
         self.mesh.add_quad(self.m0_ml, self.l_ml, self.l_bl, self.m0_bl)
         self.mesh.add_quad(self.l_ml, self.l_mr, self.l_br, self.l_bl)
 
         self.l_lip0 = self.mesh.add_xyz(
-            self.left_x, self.edge_y, self.bottom_z - 0.05
+            self.x_mid_left, self.edge_y, self.bottom_z - 0.05
         )
         self.l_lip1 = self.mesh.add_xyz(
-            self.left_x, self.edge_y - lip_protrusion, self.bottom_z - 0.13
+            self.x_mid_left, self.edge_y - lip_protrusion, self.bottom_z - 0.13
         )
         self.l_lip2 = self.mesh.add_xyz(
-            self.left_x, self.edge_y - lip_protrusion, self.bottom_z - 0.23
+            self.x_mid_left, self.edge_y - lip_protrusion, self.bottom_z - 0.23
         )
         self.mesh.add_tri(self.l_br, self.l_mr, self.l_lip0)
         self.mesh.add_tri(self.l_br, self.l_lip0, self.l_lip1)
@@ -271,6 +282,8 @@ class BottomClip:
         self.t_arc_points: List[cad.MeshPoint] = []
 
         SocketParams().assign_params_to(self)
+        self.top_z = self.z_clip_top
+        self.bottom_z = self.z_clip_bottom
 
     def gen(self) -> None:
         self.gen_arc()
@@ -309,10 +322,10 @@ class BottomClip:
             )
 
     def gen_block(self) -> None:
-        self.l_tl = self.mesh.add_xyz(self.left_x, self.l_y, self.top_z)
-        self.l_tr = self.mesh.add_xyz(self.left_x, self.r_y, self.top_z)
-        self.l_mr = self.mesh.add_xyz(self.left_x, self.r_y, self.bottom_z)
-        self.l_ml = self.mesh.add_xyz(self.left_x, self.l_y, self.bottom_z)
+        self.l_tl = self.mesh.add_xyz(self.x_mid_left, self.l_y, self.top_z)
+        self.l_tr = self.mesh.add_xyz(self.x_mid_left, self.r_y, self.top_z)
+        self.l_mr = self.mesh.add_xyz(self.x_mid_left, self.r_y, self.bottom_z)
+        self.l_ml = self.mesh.add_xyz(self.x_mid_left, self.l_y, self.bottom_z)
 
         mid0_x = self.b_arc_points[0].x
         self.m0_tr = self.mesh.add_xyz(mid0_x, self.r_y, self.top_z)
@@ -379,9 +392,11 @@ class BottomClip:
 
         lip_bottom_y = self.l_y - lip_bottom_recess
         self.l_bl = self.mesh.add_xyz(
-            self.left_x, lip_bottom_y, self.lip_bottom_z
+            self.x_mid_left, lip_bottom_y, self.lip_bottom_z
         )
-        self.l_br = self.mesh.add_xyz(self.left_x, self.r_y, self.lip_bottom_z)
+        self.l_br = self.mesh.add_xyz(
+            self.x_mid_left, self.r_y, self.lip_bottom_z
+        )
 
         self.mesh.add_quad(self.l_br, self.l_bl, self.l_ml, self.l_mr)
 
@@ -393,13 +408,13 @@ class BottomClip:
         self.mesh.add_quad(self.m0_mr, self.m_br, self.l_br, self.l_mr)
 
         self.l_lip0 = self.mesh.add_xyz(
-            self.left_x, self.l_y, self.bottom_z - 0.05
+            self.x_mid_left, self.l_y, self.bottom_z - 0.05
         )
         self.l_lip1 = self.mesh.add_xyz(
-            self.left_x, self.l_y + lip_protrusion, self.bottom_z - 0.13
+            self.x_mid_left, self.l_y + lip_protrusion, self.bottom_z - 0.13
         )
         self.l_lip2 = self.mesh.add_xyz(
-            self.left_x, self.l_y + lip_protrusion, self.bottom_z - 0.23
+            self.x_mid_left, self.l_y + lip_protrusion, self.bottom_z - 0.23
         )
         self.mesh.add_tri(self.l_bl, self.l_lip0, self.l_ml)
         self.mesh.add_tri(self.l_bl, self.l_lip1, self.l_lip0)
@@ -436,19 +451,21 @@ class DiodeClip:
         self.diode_y = 0.5
         self.top_y = self.diode_y - (self.diode_h * 0.5) - 0.5
         self.right_x = self.diode_x + 1.9
+        self.top_z = self.z_clip_top
+        self.bottom_z = self.z_clip_bottom
 
     def gen(self) -> None:
         m1_y = self.diode_y - (self.diode_h * 0.5)
         m2_y = self.diode_y + (self.diode_h * 0.5)
         b_y = m2_y + 0.5
         m_x = self.diode_x + (self.diode_w * 0.5)
-        left_x = self.diode_x + 0.3
+        x_mid_left = self.diode_x + 0.3
 
-        b_tl = self.mesh.add_xyz(left_x, self.top_y, self.bottom_z)
-        t_tl = self.mesh.add_xyz(left_x, self.top_y, self.top_z)
+        b_tl = self.mesh.add_xyz(x_mid_left, self.top_y, self.bottom_z)
+        t_tl = self.mesh.add_xyz(x_mid_left, self.top_y, self.top_z)
 
-        b_l0 = self.mesh.add_xyz(left_x, m1_y, self.bottom_z)
-        t_l0 = self.mesh.add_xyz(left_x, m1_y, self.top_z)
+        b_l0 = self.mesh.add_xyz(x_mid_left, m1_y, self.bottom_z)
+        t_l0 = self.mesh.add_xyz(x_mid_left, m1_y, self.top_z)
 
         b_l1 = self.mesh.add_xyz(m_x, m1_y, self.bottom_z)
         t_l1 = self.mesh.add_xyz(m_x, m1_y, self.top_z)
@@ -456,8 +473,8 @@ class DiodeClip:
         b_l2 = self.mesh.add_xyz(m_x, m2_y, self.bottom_z)
         t_l2 = self.mesh.add_xyz(m_x, m2_y, self.top_z)
 
-        b_l3 = self.mesh.add_xyz(left_x, m2_y, self.bottom_z)
-        t_l3 = self.mesh.add_xyz(left_x, m2_y, self.top_z)
+        b_l3 = self.mesh.add_xyz(x_mid_left, m2_y, self.bottom_z)
+        t_l3 = self.mesh.add_xyz(x_mid_left, m2_y, self.top_z)
 
         b_tr = self.mesh.add_xyz(self.right_x, self.top_y, self.bottom_z)
         t_tr = self.mesh.add_xyz(self.right_x, self.top_y, self.top_z)
@@ -465,8 +482,8 @@ class DiodeClip:
         b_br = self.mesh.add_xyz(self.right_x, b_y, self.bottom_z)
         t_br = self.mesh.add_xyz(self.right_x, b_y, self.top_z)
 
-        b_bl = self.mesh.add_xyz(left_x, b_y, self.bottom_z)
-        t_bl = self.mesh.add_xyz(left_x, b_y, self.top_z)
+        b_bl = self.mesh.add_xyz(x_mid_left, b_y, self.bottom_z)
+        t_bl = self.mesh.add_xyz(x_mid_left, b_y, self.top_z)
 
         # Vertical walls
         self.mesh.add_quad(b_tl, b_l0, t_l0, t_tl)
@@ -489,7 +506,7 @@ class DiodeClip:
         self.mesh.add_quad(t_l3, t_bl, t_br, t_l2)
 
 
-class SocketHolder:
+class SocketHolderGenerator:
     def top_clip(self) -> bpy.types.Object:
         mesh = cad.Mesh()
         TopClip(mesh).gen()
@@ -515,16 +532,10 @@ class SocketHolder:
         return obj
 
     def base_plate(self) -> bpy.types.Object:
+        params = SocketParams()
         full_size = 17.4
 
-        x_left = -full_size * 0.5
-        x_right = full_size * 0.5
-        x_mid_left = -5.3
-        x_mid_right = 6.2
         x_bottom_right = 6.8
-
-        y_top = full_size * 0.5
-        y_bottom = -full_size * 0.5
 
         y_left_top = 5.0
         y_left_bottom = -2.8
@@ -532,44 +543,45 @@ class SocketHolder:
         y_right_bottom = -1.0
         y_bottom_right_top = -5.0
 
-        z_top = 0.0
-        z_bottom = -SocketParams().thickness
-        z_range = (z_bottom, z_top)
+        z_range = (params.z_bottom, params.z_top)
 
         obj = blender_range_cube(
-            (x_mid_left, x_mid_right),
+            (params.x_mid_left, params.x_mid_right),
             (y_left_bottom, y_left_top),
             z_range,
             name="socket_holder",
         )
         left = blender_range_cube(
-            (x_left, x_mid_left),
+            (params.x_left, params.x_mid_left),
             (y_left_bottom, y_left_top),
             z_range,
             name="left",
         )
         blender_util.union(obj, left)
         top = blender_range_cube(
-            (x_mid_left, x_mid_right), (y_left_top, y_top), z_range, name="top"
+            (params.x_mid_left, params.x_mid_right),
+            (y_left_top, params.y_top),
+            z_range,
+            name="top",
         )
         blender_util.union(obj, top)
         right = blender_range_cube(
-            (x_mid_right, x_right),
+            (params.x_mid_right, params.x_right),
             (y_right_bottom, y_right_top),
             z_range,
             name="right",
         )
         blender_util.union(obj, right)
         bottom = blender_range_cube(
-            (x_mid_left, x_mid_right),
-            (y_bottom, y_left_bottom),
+            (params.x_mid_left, params.x_mid_right),
+            (params.y_bottom, y_left_bottom),
             z_range,
             name="bottom",
         )
         blender_util.union(obj, bottom)
         bottom_right = blender_range_cube(
-            (x_mid_right, x_bottom_right),
-            (y_bottom, y_bottom_right_top),
+            (params.x_mid_right, x_bottom_right),
+            (params.y_bottom, y_bottom_right_top),
             z_range,
             name="bottom_right",
         )
@@ -612,785 +624,163 @@ class SocketHolder:
         return obj
 
 
-def socket_holder() -> bpy.types.Object:
-    return SocketHolder().gen()
-
-
-class SocketHolder2:
-    """
-    Logic to lay out the socket holder.
-
-    This seems unfortunately labor-intensive and manual.  I first created this
-    using union and difference operators, which was much simpler, but proved
-    problematic when trying to combine around 50 of them into a connected grid.
-    Blender tended to produced bad results when processing unions of many of
-    them.  Manually constructing the faces was much more reliable.
-    """
-
-    z_top = 0.0
-    z_bottom = -1.0
-
-    y0 = 8.7
-    y1 = 5
-    y2 = 2.95
-    y3 = -1
-    y4 = -1.95
-    y5 = -2.8
-    y6 = -5
-    y7 = -7.0
-    y8 = -8.7
-
-    x0 = -8.7
-    x1 = -5.3
-    x2 = 6.2
-    x3 = 6.8
-    x4 = 8.7
-    main_hole_r = 2.1
-    switch_hole_r = 1.6
-    right_hole_x = 3.65
-    right_hole_y = -2.7
-    left_hole_x = -2.7
-    left_hole_y = -5.2
-
-    diode_x = -6.35
-    diode_y = 0.5
-
-    diode_w = 2.1
-    diode_h = 3.9
-    diode_outer_w = 3.8
-    diode_outer_h = 4.9
-
-    def __init__(self, mesh: cad.Mesh, transform: cad.Transform) -> None:
+class SocketHolder:
+    def __init__(self, mesh: cad.Mesh) -> None:
         self.mesh = mesh
-        self.transform = transform
+        # Points for the faces that may connect to adjacent holders
+        # in the keyboard grid.
+        self.top_points: List[MeshPoint] = []
+        self.bottom_points: List[MeshPoint] = []
+        self.left_points: List[MeshPoint] = []
+        self.right_points: List[MeshPoint] = []
 
-    def add_xyz(self, x: float, y: float, z: float) -> MeshPoint:
-        p = cad.Point(x, y, z).transform(self.transform)
-        return self.mesh.add_point(p)
+    def close_bottom_face(self) -> None:
+        top, bottom = self._split_top_bottom(self.bottom_points)
+        top.sort(key=lambda mp: mp.x)
+        bottom.sort(key=lambda mp: mp.x)
+        self._close_face(top, bottom)
 
-    def gen(self) -> None:
-        # Generate points for the holes
-        # fn for the main hole must be divisible by 4
-        self.main_hole_top, self.main_hole_bottom = self.gen_hole_points(
-            self.main_hole_r, 0.0, 0.0, fn=100
-        )
-        self.right_hole_top, self.right_hole_bottom = self.gen_hole_points(
-            self.switch_hole_r, self.right_hole_x, self.right_hole_y, fn=85
-        )
-        self.left_hole_top, self.left_hole_bottom = self.gen_hole_points(
-            self.switch_hole_r, self.left_hole_x, self.left_hole_y, fn=85
-        )
+    def close_top_face(self) -> None:
+        top, bottom = self._split_top_bottom(self.top_points)
+        top.sort(key=lambda mp: -mp.x)
+        bottom.sort(key=lambda mp: -mp.x)
+        self._close_face(top, bottom)
 
-        self.gen_upper_surface()
-        self.gen_side_faces()
-        self.gen_diode_holder()
-        self.gen_bottom_clip()
-        self.gen_lower_surface()
+    def close_left_face(self) -> None:
+        top, bottom = self._split_top_bottom(self.left_points)
+        top.sort(key=lambda mp: -mp.y)
+        bottom.sort(key=lambda mp: -mp.y)
+        self._close_face(top, bottom)
 
-        # Faces needed only if not connected to other sockets
-        self.gen_top_face()
-        self.gen_left_face()
-        self.gen_bottom_face()
-        self.gen_right_face()
+    def close_right_face(self) -> None:
+        top, bottom = self._split_top_bottom(self.right_points)
+        top.sort(key=lambda mp: mp.y)
+        bottom.sort(key=lambda mp: mp.y)
+        self._close_face(top, bottom)
 
-    def gen_upper_surface(self) -> None:
-        # top face point naming is grid-based.  tCR, where C is the column
-        # number, R is the row number
+    def _split_top_bottom(self, points: List[MeshPoint]) -> Tuple[List[MeshPoint], List[MeshPoint]]:
+        tol = 0.00001
+        params = SocketParams()
+        top: List[MeshPoint] = []
+        bottom: List[MeshPoint] = []
+        for p in points:
+            if math.isclose(p.z, params.z_top, abs_tol=tol):
+                top.append(p)
+            else:
+                assert math.isclose(p.z, params.z_bottom, abs_tol=tol)
+                bottom.append(p)
 
-        self.t10 = self.add_xyz(self.x1, self.y0, self.z_top)
-        self.t20 = self.add_xyz(self.x2, self.y0, self.z_top)
-        self.t11 = self.add_xyz(self.x1, self.y1, self.z_top)
-        self.t21 = self.add_xyz(self.x2, self.y1, self.z_top)
+        return top, bottom
 
-        self.mesh.add_quad(self.t10, self.t20, self.t21, self.t11)
+    def _close_face(self, top: List[MeshPoint], bottom: List[MeshPoint]) -> None:
+        for idx in range(1, len(bottom)):
+            self.mesh.add_tri(top[0], bottom[idx], bottom[idx - 1])
+        for idx in range(1, len(top)):
+            self.mesh.add_tri(top[idx - 1], top[idx], bottom[-1])
 
-        self.t01 = self.add_xyz(self.x0, self.y1, self.z_top)
-        self.t05 = self.add_xyz(self.x0, self.y5, self.z_top)
-        self.t15 = self.add_xyz(self.x1, self.y5, self.z_top)
 
-        self.mesh.add_quad(self.t01, self.t11, self.t15, self.t05)
+class SocketHolderBuilder:
+    def __init__(self) -> None:
+        self.points: List[cad.Point] = []
+        self.faces: List[Tuple[int, int, int]] = []
 
-        self.t21 = self.add_xyz(self.x2, self.y1, self.z_top)
-        self.t41 = self.add_xyz(self.x4, self.y1, self.z_top)
-        self.t23 = self.add_xyz(self.x2, self.y3, self.z_top)
-        self.t43 = self.add_xyz(self.x4, self.y3, self.z_top)
+        # Points around the faces that may connect to neighboring socket
+        # holders in the keyboard grid.
+        self.bottom_points: Set[int] = set()
+        self.top_points: Set[int] = set()
+        self.left_points: Set[int] = set()
+        self.right_points: Set[int] = set()
 
-        self.mesh.add_quad(self.t21, self.t41, self.t43, self.t23)
+        params = SocketParams()
 
-        self.t26 = self.add_xyz(self.x2, self.y6, self.z_top)
-        self.t36 = self.add_xyz(self.x3, self.y6, self.z_top)
-        self.t28 = self.add_xyz(self.x2, self.y8, self.z_top)
-        self.t38 = self.add_xyz(self.x3, self.y8, self.z_top)
+        # Blender doesn't seem to do great when trying to use boolean union
+        # operators to join together many different socket holders in a complex
+        # grid.  At some point it seems to fail and produces missing faces.
+        #
+        # Therefore we just use blender's boolean operators to produce a single
+        # socket, then we create our own cad.Mesh object from this, and
+        # manually create the explicit faces we want to connect them in a grid.
+        obj = SocketHolderGenerator().gen()
+        tol = 0.00001
+        with blender_util.TransformContext(obj) as ctx:
+            ctx.triangulate()
+            for v in ctx.bmesh.verts:
+                self.points.append(cad.Point(v.co.x, v.co.y, v.co.z))
 
-        self.mesh.add_quad(self.t26, self.t36, self.t38, self.t28)
+                if math.isclose(v.co.y, params.y_bottom, abs_tol=tol):
+                    if (
+                        v.co.x >= (params.x_mid_left - tol)
+                        and v.co.x <= (params.x_mid_right + tol)
+                        and v.co.z >= (params.z_bottom - tol)
+                    ):
+                        self.bottom_points.add(v.index)
+                if math.isclose(v.co.y, params.y_top, abs_tol=tol):
+                    self.top_points.add(v.index)
+                if math.isclose(v.co.x, params.x_left, abs_tol=tol):
+                    self.left_points.add(v.index)
+                if math.isclose(v.co.x, params.x_right, abs_tol=tol):
+                    self.right_points.add(v.index)
 
-        # Points from main hole to top-right corner
-        main_top_right_end = int(len(self.main_hole_top) * 0.25)
-        for n in range(0, main_top_right_end):
-            self.mesh.add_tri(
-                self.t21, self.main_hole_top[n + 1], self.main_hole_top[n]
+            for f in ctx.bmesh.faces:
+                assert len(f.verts) == 3
+                # BMesh faces list the vertices in counter-clockwise order,
+                # we want clockwise
+                indices = (
+                    f.verts[2].index,
+                    f.verts[1].index,
+                    f.verts[0].index,
+                )
+                if all(idx in self.bottom_points for idx in indices):
+                    continue
+                elif all(idx in self.top_points for idx in indices):
+                    continue
+                elif all(idx in self.left_points for idx in indices):
+                    continue
+                elif all(idx in self.right_points for idx in indices):
+                    continue
+                else:
+                    self.faces.append(indices)
+
+        bpy.data.objects.remove(obj)
+
+    def gen(self, mesh: cad.Mesh, tf: cad.Transform) -> SocketHolder:
+        holder = SocketHolder(mesh)
+        mesh_points: List[cad.MeshPoint] = []
+        for p in self.points:
+            mp = mesh.add_point(p.transform(tf))
+            mesh_points.append(mp)
+
+        for f in self.faces:
+            mesh.add_tri(
+                mesh_points[f[0]], mesh_points[f[1]], mesh_points[f[2]]
             )
 
-        self.mesh.add_tri(
-            self.t21,
-            self.right_hole_top[0],
-            self.main_hole_top[main_top_right_end],
-        )
+        for idx in self.bottom_points:
+            holder.bottom_points.append(mesh_points[idx])
+        for idx in self.top_points:
+            holder.top_points.append(mesh_points[idx])
+        for idx in self.left_points:
+            holder.left_points.append(mesh_points[idx])
+        for idx in self.right_points:
+            holder.right_points.append(mesh_points[idx])
 
-        # Points from right hole to top-right corner
-        right_top_right_0 = int(len(self.right_hole_top) * 0.15)
-        for n in range(0, right_top_right_0):
-            self.mesh.add_tri(
-                self.t21, self.right_hole_top[n + 1], self.right_hole_top[n]
-            )
-
-        # Points from right hole to mid right
-        right_top_right_1 = int(len(self.right_hole_top) * 0.25)
-        for n in range(right_top_right_0, right_top_right_1):
-            self.mesh.add_tri(
-                self.t23, self.right_hole_top[n + 1], self.right_hole_top[n]
-            )
-
-        self.mesh.add_tri(
-            self.t21, self.t23, self.right_hole_top[right_top_right_0]
-        )
-
-        # Points from right hole to bottom right corner
-        right_bottom = int(len(self.right_hole_top) * 0.5)
-        for n in range(right_top_right_1, right_bottom):
-            self.mesh.add_tri(
-                self.t26, self.right_hole_top[n + 1], self.right_hole_top[n]
-            )
-
-        self.mesh.add_tri(
-            self.t23, self.t26, self.right_hole_top[right_top_right_1]
-        )
-        self.mesh.add_tri(
-            self.right_hole_top[right_bottom], self.t26, self.t28
-        )
-
-        self.t_mid = self.add_xyz(0, -7.5, self.z_top)
-        self.t18 = self.add_xyz(self.x1, self.y8, self.z_top)
-
-        # Points from right hole to mid point
-        right_left = int(len(self.right_hole_top) * 0.75)
-        for n in range(right_bottom, right_left):
-            self.mesh.add_tri(
-                self.t_mid, self.right_hole_top[n + 1], self.right_hole_top[n]
-            )
-
-        # triangles between main hole and right hole
-        n_right = len(self.right_hole_top) - 1
-        n_main = main_top_right_end
-        self.mesh.add_tri(
-            self.main_hole_top[n_main],
-            self.right_hole_top[0],
-            self.right_hole_top[n_right],
-        )
-        while n_right > right_left:
-            self.mesh.add_tri(
-                self.main_hole_top[n_main],
-                self.right_hole_top[n_right],
-                self.main_hole_top[n_main + 1],
-            )
-            self.mesh.add_tri(
-                self.main_hole_top[n_main + 1],
-                self.right_hole_top[n_right],
-                self.right_hole_top[n_right - 1],
-            )
-            n_main += 1
-            n_right -= 1
-
-        self.mesh.add_tri(
-            self.main_hole_top[n_main],
-            self.right_hole_top[right_left],
-            self.t_mid,
-        )
-        self.mesh.add_tri(
-            self.right_hole_top[right_bottom], self.t28, self.t_mid
-        )
-
-        self.mesh.add_tri(self.t18, self.t_mid, self.t28)
-
-        # triangles between main hole and left hole
-        left_right = int(len(self.left_hole_top) * 0.25)
-        n_left = left_right
-        main_left = int(len(self.main_hole_top) * 0.75)
-        self.mesh.add_tri(
-            self.left_hole_top[n_left], self.main_hole_top[n_main], self.t_mid
-        )
-        while n_main < main_left:
-            self.mesh.add_tri(
-                self.main_hole_top[n_main],
-                self.left_hole_top[n_left],
-                self.main_hole_top[n_main + 1],
-            )
-            self.mesh.add_tri(
-                self.main_hole_top[n_main + 1],
-                self.left_hole_top[n_left],
-                self.left_hole_top[n_left - 1],
-            )
-            n_main += 1
-            n_left -= 1
-            if n_left < 0:
-                n_left += len(self.left_hole_top)
-
-        self.mesh.add_tri(
-            self.t15, self.main_hole_top[n_main], self.left_hole_top[n_left]
-        )
-        self.mesh.add_tri(self.t15, self.t11, self.main_hole_top[n_main])
-
-        # Points from main hole to top_left
-        for n in range(n_main, len(self.main_hole_top) - 1):
-            self.mesh.add_tri(
-                self.t11, self.main_hole_top[n + 1], self.main_hole_top[n]
-            )
-        self.mesh.add_tri(
-            self.t11, self.main_hole_top[0], self.main_hole_top[n]
-        )
-
-        self.mesh.add_tri(self.t11, self.t21, self.main_hole_top[0])
-
-        # Points from left hole to left mid
-        left_left = int(len(self.left_hole_top) * 0.75)
-        for n in range(left_left, n_left):
-            self.mesh.add_tri(
-                self.t15, self.left_hole_top[n + 1], self.left_hole_top[n]
-            )
-
-        self.mesh.add_tri(self.t18, self.t15, self.left_hole_top[left_left])
-
-        # Points from left hole to left bottom
-        left_bottom = int(len(self.left_hole_top) * 0.5)
-        for n in range(left_bottom, left_left):
-            self.mesh.add_tri(
-                self.t18, self.left_hole_top[n + 1], self.left_hole_top[n]
-            )
-
-        self.mesh.add_tri(
-            self.t18, self.left_hole_top[left_bottom], self.t_mid
-        )
-
-        # Points from left hole to mid
-        for n in range(left_right, left_bottom):
-            self.mesh.add_tri(
-                self.t_mid, self.left_hole_top[n + 1], self.left_hole_top[n]
-            )
-
-    def gen_hole_points(self, r: float, x: float, y: float, fn: int) -> None:
-        top_points: List[cad.MeshPoint] = []
-        bottom_points: List[cad.MeshPoint] = []
-        two_pi = math.pi * 2.0
-        for n in range(fn):
-            angle = (two_pi / fn) * n
-            circle_x = (math.sin(angle) * r) + x
-            circle_y = (math.cos(angle) * r) + y
-
-            t = self.add_xyz(circle_x, circle_y, self.z_top)
-            b = self.add_xyz(circle_x, circle_y, self.z_bottom)
-
-            top_points.append(t)
-            bottom_points.append(b)
-
-        return top_points, bottom_points
-
-    def gen_top_face(self) -> None:
-        # Generate the top face needed if we are not connected to another
-        # socket above.
-        self.mesh.add_quad(self.t20, self.t10, self.b10, self.b20)
-
-    def gen_left_face(self) -> None:
-        # Generate the left face needed if we are not connected to another
-        # socket to the left.
-        self.mesh.add_quad(self.t01, self.t05, self.b05, self.b01)
-
-    def gen_bottom_face(self) -> None:
-        # Generate the bottom face needed if we are not connected to another
-        # socket below.
-        self.mesh.add_quad(self.t18, self.t28, self.b28, self.b18)
-        self.mesh.add_quad(self.t28, self.t38, self.b38, self.b28)
-
-    def gen_right_face(self) -> None:
-        # Generate the right face needed if we are not connected to another
-        # socket to the right.
-        self.mesh.add_quad(self.t43, self.t41, self.b41, self.b43)
-
-    def gen_side_faces(self) -> None:
-        self.b10 = self.add_xyz(self.x1, self.y0, self.z_bottom)
-        self.b20 = self.add_xyz(self.x2, self.y0, self.z_bottom)
-        self.b11 = self.add_xyz(self.x1, self.y1, self.z_bottom)
-        self.b21 = self.add_xyz(self.x2, self.y1, self.z_bottom)
-
-        self.mesh.add_quad(self.t10, self.t11, self.b11, self.b10)
-
-        self.b01 = self.add_xyz(self.x0, self.y1, self.z_bottom)
-        self.b05 = self.add_xyz(self.x0, self.y5, self.z_bottom)
-        self.b15 = self.add_xyz(self.x1, self.y5, self.z_bottom)
-
-        self.mesh.add_quad(self.t11, self.t01, self.b01, self.b11)
-        self.mesh.add_quad(self.t05, self.t15, self.b15, self.b05)
-
-        self.b17 = self.add_xyz(self.x1, self.y7, self.z_bottom)
-        self.b18 = self.add_xyz(self.x1, self.y8, self.z_bottom)
-        self.mesh.add_quad(self.t15, self.t18, self.b17, self.b15)
-        self.mesh.add_tri(self.b18, self.b17, self.t18)
-
-        self.b26 = self.add_xyz(self.x2, self.y6, self.z_bottom)
-        self.b36 = self.add_xyz(self.x3, self.y6, self.z_bottom)
-        self.b28 = self.add_xyz(self.x2, self.y8, self.z_bottom)
-        self.b38 = self.add_xyz(self.x3, self.y8, self.z_bottom)
-        self.mesh.add_quad(self.t38, self.t36, self.b36, self.b38)
-        self.mesh.add_quad(self.t36, self.t26, self.b26, self.b36)
-
-        self.b23 = self.add_xyz(self.x2, self.y3, self.z_bottom)
-        self.mesh.add_quad(self.t26, self.t23, self.b23, self.b26)
-        self.b43 = self.add_xyz(self.x4, self.y3, self.z_bottom)
-        self.mesh.add_quad(self.t23, self.t43, self.b43, self.b23)
-
-        self.b21 = self.add_xyz(self.x2, self.y1, self.z_bottom)
-        self.b41 = self.add_xyz(self.x4, self.y1, self.z_bottom)
-
-        self.mesh.add_quad(self.t41, self.t21, self.b21, self.b41)
-
-        self.b20 = self.add_xyz(self.x2, self.y0, self.z_bottom)
-        self.mesh.add_quad(self.t21, self.t20, self.b20, self.b21)
-
-    def gen_diode_holder(self) -> None:
-        self.z_diode_bottom = -3.0
-        wire_gap_width = 0.6
-
-        # top outer top left
-        self.diode_totl = self.add_xyz(
-            self.diode_x + (self.diode_outer_w * 0.5),
-            self.diode_y + (self.diode_outer_h * 0.5),
-            self.z_bottom,
-        )
-        # top outer mid left
-        self.diode_toml = self.add_xyz(
-            self.diode_x + (self.diode_outer_w * 0.5), 0.0, self.z_bottom
-        )
-        # top outer top mid-left
-        self.diode_totml = self.add_xyz(
-            self.diode_x + (wire_gap_width * 0.5),
-            self.diode_y + (self.diode_outer_h * 0.5),
-            self.z_bottom,
-        )
-        self.diode_totmr = self.add_xyz(
-            self.diode_x - (wire_gap_width * 0.5),
-            self.diode_y + (self.diode_outer_h * 0.5),
-            self.z_bottom,
-        )
-        self.diode_totr = self.add_xyz(
-            self.diode_x - (self.diode_outer_w * 0.5),
-            self.diode_y + (self.diode_outer_h * 0.5),
-            self.z_bottom,
-        )
-        self.diode_tobr = self.add_xyz(
-            self.diode_x - (self.diode_outer_w * 0.5),
-            self.diode_y - (self.diode_outer_h * 0.5),
-            self.z_bottom,
-        )
-        self.diode_tobmr = self.add_xyz(
-            self.diode_x - (wire_gap_width * 0.5),
-            self.diode_y - (self.diode_outer_h * 0.5),
-            self.z_bottom,
-        )
-        self.diode_tobml = self.add_xyz(
-            self.diode_x + (wire_gap_width * 0.5),
-            self.diode_y - (self.diode_outer_h * 0.5),
-            self.z_bottom,
-        )
-        # Note, the outer bottom left is actually at the same x location as
-        # the inner bottom leftj
-        self.diode_tobl = self.add_xyz(
-            self.diode_x + (self.diode_w * 0.5),
-            self.diode_y - (self.diode_outer_h * 0.5),
-            self.z_bottom,
-        )
-        self.diode_tibmr = self.add_xyz(
-            self.diode_x - (wire_gap_width * 0.5),
-            self.diode_y - (self.diode_h * 0.5),
-            self.z_bottom,
-        )
-        self.diode_tibml = self.add_xyz(
-            self.diode_x + (wire_gap_width * 0.5),
-            self.diode_y - (self.diode_h * 0.5),
-            self.z_bottom,
-        )
-        self.diode_tibl = self.add_xyz(
-            self.diode_x + (self.diode_w * 0.5),
-            self.diode_y - (self.diode_h * 0.5),
-            self.z_bottom,
-        )
-        self.diode_tibr = self.add_xyz(
-            self.diode_x - (self.diode_w * 0.5),
-            self.diode_y - (self.diode_h * 0.5),
-            self.z_bottom,
-        )
-        self.diode_titr = self.add_xyz(
-            self.diode_x - (self.diode_w * 0.5),
-            self.diode_y + (self.diode_h * 0.5),
-            self.z_bottom,
-        )
-
-        self.diode_titml = self.add_xyz(
-            self.diode_x + (wire_gap_width * 0.5),
-            self.diode_y + (self.diode_h * 0.5),
-            self.z_bottom,
-        )
-        self.diode_titmr = self.add_xyz(
-            self.diode_x - (wire_gap_width * 0.5),
-            self.diode_y + (self.diode_h * 0.5),
-            self.z_bottom,
-        )
-        self.diode_titl = self.add_xyz(
-            self.diode_x + (self.diode_w * 0.5),
-            self.diode_y + (self.diode_h * 0.5),
-            self.z_bottom,
-        )
-        self.diode_timl = self.add_xyz(
-            self.diode_x + (self.diode_w * 0.5), 0.0, self.z_bottom
-        )
-
-        self.diode_botl = self.add_xyz(
-            self.diode_x + (self.diode_outer_w * 0.5),
-            self.diode_y + (self.diode_outer_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_boml = self.add_xyz(
-            self.diode_x + (self.diode_outer_w * 0.5), 0, self.z_diode_bottom
-        )
-        self.diode_botml = self.add_xyz(
-            self.diode_x + (wire_gap_width * 0.5),
-            self.diode_y + (self.diode_outer_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_botmr = self.add_xyz(
-            self.diode_x - (wire_gap_width * 0.5),
-            self.diode_y + (self.diode_outer_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_botr = self.add_xyz(
-            self.diode_x - (self.diode_outer_w * 0.5),
-            self.diode_y + (self.diode_outer_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_bobr = self.add_xyz(
-            self.diode_x - (self.diode_outer_w * 0.5),
-            self.diode_y - (self.diode_outer_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_bobmr = self.add_xyz(
-            self.diode_x - (wire_gap_width * 0.5),
-            self.diode_y - (self.diode_outer_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_bobml = self.add_xyz(
-            self.diode_x + (wire_gap_width * 0.5),
-            self.diode_y - (self.diode_outer_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_bobl = self.add_xyz(
-            self.diode_x + (self.diode_w * 0.5),
-            self.diode_y - (self.diode_outer_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_bibmr = self.add_xyz(
-            self.diode_x - (wire_gap_width * 0.5),
-            self.diode_y - (self.diode_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_bibml = self.add_xyz(
-            self.diode_x + (wire_gap_width * 0.5),
-            self.diode_y - (self.diode_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_bibl = self.add_xyz(
-            self.diode_x + (self.diode_w * 0.5),
-            self.diode_y - (self.diode_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_bibr = self.add_xyz(
-            self.diode_x - (self.diode_w * 0.5),
-            self.diode_y - (self.diode_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_bitr = self.add_xyz(
-            self.diode_x - (self.diode_w * 0.5),
-            self.diode_y + (self.diode_h * 0.5),
-            self.z_diode_bottom,
-        )
-
-        self.diode_bitml = self.add_xyz(
-            self.diode_x + (wire_gap_width * 0.5),
-            self.diode_y + (self.diode_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_bitmr = self.add_xyz(
-            self.diode_x - (wire_gap_width * 0.5),
-            self.diode_y + (self.diode_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_bitl = self.add_xyz(
-            self.diode_x + (self.diode_w * 0.5),
-            self.diode_y + (self.diode_h * 0.5),
-            self.z_diode_bottom,
-        )
-        self.diode_biml = self.add_xyz(
-            self.diode_x + (self.diode_w * 0.5), 0.0, self.z_diode_bottom
-        )
-
-        # Vertical walls on left top side
-        self.mesh.add_quad(
-            self.diode_totl, self.diode_botl, self.diode_boml, self.diode_toml
-        )
-        self.mesh.add_quad(
-            self.diode_totl,
-            self.diode_totml,
-            self.diode_botml,
-            self.diode_botl,
-        )
-        self.mesh.add_quad(
-            self.diode_bitml,
-            self.diode_botml,
-            self.diode_totml,
-            self.diode_titml,
-        )
-        self.mesh.add_quad(
-            self.diode_bitl,
-            self.diode_bitml,
-            self.diode_titml,
-            self.diode_titl,
-        )
-        self.mesh.add_quad(
-            self.diode_biml, self.diode_bitl, self.diode_titl, self.diode_timl
-        )
-        # Bottom walls on left top side
-        self.mesh.add_quad(
-            self.diode_boml, self.diode_botl, self.diode_bitl, self.diode_biml
-        )
-        self.mesh.add_quad(
-            self.diode_botl,
-            self.diode_botml,
-            self.diode_bitml,
-            self.diode_bitl,
-        )
-
-        # Vertical walls on left bottom side
-        self.mesh.add_quad(
-            self.diode_bibml,
-            self.diode_bibl,
-            self.diode_tibl,
-            self.diode_tibml,
-        )
-        self.mesh.add_quad(
-            self.diode_bobml,
-            self.diode_bibml,
-            self.diode_tibml,
-            self.diode_tobml,
-        )
-        self.mesh.add_quad(
-            self.diode_bobl,
-            self.diode_bobml,
-            self.diode_tobml,
-            self.diode_tobl,
-        )
-        self.mesh.add_quad(
-            self.diode_bibl, self.diode_biml, self.diode_timl, self.diode_tibl
-        )
-        # Bottom wall on left bottom side
-        self.mesh.add_quad(
-            self.diode_bobl,
-            self.diode_bibl,
-            self.diode_bibml,
-            self.diode_bobml,
-        )
-
-        # Vertical walls on right side
-        self.mesh.add_quad(
-            self.diode_botr,
-            self.diode_botmr,
-            self.diode_totmr,
-            self.diode_totr,
-        )
-        self.mesh.add_quad(
-            self.diode_bobr, self.diode_botr, self.diode_totr, self.diode_tobr
-        )
-        self.mesh.add_quad(
-            self.diode_bobmr,
-            self.diode_bobr,
-            self.diode_tobr,
-            self.diode_tobmr,
-        )
-        self.mesh.add_quad(
-            self.diode_bibmr,
-            self.diode_bobmr,
-            self.diode_tobmr,
-            self.diode_tibmr,
-        )
-        self.mesh.add_quad(
-            self.diode_bibr,
-            self.diode_bibmr,
-            self.diode_tibmr,
-            self.diode_tibr,
-        )
-        self.mesh.add_quad(
-            self.diode_bitr, self.diode_bibr, self.diode_tibr, self.diode_titr
-        )
-        self.mesh.add_quad(
-            self.diode_bitmr,
-            self.diode_bitr,
-            self.diode_titr,
-            self.diode_titmr,
-        )
-        self.mesh.add_quad(
-            self.diode_botmr,
-            self.diode_bitmr,
-            self.diode_titmr,
-            self.diode_totmr,
-        )
-        # Bottom walls on right side
-        self.mesh.add_quad(
-            self.diode_botmr,
-            self.diode_botr,
-            self.diode_bitr,
-            self.diode_bitmr,
-        )
-        self.mesh.add_quad(
-            self.diode_botr, self.diode_bobr, self.diode_bibr, self.diode_bitr
-        )
-        self.mesh.add_quad(
-            self.diode_bibmr,
-            self.diode_bibr,
-            self.diode_bobr,
-            self.diode_bobmr,
-        )
-
-    def gen_bottom_clip(self) -> None:
-        self.z_clip_bottom = -3.55
-        self.z_clip_lower_bottom = -3.0
-        self.z_clip_lip_base = -3.05
-        self.z_clip_lip_top = -3.13
-        self.z_clip_lip_bottom = -3.23
-
-        self.cb18 = self.add_xyz(self.x1, self.y8, self.z_clip_bottom)
-        self.c17_0 = self.add_xyz(self.x1, self.y7, self.z_clip_lower_bottom)
-        self.c17_1 = self.add_xyz(self.x1, self.y7, self.z_clip_lip_base)
-        self.c17_2 = self.add_xyz(self.x1, self.y7 + 0.1, self.z_clip_lip_top)
-        self.c17_3 = self.add_xyz(
-            self.x1, self.y7 + 0.1, self.z_clip_lip_bottom
-        )
-        self.cb17 = self.add_xyz(self.x1, -7.28, self.z_clip_bottom)
-        self.mesh.add_quad(self.cb18, self.c17_0, self.b17, self.b18)
-        self.mesh.add_tri(self.cb18, self.c17_1, self.c17_0)
-        self.mesh.add_tri(self.cb18, self.cb17, self.c17_1)
-        self.mesh.add_tri(self.cb17, self.c17_3, self.c17_2)
-        self.mesh.add_tri(self.cb17, self.c17_2, self.c17_1)
-
-        x_end = 4.2
-        self.bx7 = self.add_xyz(x_end, self.y7, self.z_bottom)
-        self.cx7_0 = self.add_xyz(x_end, self.y7, self.z_clip_lower_bottom)
-        self.cx7_1 = self.add_xyz(x_end, self.y7, self.z_clip_lip_base)
-        self.cx7_2 = self.add_xyz(x_end, self.y7 + 0.1, self.z_clip_lip_top)
-        self.cx7_3 = self.add_xyz(x_end, self.y7 + 0.1, self.z_clip_lip_bottom)
-        self.cbx7 = self.add_xyz(x_end, -7.28, self.z_clip_bottom)
-        self.cbx8 = self.add_xyz(x_end, self.y8, self.z_clip_bottom)
-        self.mesh.add_quad(self.c17_1, self.cx7_1, self.cx7_0, self.c17_0)
-        self.mesh.add_quad(self.c17_0, self.cx7_0, self.bx7, self.b17)
-        self.mesh.add_quad(self.c17_2, self.cx7_2, self.cx7_1, self.c17_1)
-        self.mesh.add_quad(self.c17_3, self.cx7_3, self.cx7_2, self.c17_2)
-        self.mesh.add_quad(self.cb17, self.cbx7, self.cx7_3, self.c17_3)
-        self.mesh.add_quad(self.cb18, self.cbx8, self.cbx7, self.cb17)
-
-        # bottom vertical face
-        self.cx8_0 = self.add_xyz(x_end, self.y8, self.z_clip_lower_bottom)
-        self.c38_0 = self.add_xyz(self.x3, self.y8, self.z_clip_lower_bottom)
-        self.mesh.add_tri(self.b18, self.b38, self.cx8_0)
-        self.mesh.add_tri(self.c38_0, self.cx8_0, self.b38)
-        self.mesh.add_quad(self.cbx8, self.cb18, self.b18, self.cx8_0)
-
-        self.mesh.add_quad(self.cx7_1, self.cbx8, self.cx8_0, self.cx7_0)
-        self.mesh.add_tri(self.cbx7, self.cbx8, self.cx7_1)
-        self.mesh.add_tri(self.cbx7, self.cx7_1, self.cx7_2)
-        self.mesh.add_tri(self.cbx7, self.cx7_2, self.cx7_3)
-
-        self.mesh.add_tri(self.cx7_0, self.cx8_0, self.c38_0)
-
-    def gen_lower_surface(self) -> None:
-        self.mesh.add_quad(self.b20, self.b10, self.b11, self.b21)
-
-        self.b22_5 = self.add_xyz(self.x2, self.y3 + 1.0, self.z_bottom)
-        self.mesh.add_quad(self.b41, self.b21, self.b22_5, self.b43)
-        self.mesh.add_tri(self.b43, self.b22_5, self.b23)
-
-        main_right = int(len(self.main_hole_bottom) * 0.25)
-        self.mesh.add_tri(
-            self.b21, self.main_hole_bottom[main_right], self.b22_5
-        )
-
-        # Points from the main hole to the top right
-        for n in range(0, main_right):
-            self.mesh.add_tri(
-                self.b21,
-                self.main_hole_bottom[n],
-                self.main_hole_bottom[n + 1],
-            )
-
-        self.mesh.add_tri(self.b21, self.b01, self.main_hole_bottom[0])
-
-        main_left = int(len(self.main_hole_bottom) * 0.75)
-        # Points from the main hole to the top right
-        for n in range(main_left, len(self.main_hole_bottom) - 1):
-            self.mesh.add_tri(
-                self.diode_totl,
-                self.main_hole_bottom[n],
-                self.main_hole_bottom[n + 1],
-            )
-        self.mesh.add_tri(
-            self.diode_totl,
-            self.main_hole_bottom[-1],
-            self.main_hole_bottom[0],
-        )
-        self.mesh.add_tri(self.diode_totl, self.main_hole_bottom[0], self.b01)
-
-        self.mesh.add_tri(
-            self.diode_totl, self.diode_toml, self.main_hole_bottom[main_left]
-        )
-        self.mesh.add_tri(self.b01, self.diode_totml, self.diode_totl)
-        self.mesh.add_tri(self.b01, self.diode_totmr, self.diode_totml)
-        self.mesh.add_tri(self.b01, self.diode_totr, self.diode_totmr)
-        self.mesh.add_quad(
-            self.b01, self.b05, self.diode_tobr, self.diode_totr
-        )
-
-        self.mesh.add_quad(
-            self.b05, self.b15, self.diode_tobmr, self.diode_tobr
-        )
-        self.mesh.add_tri(self.b15, self.diode_tobml, self.diode_tobmr)
-        self.mesh.add_tri(self.b15, self.diode_tobl, self.diode_tobml)
-
-        self.mesh.add_quad(
-            self.diode_totml,
-            self.diode_totmr,
-            self.diode_titmr,
-            self.diode_titml,
-        )
-        self.mesh.add_quad(
-            self.diode_tibml,
-            self.diode_tibmr,
-            self.diode_tobmr,
-            self.diode_tobml,
-        )
-        self.mesh.add_tri(self.diode_timl, self.diode_titl, self.diode_titml)
-        self.mesh.add_tri(self.diode_timl, self.diode_titml, self.diode_titr)
-        self.mesh.add_tri(self.diode_timl, self.diode_titr, self.diode_tibr)
-        self.mesh.add_tri(self.diode_timl, self.diode_tibr, self.diode_tibmr)
-        self.mesh.add_tri(self.diode_timl, self.diode_tibmr, self.diode_tibml)
-        self.mesh.add_tri(self.diode_timl, self.diode_tibml, self.diode_tibl)
+        return holder
 
 
-def socket_holder2() -> bpy.types.Object:
+def cad_socket_holder() -> bpy.types.Object:
+    """
+    Return the original socket holder object that we generate, before turning
+    it into a cad.Mesh.
+    """
+    return SocketHolderGenerator().gen()
+
+
+def socket_holder() -> bpy.types.Object:
     mesh = cad.Mesh()
-    transform = cad.Transform()
-    SocketHolder2(mesh, transform).gen()
-    return blender_util.new_mesh_obj("socket_holder2", mesh)
+    builder = SocketHolderBuilder()
+    holder = builder.gen(mesh, cad.Transform())
+    holder.close_bottom_face()
+    holder.close_top_face()
+    holder.close_left_face()
+    holder.close_right_face()
+    return blender_util.new_mesh_obj("socket_holder", mesh)

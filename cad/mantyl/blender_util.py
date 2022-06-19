@@ -181,6 +181,9 @@ class TransformContext:
         matrix = mathutils.Matrix(tf._data)
         bmesh.ops.transform(self.bmesh, verts=self.bmesh.verts, matrix=matrix)
 
+    def triangulate(self) -> None:
+        bmesh.ops.triangulate(self.bmesh, faces=self.bmesh.faces[:])
+
 
 def set_shading_mode(mode: str) -> None:
     for area in bpy.context.workspace.screens[0].areas:
