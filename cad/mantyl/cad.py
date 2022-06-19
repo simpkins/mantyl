@@ -287,6 +287,28 @@ def cube(x: float, y: float, z: float) -> Mesh:
     return mesh
 
 
+def range_cube(x_range: Tuple[float, float], y_range: Tuple[float, float], z_range: Tuple[float, float]) -> Mesh:
+    mesh = Mesh()
+    b_tl = mesh.add_xyz(x_range[0], y_range[1], z_range[0])
+    b_tr = mesh.add_xyz(x_range[1], y_range[1], z_range[0])
+    b_br = mesh.add_xyz(x_range[1], y_range[0], z_range[0])
+    b_bl = mesh.add_xyz(x_range[0], y_range[0], z_range[0])
+
+    t_tl = mesh.add_xyz(x_range[0], y_range[1], z_range[1])
+    t_tr = mesh.add_xyz(x_range[1], y_range[1], z_range[1])
+    t_br = mesh.add_xyz(x_range[1], y_range[0], z_range[1])
+    t_bl = mesh.add_xyz(x_range[0], y_range[0], z_range[1])
+
+    mesh.add_quad(b_tl, b_bl, b_br, b_tr)
+    mesh.add_quad(t_tl, t_tr, t_br, t_bl)
+    mesh.add_quad(t_br, t_tr, b_tr, b_br)
+    mesh.add_quad(t_bl, t_br, b_br, b_bl)
+    mesh.add_quad(t_tl, t_bl, b_bl, b_tl)
+    mesh.add_quad(t_tr, t_tl, b_tl, b_tr)
+
+    return mesh
+
+
 def cylinder(
     r: float, h: float, fn: int = 24, rotation: float = 360.0
 ) -> Mesh:
