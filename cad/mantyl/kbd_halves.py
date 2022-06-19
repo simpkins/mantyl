@@ -10,7 +10,7 @@ import bpy
 from .foot import add_feet
 from .i2c_conn import add_i2c_connector
 from .keyboard import Keyboard, gen_keyboard
-from .key_socket_holder import socket_holder, SocketParams
+from .key_socket_holder import SocketHolderBuilder, SocketParams
 from .screw_holes import add_screw_holes
 
 
@@ -26,109 +26,78 @@ def right_half() -> bpy.types.Object:
     return kbd_obj
 
 
+def right_keyboard_grid() -> bpy.types.Object:
+    kbd = Keyboard()
+    kbd.gen_main_grid()
+    kbd.gen_main_grid_edges()
+    mesh = blender_util.blender_mesh("keyboard_mesh", kbd.mesh)
+    return blender_util.new_mesh_obj("keyboard2", mesh)
+
+
 def right_socket_grid() -> bpy.types.Object:
     from . import blender_util
     from . import cad
 
-    z_offset = -0.2
-    collection = bpy.data.collections[0]
+    builder = SocketHolderBuilder()
+    mesh = cad.Mesh()
 
     kbd = Keyboard()
-    holder = socket_holder()
+    base_transform = cad.Transform().translate(0.0, 0.0, -0.2)
 
-    def add_holder(col: int, row: int) -> byp.types.Object:
-        h = bpy.data.objects.new("socket_holder", holder.data.copy())
-        collection.objects.link(h)
-        with blender_util.TransformContext(h) as ctx:
-            if row != 0:
-                ctx.rotate(180, "Z")
-            ctx.translate(0, 0, z_offset)
-            ctx.transform(kbd._keys[col][row].transform)
-
-        return h
-
-    full_size = 17.4
-    z_top = z_offset
-    z_bottom = z_offset - SocketParams().thickness
-
-    def join_vertical(k1: KeyHole, k2: KeyHole) -> None:
-        x_left = -5
-        x_right = 2.5
-        y_top = full_size * 0.499
-        y_bottom = -full_size * 0.499
-
-        ttl = k1.add_point(x_left, y_bottom, z_top)
-        ttr = k1.add_point(x_right, y_bottom, z_top)
-        tbl = k2.add_point(x_left, y_top, z_top)
-        tbr = k2.add_point(x_right, y_top, z_top)
-        btl = k1.add_point(x_left, y_bottom, z_bottom)
-        btr = k1.add_point(x_right, y_bottom, z_bottom)
-        bbl = k2.add_point(x_left, y_top, z_bottom)
-        bbr = k2.add_point(x_right, y_top, z_bottom)
-
-        kbd.mesh.add_quad(ttl, ttr, tbr, tbl)
-        kbd.mesh.add_quad(bbl, bbr, btr, btl)
-        kbd.mesh.add_quad(tbl, tbr, bbr, bbl)
-        kbd.mesh.add_quad(ttl, tbl, bbl, btl)
-        kbd.mesh.add_quad(ttr, ttl, btl, btr)
-        kbd.mesh.add_quad(tbr, ttr, btr, bbr)
-
-    def join_horizontal(k1: KeyHole, k2: KeyHole) -> None:
-        x_left = -full_size * 0.499
-        x_right = full_size * 0.499
-        y_top = 1
-        y_bottom = -5
-
-        ttl = k1.add_point(x_right, y_top, z_top)
-        ttr = k2.add_point(x_left, y_top, z_top)
-        tbl = k1.add_point(x_right, y_bottom, z_top)
-        tbr = k2.add_point(x_left, y_bottom, z_top)
-        btl = k1.add_point(x_right, y_top, z_bottom)
-        btr = k2.add_point(x_left, y_top, z_bottom)
-        bbl = k1.add_point(x_right, y_bottom, z_bottom)
-        bbr = k2.add_point(x_left, y_bottom, z_bottom)
-
-        kbd.mesh.add_quad(ttl, ttr, tbr, tbl)
-        kbd.mesh.add_quad(bbl, bbr, btr, btl)
-        kbd.mesh.add_quad(tbl, tbr, bbr, bbl)
-        kbd.mesh.add_quad(ttl, tbl, bbl, btl)
-        kbd.mesh.add_quad(ttr, ttl, btl, btr)
-        kbd.mesh.add_quad(tbr, ttr, btr, bbr)
-
-    # Connections between vertical keys on each column
-    join_vertical(kbd.k02, kbd.k03)
-    join_vertical(kbd.k03, kbd.k04)
-    for row in range(4):
-        join_vertical(kbd._keys[1][row], kbd._keys[1][row + 1])
-    for col in range(2, 7):
-        for row in range(5):
-            join_vertical(kbd._keys[col][row], kbd._keys[col][row + 1])
-
-    # Connections between horizontal keys on each row
-    join_horizontal(kbd.k02, kbd.k12)
-    join_horizontal(kbd.k03, kbd.k13)
-    join_horizontal(kbd.k04, kbd.k14)
-    for col in range(1, 6):
-        for row in range(5):
-            join_horizontal(kbd._keys[col][row], kbd._keys[col + 1][row])
-    for col in range(2, 6):
-        join_horizontal(kbd._keys[col][5], kbd._keys[col + 1][5])
-
-    mesh = blender_util.blender_mesh("keyboard_mesh", kbd.mesh)
-    obj = blender_util.new_mesh_obj("keyboard", mesh)
+    holders: List[List[Optional[KeyHole]]] = []
+    for col in range(7):
+        holders.append([None] * 6)
 
     # Add all of the socket holders
     for col, row in kbd.key_indices():
-        h = add_holder(col, row)
-        blender_util.union(obj, h)
+        # Flip all socket holders, except for the top row where they would
+        # otherwise hit the back walls
+        flip = row != 0
 
-    # Delete the original socket holder reference object
-    bpy.data.objects.remove(holder)
+        tf = base_transform.transform(kbd._keys[col][row].transform)
+        h = builder.gen(mesh, tf, flip=flip)
+        holders[col][row] = h
 
-    return obj
+    # Connections between vertical keys on each column
+    holders[0][2].join_bottom(holders[0][3])
+    holders[0][3].join_bottom(holders[0][4])
+    for row in range(4):
+        holders[1][row].join_bottom(holders[1][row + 1])
+    for col in range(2, 7):
+        for row in range(5):
+            holders[col][row].join_bottom(holders[col][row + 1])
 
-    kbd2 = Keyboard()
-    kbd2.gen_main_grid()
-    kbd2.gen_main_grid_edges()
-    mesh2 = blender_util.blender_mesh("keyboard_mesh", kbd2.mesh)
-    obj2 = blender_util.new_mesh_obj("keyboard2", mesh2)
+    # Connections between horizontal keys on each row
+    holders[0][2].join_right(holders[1][2])
+    holders[0][3].join_right(holders[1][3])
+    holders[0][4].join_right(holders[1][4])
+    for col in range(1, 6):
+        for row in range(5):
+            holders[col][row].join_right(holders[col + 1][row])
+    for col in range(2, 6):
+        holders[col][5].join_right(holders[col + 1][5])
+
+    # Left faces
+    holders[1][0].close_left_face()
+    holders[1][1].close_left_face()
+    holders[0][2].close_left_face()
+    holders[0][3].close_left_face()
+    holders[0][4].close_left_face()
+    holders[2][5].close_left_face()
+
+    # Bottom faces
+    holders[0][4].close_bottom_face()
+    holders[1][4].close_bottom_face()
+    for col in range(2, 7):
+        holders[col][5].close_bottom_face()
+
+    # Right faces
+    for row in range(6):
+        holders[6][row].close_right_face()
+
+    # Top faces
+    holders[0][2].close_top_face()
+    for col in range(1, 7):
+        holders[col][0].close_top_face()
+
+    return blender_util.new_mesh_obj("socket_holders", mesh)

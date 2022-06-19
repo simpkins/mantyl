@@ -736,6 +736,76 @@ class SocketHolder:
         for idx in range(1, len(top)):
             self.mesh.add_tri(top[idx - 1], top[idx], bottom[-1])
 
+    def join_bottom(self, other: SocketHolder) -> None:
+        """Connect this SocketHolder to one below it."""
+        # left side face
+        left_tl = self.bottom_points[0][0]
+        left_bl = self.bottom_points[1][0]
+        left_tr = other.top_points[0][-1]
+        left_br = other.top_points[1][-1]
+        self.mesh.add_quad(left_tl, left_tr, left_br, left_bl)
+
+        # right side face
+        right_tl = other.top_points[0][0]
+        right_bl = other.top_points[1][0]
+        right_tr = self.bottom_points[0][-1]
+        right_br = self.bottom_points[1][-1]
+        self.mesh.add_quad(right_tl, right_tr, right_br, right_bl)
+
+        # bottom face
+        for n in range(0, len(other.top_points[1]) - 1):
+            self.mesh.add_tri(
+                self.bottom_points[1][0],
+                other.top_points[1][n + 1],
+                other.top_points[1][n],
+            )
+        for n in range(0, len(self.bottom_points[1]) - 1):
+            self.mesh.add_tri(
+                other.top_points[1][0],
+                self.bottom_points[1][n + 1],
+                self.bottom_points[1][n],
+            )
+
+        # top face
+        for n in range(0, len(other.top_points[0]) - 1):
+            self.mesh.add_tri(
+                self.bottom_points[0][0],
+                other.top_points[0][n],
+                other.top_points[0][n + 1],
+            )
+        for n in range(0, len(self.bottom_points[0]) - 1):
+            self.mesh.add_tri(
+                other.top_points[0][0],
+                self.bottom_points[0][n],
+                self.bottom_points[0][n + 1],
+            )
+
+    def join_right(self, other: SocketHolder) -> None:
+        """Connect this SocketHolder to one to its right."""
+        # lower vertical face
+        bottom_tl = self.right_points[0][0]
+        bottom_bl = self.right_points[1][0]
+        bottom_tr = other.left_points[0][-1]
+        bottom_br = other.left_points[1][-1]
+        self.mesh.add_quad(bottom_tl, bottom_tr, bottom_br, bottom_bl)
+
+        # upper vertical face
+        top_tl = other.left_points[0][0]
+        top_bl = other.left_points[1][0]
+        top_tr = self.right_points[0][-1]
+        top_br = self.right_points[1][-1]
+        self.mesh.add_quad(top_tl, top_tr, top_br, top_bl)
+
+        # bottom face
+        assert len(self.right_points[1]) == 2
+        assert len(other.left_points[1]) == 2
+        self.mesh.add_quad(self.right_points[1][0], other.left_points[1][1], other.left_points[1][0], self.right_points[1][1])
+
+        # top face
+        assert len(self.right_points[0]) == 2
+        assert len(other.left_points[0]) == 2
+        self.mesh.add_quad(self.right_points[0][0], self.right_points[0][1], other.left_points[0][0], other.left_points[0][1])
+
 
 class SocketHolderBuilder:
     def __init__(self) -> None:
@@ -842,7 +912,12 @@ class SocketHolderBuilder:
 
         return top, bottom
 
-    def gen(self, mesh: cad.Mesh, tf: cad.Transform) -> SocketHolder:
+    def gen(
+        self, mesh: cad.Mesh, tf: cad.Transform, flip: bool = False
+    ) -> SocketHolder:
+        if flip:
+            tf = cad.Transform().rotate(0.0, 0.0, 180.0).transform(tf)
+
         holder = SocketHolder(mesh)
         mesh_points: List[cad.MeshPoint] = []
         for p in self.points:
@@ -866,6 +941,17 @@ class SocketHolderBuilder:
         holder.top_points = to_mesh_points(self.top_points)
         holder.left_points = to_mesh_points(self.left_points)
         holder.right_points = to_mesh_points(self.right_points)
+
+        if flip:
+            holder.top_points, holder.bottom_points = (
+                holder.bottom_points,
+                holder.top_points,
+            )
+            holder.left_points, holder.right_points = (
+                holder.right_points,
+                holder.left_points,
+            )
+
         return holder
 
 
@@ -877,10 +963,10 @@ def cad_socket_holder() -> bpy.types.Object:
     return SocketHolderGenerator().gen()
 
 
-def socket_holder() -> bpy.types.Object:
+def socket_holder(flip: bool = False) -> bpy.types.Object:
     mesh = cad.Mesh()
     builder = SocketHolderBuilder()
-    holder = builder.gen(mesh, cad.Transform())
+    holder = builder.gen(mesh, cad.Transform(), flip=flip)
     holder.close_bottom_face()
     holder.close_top_face()
     holder.close_left_face()
