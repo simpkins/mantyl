@@ -287,7 +287,11 @@ def cube(x: float, y: float, z: float) -> Mesh:
     return mesh
 
 
-def range_cube(x_range: Tuple[float, float], y_range: Tuple[float, float], z_range: Tuple[float, float]) -> Mesh:
+def range_cube(
+    x_range: Tuple[float, float],
+    y_range: Tuple[float, float],
+    z_range: Tuple[float, float],
+) -> Mesh:
     mesh = Mesh()
     b_tl = mesh.add_xyz(x_range[0], y_range[1], z_range[0])
     b_tr = mesh.add_xyz(x_range[1], y_range[1], z_range[0])
