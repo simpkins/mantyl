@@ -8,7 +8,7 @@ from __future__ import annotations
 import bpy
 
 import math
-from typing import List
+from typing import Callable, List, Tuple
 
 from . import blender_util, cad
 
@@ -450,7 +450,9 @@ class DiodeClip:
         self.top_wall_thickness = 0.75
         self.diode_x = -6.35
         self.diode_y = 0.5
-        self.top_y = self.diode_y - (self.diode_h * 0.5) - self.top_wall_thickness
+        self.top_y = (
+            self.diode_y - (self.diode_h * 0.5) - self.top_wall_thickness
+        )
         self.right_x = self.diode_x + 1.9
         self.top_z = self.z_clip_top
         self.bottom_z = self.z_clip_bottom
@@ -602,25 +604,53 @@ class SocketHolderGenerator:
 
         z_base = params.z_bottom - base_h
 
-        base = blender_range_cube((x - base_r_x, x + base_r_x), (y - base_r_y, y + base_r_y), (params.z_bottom, z_base))
+        base = blender_range_cube(
+            (x - base_r_x, x + base_r_x),
+            (y - base_r_y, y + base_r_y),
+            (params.z_bottom, z_base),
+        )
 
         # Middle tower
         r_x = w * 0.5
-        tower = blender_range_cube((x - r_x, x + r_x), (y - base_r_y, y - base_r_y + d), (z_base, z_base - h))
+        tower = blender_range_cube(
+            (x - r_x, x + r_x),
+            (y - base_r_y, y - base_r_y + d),
+            (z_base, z_base - h),
+        )
         blender_util.union(base, tower)
-        top = blender_range_cube((x - r_x, x + r_x), (y - base_r_y, y - base_r_y + d + lip_d), (z_base - h, z_base - h - lip_h))
+        top = blender_range_cube(
+            (x - r_x, x + r_x),
+            (y - base_r_y, y - base_r_y + d + lip_d),
+            (z_base - h, z_base - h - lip_h),
+        )
         blender_util.union(base, top)
 
         # Left tower
-        tower = blender_range_cube((x - base_r_x, x - base_r_x + w), (y + base_r_y - d, y + base_r_y), (z_base, z_base - h))
+        tower = blender_range_cube(
+            (x - base_r_x, x - base_r_x + w),
+            (y + base_r_y - d, y + base_r_y),
+            (z_base, z_base - h),
+        )
         blender_util.union(base, tower)
-        top = blender_range_cube((x - base_r_x, x - base_r_x + w), (y + base_r_y - d - lip_d, y + base_r_y), (z_base - h, z_base - h - lip_h))
+        top = blender_range_cube(
+            (x - base_r_x, x - base_r_x + w),
+            (y + base_r_y - d - lip_d, y + base_r_y),
+            (z_base - h, z_base - h - lip_h),
+        )
         blender_util.union(base, top)
 
         # Right tower
-        tower = blender_range_cube((x + base_r_x - w, x + base_r_x), (y + base_r_y - d, y + base_r_y), (z_base, z_base - h))
+        tower = blender_range_cube(
+            (x + base_r_x - w, x + base_r_x),
+            (y + base_r_y - d, y + base_r_y),
+            (z_base, z_base - h),
+        )
         blender_util.union(base, tower)
-        top = blender_range_cube((x + base_r_x - w, x + base_r_x), (y + base_r_y - d - lip_d, y + base_r_y), (z_base - h, z_base - h - lip_h))
+        top = blender_range_cube(
+            (x + base_r_x - w, x + base_r_x),
+            (y + base_r_y - d - lip_d, y + base_r_y),
+            (z_base - h, z_base - h - lip_h),
+        )
         blender_util.union(base, top)
 
         return base
@@ -677,51 +707,30 @@ class SocketHolder:
     def __init__(self, mesh: cad.Mesh) -> None:
         self.mesh = mesh
         # Points for the faces that may connect to adjacent holders
-        # in the keyboard grid.
-        self.top_points: List[MeshPoint] = []
-        self.bottom_points: List[MeshPoint] = []
-        self.left_points: List[MeshPoint] = []
-        self.right_points: List[MeshPoint] = []
+        # in the keyboard grid.  These are split by the points on the top and
+        # bottom of the face.  Within each set of top and bottom, the points
+        # are sorted from left to right when looking at the front of the face.
+        self.top_points: Tuple[List[MeshPoint], List[MeshPoint]] = []
+        self.bottom_points: Tuple[List[MeshPoint], List[MeshPoint]] = []
+        self.left_points: Tuple[List[MeshPoint], List[MeshPoint]] = []
+        self.right_points: Tuple[List[MeshPoint], List[MeshPoint]] = []
 
     def close_bottom_face(self) -> None:
-        top, bottom = self._split_top_bottom(self.bottom_points)
-        top.sort(key=lambda mp: mp.x)
-        bottom.sort(key=lambda mp: mp.x)
-        self._close_face(top, bottom)
+        self._close_face(self.bottom_points)
 
     def close_top_face(self) -> None:
-        top, bottom = self._split_top_bottom(self.top_points)
-        top.sort(key=lambda mp: -mp.x)
-        bottom.sort(key=lambda mp: -mp.x)
-        self._close_face(top, bottom)
+        self._close_face(self.top_points)
 
     def close_left_face(self) -> None:
-        top, bottom = self._split_top_bottom(self.left_points)
-        top.sort(key=lambda mp: -mp.y)
-        bottom.sort(key=lambda mp: -mp.y)
-        self._close_face(top, bottom)
+        self._close_face(self.left_points)
 
     def close_right_face(self) -> None:
-        top, bottom = self._split_top_bottom(self.right_points)
-        top.sort(key=lambda mp: mp.y)
-        bottom.sort(key=lambda mp: mp.y)
-        self._close_face(top, bottom)
+        self._close_face(self.right_points)
 
-    def _split_top_bottom(self, points: List[MeshPoint]) -> Tuple[List[MeshPoint], List[MeshPoint]]:
-        tol = 0.00001
-        params = SocketParams()
-        top: List[MeshPoint] = []
-        bottom: List[MeshPoint] = []
-        for p in points:
-            if math.isclose(p.z, params.z_top, abs_tol=tol):
-                top.append(p)
-            else:
-                assert math.isclose(p.z, params.z_bottom, abs_tol=tol)
-                bottom.append(p)
-
-        return top, bottom
-
-    def _close_face(self, top: List[MeshPoint], bottom: List[MeshPoint]) -> None:
+    def _close_face(
+        self, points: Tuple[List[MeshPoint], List[MeshPoint]]
+    ) -> None:
+        top, bottom = points
         for idx in range(1, len(bottom)):
             self.mesh.add_tri(top[0], bottom[idx], bottom[idx - 1])
         for idx in range(1, len(top)):
@@ -734,11 +743,19 @@ class SocketHolderBuilder:
         self.faces: List[Tuple[int, int, int]] = []
 
         # Points around the faces that may connect to neighboring socket
-        # holders in the keyboard grid.
-        self.bottom_points: Set[int] = set()
-        self.top_points: Set[int] = set()
-        self.left_points: Set[int] = set()
-        self.right_points: Set[int] = set()
+        # holders in the keyboard grid.  Each list is split into 2 tuples of
+        # the top and bottom points.  Among the top and bottom points, these
+        # are sorted from left to right when looking at the face's front.
+        self.bottom_points: Tuple[List[int], List[int]] = ([], [])
+        self.top_points: Tuple[List[int], List[int]] = ([], [])
+        self.left_points: Tuple[List[int], List[int]] = ([], [])
+        self.right_points: Tuple[List[int], List[int]] = ([], [])
+
+        # Sets of the face points, before splitting and sorting
+        bottom_point_set: Set[int] = set()
+        top_point_set: Set[int] = set()
+        left_point_set: Set[int] = set()
+        right_point_set: Set[int] = set()
 
         params = SocketParams()
 
@@ -762,13 +779,13 @@ class SocketHolderBuilder:
                         and v.co.x <= (params.x_mid_right + tol)
                         and v.co.z >= (params.z_bottom - tol)
                     ):
-                        self.bottom_points.add(v.index)
+                        bottom_point_set.add(v.index)
                 if math.isclose(v.co.y, params.y_top, abs_tol=tol):
-                    self.top_points.add(v.index)
+                    top_point_set.add(v.index)
                 if math.isclose(v.co.x, params.x_left, abs_tol=tol):
-                    self.left_points.add(v.index)
+                    left_point_set.add(v.index)
                 if math.isclose(v.co.x, params.x_right, abs_tol=tol):
-                    self.right_points.add(v.index)
+                    right_point_set.add(v.index)
 
             for f in ctx.bmesh.faces:
                 assert len(f.verts) == 3
@@ -779,18 +796,51 @@ class SocketHolderBuilder:
                     f.verts[1].index,
                     f.verts[0].index,
                 )
-                if all(idx in self.bottom_points for idx in indices):
+                if all(idx in bottom_point_set for idx in indices):
                     continue
-                elif all(idx in self.top_points for idx in indices):
+                elif all(idx in top_point_set for idx in indices):
                     continue
-                elif all(idx in self.left_points for idx in indices):
+                elif all(idx in left_point_set for idx in indices):
                     continue
-                elif all(idx in self.right_points for idx in indices):
+                elif all(idx in right_point_set for idx in indices):
                     continue
                 else:
                     self.faces.append(indices)
 
+        self.bottom_points = self._split_top_bottom(
+            bottom_point_set, lambda idx: self.points[idx].x
+        )
+        self.top_points = self._split_top_bottom(
+            top_point_set, lambda idx: -self.points[idx].x
+        )
+        self.left_points = self._split_top_bottom(
+            left_point_set, lambda idx: -self.points[idx].y
+        )
+        self.right_points = self._split_top_bottom(
+            right_point_set, lambda idx: self.points[idx].y
+        )
+
         bpy.data.objects.remove(obj)
+
+    def _split_top_bottom(
+        self, points: Set[int], sort_key: Callable[[int], float]
+    ) -> Tuple[List[int], List[int]]:
+        tol = 0.00001
+        params = SocketParams()
+        top: List[int] = []
+        bottom: List[int] = []
+        for idx in points:
+            p = self.points[idx]
+            if math.isclose(p.z, params.z_top, abs_tol=tol):
+                top.append(idx)
+            else:
+                assert math.isclose(p.z, params.z_bottom, abs_tol=tol)
+                bottom.append(idx)
+
+        top.sort(key=sort_key)
+        bottom.sort(key=sort_key)
+
+        return top, bottom
 
     def gen(self, mesh: cad.Mesh, tf: cad.Transform) -> SocketHolder:
         holder = SocketHolder(mesh)
@@ -804,15 +854,18 @@ class SocketHolderBuilder:
                 mesh_points[f[0]], mesh_points[f[1]], mesh_points[f[2]]
             )
 
-        for idx in self.bottom_points:
-            holder.bottom_points.append(mesh_points[idx])
-        for idx in self.top_points:
-            holder.top_points.append(mesh_points[idx])
-        for idx in self.left_points:
-            holder.left_points.append(mesh_points[idx])
-        for idx in self.right_points:
-            holder.right_points.append(mesh_points[idx])
+        def to_mp(indices: List[int]) -> List[MeshPoint]:
+            return [mesh_points[idx] for idx in indices]
 
+        def to_mesh_points(
+            indices: Tuple[List[int], List[int]]
+        ) -> Tuple[List[MeshPoint], List[MeshPoint]]:
+            return to_mp(indices[0]), to_mp(indices[1])
+
+        holder.bottom_points = to_mesh_points(self.bottom_points)
+        holder.top_points = to_mesh_points(self.top_points)
+        holder.left_points = to_mesh_points(self.left_points)
+        holder.right_points = to_mesh_points(self.right_points)
         return holder
 
 
