@@ -7,14 +7,15 @@ import bpy
 
 from .blender_util import delete_all
 from . import kbd_halves
-from .key_socket_holder import socket_holder
+from .key_socket_holder import socket_holder, socket_holder2
 
 
 def regenerate() -> None:
     delete_all()
     # kbd_halves.right_half()
-    kbd_halves.right_socket_grid()
-    # socket_holder()
+    # kbd_halves.right_socket_grid()
+    socket_holder()
+    socket_holder2()
 
     bpy.ops.object.mode_set(mode="EDIT")
     # blender_util.set_shading_mode("WIREFRAME")
