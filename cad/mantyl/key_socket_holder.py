@@ -19,6 +19,10 @@ def blender_cube(
     mesh = cad.cube(x, y, z)
     return blender_util.new_mesh_obj(name, mesh)
 
+def blender_range_cube(x_range: Tuple[float, float], y_range: Tuple[float, float], z_range: Tuple[float, float], name: str = "cube") -> bpy.types.Object:
+    mesh = cad.range_cube(x_range, y_range, z_range)
+    return blender_util.new_mesh_obj(name, mesh)
+
 
 def blender_cylinder(
     r: float,
@@ -509,6 +513,18 @@ class SocketHolder:
         return obj
 
     def base_plate(self) -> bpy.types.Object:
+        # return self.old_base_plate()
+        x_left = -8.9
+        x_mid_left = -5.3
+        x_mid_right = 6.2
+
+        obj = blender_range_cube((x_mid_left, x_mid_right), (-2.8, 5.0), (-1.0, 0.0), name="socket_holder")
+        left = blender_range_cube((x_left, x_mid_left), (-2.8, 5.0), (-1.0, 0.0), name="left")
+        top = blender_range_cube((x_left, x_mid_left), (-2.8, 5.0), (-1.0, 0.0), name="left")
+        blender_util.union(obj, left)
+        return obj
+
+    def old_base_plate(self) -> bpy.types.Object:
         params = SocketParams()
         dz = -params.thickness * 0.5
         full_size = 17.4
@@ -547,105 +563,46 @@ class SocketHolder:
 
         return obj
 
+    def gen(self) -> bpy.types.Object:
+        params = SocketParams()
+        thickness = params.thickness
 
-def clip_bottom_main() -> bpy.types.Object:
-    thickness = 1.0
-    socket_h = 2.0
+        # Base
+        obj = self.base_plate()
 
-    lip_bottom_h = socket_h + 0.05
-    lip_tip_bottom_h = socket_h + 0.134
-    lip_tip_top_h = lip_tip_bottom_h + 0.1
-    lip_top_h = 2.55
+        return obj
 
-    left_x = -5.3
-    right_x = 0.4
+        top_clip = self.top_clip()
+        blender_util.union(obj, top_clip)
+        bottom_clip = self.bottom_clip()
+        blender_util.union(obj, bottom_clip)
+        diode_clip_right = self.diode_clip_right()
+        blender_util.union(obj, diode_clip_right)
+        diode_clip_left = self.diode_clip_left()
+        blender_util.union(obj, diode_clip_left)
 
-    mesh = cad.Mesh()
-    points = [
-        (-2.5233, lip_top_h),
-        (0, lip_top_h),
-        (0, -0.1),
-        (-2.8, -0.1),
-        (-2.8, lip_bottom_h),
-        (-2.9, lip_tip_bottom_h),
-        (-2.9, lip_tip_top_h),
-    ]
+        # Cut-outs for the switch legs
+        leg_r_cutout = blender_cylinder(r=1.6, h=8, fn=85)
+        with blender_util.TransformContext(leg_r_cutout) as ctx:
+            ctx.translate(3.65, -2.7, -thickness)
+        blender_util.difference(obj, leg_r_cutout)
 
-    left_points: List[cad.MeshPoint] = []
-    right_points: List[cad.MeshPoint] = []
-    for (y, z) in points:
-        l = mesh.add_xyz(left_x, y, -thickness - z)
-        left_points.append(l)
-        r = mesh.add_xyz(right_x, y, -thickness - z)
-        right_points.append(r)
+        leg_l_cutout = blender_cylinder(r=1.6, h=8, fn=85)
+        with blender_util.TransformContext(leg_l_cutout) as ctx:
+            ctx.translate(-2.7, -5.2, -thickness)
+        blender_util.difference(obj, leg_l_cutout)
 
-    for idx in range(len(left_points) - 2):
-        mesh.add_tri(
-            left_points[0], left_points[idx + 1], left_points[idx + 2]
-        )
-        mesh.add_tri(
-            right_points[0], right_points[idx + 2], right_points[idx + 1]
-        )
+        # Cut-out for the switch stabilizer
+        main_cutout = blender_cylinder(r=2.1, h=8, fn=98)
+        with blender_util.TransformContext(main_cutout) as ctx:
+            ctx.translate(0, 0, -thickness)
+        blender_util.difference(obj, main_cutout)
 
-    for idx in range(len(left_points)):
-        next_idx = idx + 1
-        if next_idx >= len(left_points):
-            next_idx = 0
-        mesh.add_quad(
-            right_points[idx],
-            right_points[next_idx],
-            left_points[next_idx],
-            left_points[idx],
-        )
-
-    obj = blender_util.new_mesh_obj("clip_bottom", mesh)
-
-    cyl_h = 2.0
-    cyl = blender_cylinder(r=1.8, h=cyl_h, fn=23, rotation=90.0)
-    with blender_util.TransformContext(cyl) as ctx:
-        # ctx.rotate(-90.0, "Z")
-        ctx.rotate(180.0, "X")
-        ctx.translate(0.4, -1.0, -1.0 - cyl_h * 0.5)
-
-    blender_util.union(obj, cyl)
-    return obj
+        return obj
 
 
 def socket_holder() -> bpy.types.Object:
-    thickness = SocketParams.thickness
-
-    left_x = -5.3
-
-    # Base
-    obj = SocketHolder().base_plate()
-
-    top_clip = SocketHolder().top_clip()
-    blender_util.union(obj, top_clip)
-    bottom_clip = SocketHolder().bottom_clip()
-    blender_util.union(obj, bottom_clip)
-    diode_clip_right = SocketHolder().diode_clip_right()
-    blender_util.union(obj, diode_clip_right)
-    diode_clip_left = SocketHolder().diode_clip_left()
-    blender_util.union(obj, diode_clip_left)
-
-    # Cut-outs for the switch legs
-    leg_r_cutout = blender_cylinder(r=1.6, h=8, fn=85)
-    with blender_util.TransformContext(leg_r_cutout) as ctx:
-        ctx.translate(3.65, -2.7, -thickness)
-    blender_util.difference(obj, leg_r_cutout)
-
-    leg_l_cutout = blender_cylinder(r=1.6, h=8, fn=85)
-    with blender_util.TransformContext(leg_l_cutout) as ctx:
-        ctx.translate(-2.7, -5.2, -thickness)
-    blender_util.difference(obj, leg_l_cutout)
-
-    # Cut-out for the switch stabilizer
-    main_cutout = blender_cylinder(r=2.1, h=8, fn=98)
-    with blender_util.TransformContext(main_cutout) as ctx:
-        ctx.translate(0, 0, -thickness)
-    blender_util.difference(obj, main_cutout)
-
-    return obj
+    return SocketHolder().gen()
 
 
 class SocketHolder2:
