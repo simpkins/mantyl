@@ -10,7 +10,7 @@ import bpy
 from .foot import add_feet
 from .i2c_conn import add_i2c_connector
 from .keyboard import Keyboard, gen_keyboard
-from .key_socket_holder import SocketHolderBuilder, SocketParams
+from .key_socket_holder import SocketHolderBuilder
 from .screw_holes import add_screw_holes
 
 
@@ -42,7 +42,7 @@ def right_socket_grid() -> bpy.types.Object:
     mesh = cad.Mesh()
 
     kbd = Keyboard()
-    base_transform = cad.Transform().translate(0.0, 0.0, -0.2)
+    base_transform = cad.Transform().translate(0.0, 0.0, -0.5)
 
     holders: List[List[Optional[KeyHole]]] = []
     for col in range(7):

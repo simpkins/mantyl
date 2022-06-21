@@ -274,7 +274,7 @@ class TopClip:
 
 class BottomClip:
     l_y = -7.0
-    r_y = -8.7
+    r_y = -8.5
 
     def __init__(self, mesh: cad.Mesh) -> None:
         self.mesh = mesh
@@ -555,7 +555,7 @@ class SocketHolderGenerator:
             name="socket_holder",
         )
         left = blender_range_cube(
-            (params.x_left, params.x_mid_left),
+            (params.x_left + 1.0, params.x_mid_left),
             (y_left_bottom, y_left_top),
             z_range,
             name="left",
@@ -563,13 +563,13 @@ class SocketHolderGenerator:
         blender_util.union(obj, left)
         top = blender_range_cube(
             (params.x_mid_left, params.x_mid_right),
-            (y_left_top, params.y_top),
+            (y_left_top, params.y_top - 3.0),
             z_range,
             name="top",
         )
         blender_util.union(obj, top)
         right = blender_range_cube(
-            (params.x_mid_right, params.x_right),
+            (params.x_mid_right, params.x_right - 1.0),
             (y_right_bottom, y_right_top),
             z_range,
             name="right",
@@ -577,28 +577,62 @@ class SocketHolderGenerator:
         blender_util.union(obj, right)
         bottom = blender_range_cube(
             (params.x_mid_left, params.x_mid_right),
-            (params.y_bottom, y_left_bottom),
+            (params.y_bottom + 1.7, y_left_bottom),
             z_range,
             name="bottom",
         )
         blender_util.union(obj, bottom)
         bottom_right = blender_range_cube(
             (params.x_mid_right, x_bottom_right),
-            (params.y_bottom, y_bottom_right_top),
+            (params.y_bottom + 1.7, y_bottom_right_top),
             z_range,
             name="bottom_right",
         )
         blender_util.union(obj, bottom_right)
+
+        z_edge_range = (params.z_bottom - 1.0, params.z_top)
+        top_edge = blender_range_cube(
+            (params.x_mid_left, params.x_mid_right),
+            (params.y_top - 3.0, params.y_top),
+            z_edge_range,
+            name="top_edge",
+        )
+        blender_util.union(obj, top_edge)
+
+        bottom_edge = blender_range_cube(
+            (params.x_mid_left, x_bottom_right),
+            (params.y_bottom, params.y_bottom + 1.7),
+            z_edge_range,
+            name="bottom",
+        )
+        blender_util.union(obj, bottom_edge)
+
+        right_edge = blender_range_cube(
+            (params.x_right - 1.0, params.x_right),
+            (y_right_bottom, y_right_top),
+            z_edge_range,
+            name="right_edge",
+        )
+        blender_util.union(obj, right_edge)
+
+        left_edge = blender_range_cube(
+            (params.x_left, params.x_left + 1.0),
+            (y_left_bottom, y_left_top),
+            z_edge_range,
+            name="left_edge",
+        )
+        blender_util.union(obj, left_edge)
+
         return obj
 
     def wire_holder_tower(self, x: float, y: float) -> bpy.types.Object:
         base_r_x = 1.5
         base_r_y = 0.80
-        base_h = 0.5
+        base_h = 0.75
         w = 0.8
         d = 0.8
         lip_d = 0.3
-        h = 1.0
+        h = 0.75
         lip_h = 0.5
         params = SocketParams()
 
@@ -844,12 +878,7 @@ class SocketHolderBuilder:
                 self.points.append(cad.Point(v.co.x, v.co.y, v.co.z))
 
                 if math.isclose(v.co.y, params.y_bottom, abs_tol=tol):
-                    if (
-                        v.co.x >= (params.x_mid_left - tol)
-                        and v.co.x <= (params.x_mid_right + tol)
-                        and v.co.z >= (params.z_bottom - tol)
-                    ):
-                        bottom_point_set.add(v.index)
+                    bottom_point_set.add(v.index)
                 if math.isclose(v.co.y, params.y_top, abs_tol=tol):
                     top_point_set.add(v.index)
                 if math.isclose(v.co.x, params.x_left, abs_tol=tol):
@@ -895,8 +924,10 @@ class SocketHolderBuilder:
     def _split_top_bottom(
         self, points: Set[int], sort_key: Callable[[int], float]
     ) -> Tuple[List[int], List[int]]:
-        tol = 0.00001
         params = SocketParams()
+        z_edge_bottom = params.z_bottom - 1.0
+
+        tol = 0.00001
         top: List[int] = []
         bottom: List[int] = []
         for idx in points:
@@ -904,7 +935,7 @@ class SocketHolderBuilder:
             if math.isclose(p.z, params.z_top, abs_tol=tol):
                 top.append(idx)
             else:
-                assert math.isclose(p.z, params.z_bottom, abs_tol=tol)
+                assert math.isclose(p.z, z_edge_bottom, abs_tol=tol)
                 bottom.append(idx)
 
         top.sort(key=sort_key)
