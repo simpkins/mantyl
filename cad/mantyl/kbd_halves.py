@@ -39,6 +39,7 @@ def right_socket_grid() -> bpy.types.Object:
     from . import cad
 
     builder = SocketHolderBuilder()
+    top_builder = SocketHolderBuilder(top_only=True)
     mesh = cad.Mesh()
 
     kbd = Keyboard()
@@ -55,7 +56,10 @@ def right_socket_grid() -> bpy.types.Object:
         flip = row != 0
 
         tf = base_transform.transform(kbd._keys[col][row].transform)
-        h = builder.gen(mesh, tf, flip=flip)
+        if not flip:
+            h = top_builder.gen(mesh, tf)
+        else:
+            h = builder.gen(mesh, tf, flip=True)
         holders[col][row] = h
 
     # Connections between vertical keys on each column
@@ -72,7 +76,7 @@ def right_socket_grid() -> bpy.types.Object:
     holders[0][3].join_right(holders[1][3])
     holders[0][4].join_right(holders[1][4])
     for col in range(1, 6):
-        for row in range(5):
+        for row in range(1, 5):
             holders[col][row].join_right(holders[col + 1][row])
     for col in range(2, 6):
         holders[col][5].join_right(holders[col + 1][5])

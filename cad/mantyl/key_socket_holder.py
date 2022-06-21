@@ -536,7 +536,6 @@ class SocketHolderGenerator:
 
     def base_plate(self) -> bpy.types.Object:
         params = SocketParams()
-        full_size = 17.4
 
         x_bottom_right = 6.8
 
@@ -625,6 +624,51 @@ class SocketHolderGenerator:
 
         return obj
 
+    def top_base_plate(self) -> bpy.types.Object:
+        params = SocketParams()
+
+        x_bottom_right = 6.8
+
+        y_left_top = 5.0
+        y_left_bottom = -2.8
+        y_right_top = 5.0
+        y_right_bottom = -1.0
+        y_bottom_right_top = -5.0
+
+        z_range = (params.z_bottom, params.z_top)
+
+        obj = blender_range_cube(
+            (params.x_mid_left, params.x_mid_right),
+            (y_left_bottom, 0.0),
+            z_range,
+            name="socket_holder",
+        )
+        bottom = blender_range_cube(
+            (params.x_mid_left, params.x_mid_right),
+            (params.y_bottom + 1.7, y_left_bottom),
+            z_range,
+            name="bottom",
+        )
+        blender_util.union(obj, bottom)
+        bottom_right = blender_range_cube(
+            (params.x_mid_right, x_bottom_right),
+            (params.y_bottom + 1.7, y_bottom_right_top),
+            z_range,
+            name="bottom_right",
+        )
+        blender_util.union(obj, bottom_right)
+
+        z_edge_range = (params.z_bottom - 1.0, params.z_top)
+        bottom_edge = blender_range_cube(
+            (params.x_mid_left, x_bottom_right),
+            (params.y_bottom, params.y_bottom + 1.7),
+            z_edge_range,
+            name="bottom",
+        )
+        blender_util.union(obj, bottom_edge)
+
+        return obj
+
     def wire_holder_tower(self, x: float, y: float) -> bpy.types.Object:
         base_r_x = 1.5
         base_r_y = 0.80
@@ -699,23 +743,26 @@ class SocketHolderGenerator:
             ctx.translate(7.3, 2.0, 0.0)
         blender_util.union(obj, right_tower)
 
-    def gen(self) -> bpy.types.Object:
+    def gen(self, top_only: bool = False) -> bpy.types.Object:
         params = SocketParams()
         thickness = params.thickness
 
         # Base
-        obj = self.base_plate()
+        if top_only:
+            obj = self.top_base_plate()
+        else:
+            obj = self.base_plate()
 
         top_clip = self.top_clip()
         blender_util.union(obj, top_clip)
         bottom_clip = self.bottom_clip()
         blender_util.union(obj, bottom_clip)
-        diode_clip_right = self.diode_clip_right()
-        blender_util.union(obj, diode_clip_right)
-        diode_clip_left = self.diode_clip_left()
-        blender_util.union(obj, diode_clip_left)
-
-        self.wire_holders(obj)
+        if not top_only:
+            diode_clip_right = self.diode_clip_right()
+            blender_util.union(obj, diode_clip_right)
+            diode_clip_left = self.diode_clip_left()
+            blender_util.union(obj, diode_clip_left)
+            self.wire_holders(obj)
 
         # Cut-outs for the switch legs
         leg_r_cutout = blender_cylinder(r=1.6, h=8, fn=85)
@@ -735,6 +782,9 @@ class SocketHolderGenerator:
         blender_util.difference(obj, main_cutout)
 
         return obj
+
+    def gen_top(self) -> bpy.types.Object:
+        return self.gen(top_only=True)
 
 
 class SocketHolder:
@@ -842,7 +892,7 @@ class SocketHolder:
 
 
 class SocketHolderBuilder:
-    def __init__(self) -> None:
+    def __init__(self, top_only: bool = False) -> None:
         self.points: List[cad.Point] = []
         self.faces: List[Tuple[int, int, int]] = []
 
@@ -870,7 +920,7 @@ class SocketHolderBuilder:
         # Therefore we just use blender's boolean operators to produce a single
         # socket, then we create our own cad.Mesh object from this, and
         # manually create the explicit faces we want to connect them in a grid.
-        obj = SocketHolderGenerator().gen()
+        obj = SocketHolderGenerator().gen(top_only=top_only)
         tol = 0.00001
         with blender_util.TransformContext(obj) as ctx:
             ctx.triangulate()
@@ -992,6 +1042,14 @@ def cad_socket_holder() -> bpy.types.Object:
     it into a cad.Mesh.
     """
     return SocketHolderGenerator().gen()
+
+
+def cad_top_socket_holder() -> bpy.types.Object:
+    """
+    Return the original socket holder object that we generate, before turning
+    it into a cad.Mesh.
+    """
+    return SocketHolderGenerator().gen_top()
 
 
 def socket_holder(flip: bool = False) -> bpy.types.Object:

@@ -15,6 +15,7 @@ def regenerate() -> None:
     # kbd_halves.right_half()
     kbd_halves.right_socket_grid()
     # key_socket_holder.socket_holder()
+    # key_socket_holder.cad_top_socket_holder()
 
     bpy.ops.object.mode_set(mode="EDIT")
     # blender_util.set_shading_mode("WIREFRAME")
