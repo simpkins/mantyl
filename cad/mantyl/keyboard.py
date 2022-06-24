@@ -808,7 +808,7 @@ class Keyboard:
     ) -> List[WallColumn]:
         u_near_off = -2.0
         l_near_off = -1.0
-        far_off = Point(-6.0, 0.0, -2.0)
+        far_off = Point(-7.0, 0.0, -2.0)
 
         columns: List[WallColumn] = []
         for col_idx, row_idx in indices:
@@ -932,7 +932,7 @@ class Keyboard:
         segment0 = self._left_wall_helper([(1, 0), (1, 1)], x_aligned=False)
         # The bottom vertical segment
         segment2 = self._left_wall_helper(
-            [(0, 2), (0, 3), (0, 4)], x_aligned=True
+            [(0, 2), (0, 3), (0, 4)], x_aligned=False
         )
 
         oc = self._left_wall_outer_corner(segment2[0].out3.x)
@@ -952,6 +952,9 @@ class Keyboard:
         self._bevel_edge(oc.in3, oc.in2, self._bevel_inner_vert_corner)
         self._bevel_edge(ic.out3, ic.out2, self._bevel_inner_vert_corner)
         self._bevel_edge(ic.in3, ic.in2, self._bevel_outer_vert_corner)
+
+        for n in range(1, 5):
+            self._bevel_edge(segment2[n].out2, segment2[n].out3, self._bevel_ring_flat)
 
         return columns
 
