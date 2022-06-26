@@ -24,6 +24,15 @@ def delete_all() -> None:
     bpy.ops.object.delete(use_global=False)
 
 
+def set_view_distance(distance: float) -> None:
+    """Update the camera distance in all viewport panels"""
+    layout = bpy.data.screens["Layout"]
+    view_areas = [a for a in layout.areas if a.type == "VIEW_3D"]
+    for a in view_areas:
+        region = a.spaces.active.region_3d
+        region.view_distance = distance
+
+
 def blender_mesh(name: str, mesh: cad.Mesh) -> bpy.types.Mesh:
     points = [(p.x, p.y, p.z) for p in mesh.points]
     faces = [tuple(reversed(f)) for f in mesh.faces]

@@ -43,7 +43,7 @@ _DEPENDENCIES: List[Tuple[Path, str]] = [
     (Path("mantyl/screw_holes.py"), "mantyl.screw_holes"),
     (Path("mantyl/key_socket_holder.py"), "mantyl.key_socket_holder"),
     (Path("mantyl/kbd_halves.py"), "mantyl.kbd_halves"),
-    (Path("mantyl/main.py"), "mantyl.main"),
+    (Path("mantyl/testing.py"), "mantyl.testing"),
 ]
 
 
@@ -214,6 +214,7 @@ class FunctionMonitorOperator(MonitorOperatorBase):
     bl_label = "Monitor External Function"
 
     function: bpy.props.StringProperty(name="function")
+    delete_all: bpy.props.BoolProperty(name="delete_all", default=True)
 
     _local_dir: Path
     _mod_name: str
@@ -240,6 +241,12 @@ class FunctionMonitorOperator(MonitorOperatorBase):
         return monitor_modules
 
     def _run(self):
+        if self.delete_all:
+            if bpy.context.object is not None:
+                bpy.ops.object.mode_set(mode="OBJECT")
+            bpy.ops.object.select_all(action="SELECT")
+            bpy.ops.object.delete(use_global=False)
+
         module = sys.modules[self._mod_name]
         fn = getattr(module, self._fn_name)
         fn()
@@ -269,8 +276,12 @@ def unregister():
     bpy.types.TOPBAR_MT_edit.remove(menu_func)
 
 
-if __name__ == "__main__":
-    register()
+def main(fn_name: str) -> None:
+    try:
+        register()
+        bpy.ops.script.external_function_monitor(function=fn_name)
+    except Exception as ex:
+        import logging
 
-    # Start the operator
-    # bpy.ops.script.external_script_monitor()
+        logging.exception(f"unhandled exception: {ex}")
+        sys.exit(1)
