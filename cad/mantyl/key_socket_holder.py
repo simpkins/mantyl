@@ -673,11 +673,9 @@ class SocketHolderGenerator:
         base_r_x = 1.5
         base_r_y = 0.80
         base_h = 0.75
-        w = 0.8
+        w = 1.10
         d = 0.8
-        lip_d = 0.3
-        h = 0.75
-        lip_h = 0.5
+        h = 1.25
         params = SocketParams()
 
         z_base = params.z_bottom - base_h
@@ -688,34 +686,13 @@ class SocketHolderGenerator:
             (params.z_bottom, z_base),
         )
 
-        # Middle tower
-        r_x = w * 0.5
+        # Left tower
         tower = blender_range_cube(
-            (x - r_x, x + r_x),
+            (x - base_r_x, x - base_r_x + w),
             (y - base_r_y, y - base_r_y + d),
             (z_base, z_base - h),
         )
         blender_util.union(base, tower)
-        top = blender_range_cube(
-            (x - r_x, x + r_x),
-            (y - base_r_y, y - base_r_y + d + lip_d),
-            (z_base - h, z_base - h - lip_h),
-        )
-        blender_util.union(base, top)
-
-        # Left tower
-        tower = blender_range_cube(
-            (x - base_r_x, x - base_r_x + w),
-            (y + base_r_y - d, y + base_r_y),
-            (z_base, z_base - h),
-        )
-        blender_util.union(base, tower)
-        top = blender_range_cube(
-            (x - base_r_x, x - base_r_x + w),
-            (y + base_r_y - d - lip_d, y + base_r_y),
-            (z_base - h, z_base - h - lip_h),
-        )
-        blender_util.union(base, top)
 
         # Right tower
         tower = blender_range_cube(
@@ -724,12 +701,6 @@ class SocketHolderGenerator:
             (z_base, z_base - h),
         )
         blender_util.union(base, tower)
-        top = blender_range_cube(
-            (x + base_r_x - w, x + base_r_x),
-            (y + base_r_y - d - lip_d, y + base_r_y),
-            (z_base - h, z_base - h - lip_h),
-        )
-        blender_util.union(base, top)
 
         return base
 
