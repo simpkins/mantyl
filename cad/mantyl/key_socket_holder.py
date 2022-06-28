@@ -629,7 +629,7 @@ class SocketHolderGenerator:
 
         x_bottom_right = 6.8
 
-        y_left_top = 5.0
+        y_left_top = 3.5
         y_left_bottom = -2.8
         y_right_top = 5.0
         y_right_bottom = -1.0
@@ -639,7 +639,7 @@ class SocketHolderGenerator:
 
         obj = blender_range_cube(
             (params.x_mid_left, params.x_mid_right),
-            (y_left_bottom, 0.0),
+            (y_left_bottom, y_left_top),
             z_range,
             name="socket_holder",
         )
