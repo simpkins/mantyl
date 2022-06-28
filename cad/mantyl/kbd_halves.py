@@ -10,7 +10,7 @@ import bpy
 from .foot import add_feet
 from .i2c_conn import add_i2c_connector
 from .keyboard import Keyboard, gen_keyboard
-from .key_socket_holder import SocketHolderBuilder
+from .key_socket_holder import SocketHolderBuilder, SocketType
 from .screw_holes import add_screw_holes
 
 
@@ -39,8 +39,9 @@ def right_socket_underlay() -> bpy.types.Object:
     from . import cad
 
     builder = SocketHolderBuilder()
-    top_builder = SocketHolderBuilder(top_only=True)
-    bottom_builder = SocketHolderBuilder(short_top=True)
+    top_builder = SocketHolderBuilder(SocketType.TOP)
+    bottom_builder = SocketHolderBuilder(SocketType.BOTTOM)
+    left_builder = SocketHolderBuilder(SocketType.LEFT)
     mesh = cad.Mesh()
 
     kbd = Keyboard()
@@ -55,7 +56,9 @@ def right_socket_underlay() -> bpy.types.Object:
         # Flip all socket holders, except for the top row where they would
         # otherwise hit the back walls
         tf = base_transform.transform(kbd._keys[col][row].transform)
-        if row == 0:
+        if col == 0:
+            h = left_builder.gen(mesh, tf)
+        elif row == 0:
             h = top_builder.gen(mesh, tf)
         elif row == 5 or (col in (0, 1) and row == 4):
             h = bottom_builder.gen(mesh, tf, flip=True)
@@ -109,26 +112,27 @@ def right_thumb_underlay() -> bpy.types.Object:
     from . import cad
 
     builder = SocketHolderBuilder()
-    top_builder = SocketHolderBuilder(top_only=True)
+    top_builder = SocketHolderBuilder(SocketType.TOP)
+    left_builder = SocketHolderBuilder(SocketType.LEFT)
     mesh = cad.Mesh()
 
     kbd = Keyboard()
     base_transform = cad.Transform().translate(0.0, 0.0, -0.5)
 
-    def make_holder(k: KeyHole) -> SocketHolder:
+    def make_holder(builder: SocketHolderBuilder, k: KeyHole) -> SocketHolder:
         tf = base_transform.transform(k.transform)
         return builder.gen(mesh, tf)
 
-    h00 = make_holder(kbd.t00)
-    h01 = make_holder(kbd.t01)
-    h02 = make_holder(kbd.t02)
+    h00 = make_holder(left_builder, kbd.t00)
+    h01 = make_holder(left_builder, kbd.t01)
+    h02 = make_holder(left_builder, kbd.t02)
 
-    h10 = make_holder(kbd.t10)
-    h11 = make_holder(kbd.t11)
-    h12 = make_holder(kbd.t12)
+    h10 = make_holder(builder, kbd.t10)
+    h11 = make_holder(builder, kbd.t11)
+    h12 = make_holder(builder, kbd.t12)
 
-    h20 = make_holder(kbd.t20)
-    h21 = make_holder(kbd.t21)
+    h20 = make_holder(builder, kbd.t20)
+    h21 = make_holder(builder, kbd.t21)
 
     h00.close_left_face()
     h01.close_left_face()
