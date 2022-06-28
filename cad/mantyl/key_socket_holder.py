@@ -540,7 +540,7 @@ class SocketHolderGenerator:
 
         x_bottom_right = 6.8
 
-        if type == SocketType.TOP:
+        if type == SocketType.SMALL_TOP:
             y_left_top = 3.5
         else:
             y_left_top = 5.0
@@ -581,8 +581,8 @@ class SocketHolderGenerator:
         )
         blender_util.union(obj, bottom_edge)
 
-        if type == SocketType.TOP:
-            return
+        if type == SocketType.SMALL_TOP:
+            return obj
 
         if type == SocketType.LEFT:
             left = blender_range_cube(
@@ -608,14 +608,14 @@ class SocketHolderGenerator:
             )
             blender_util.union(obj, left_edge)
 
-        top = blender_range_cube(
-            (params.x_mid_left, params.x_mid_right),
-            (y_left_top, params.y_top - 3.0),
-            z_range,
-            name="top",
-        )
-        blender_util.union(obj, top)
-        if type != SocketType.BOTTOM:
+        if type != SocketType.TOP:
+            top = blender_range_cube(
+                (params.x_mid_left, params.x_mid_right),
+                (y_left_top, params.y_top - 3.0),
+                z_range,
+                name="top",
+            )
+            blender_util.union(obj, top)
             top_edge = blender_range_cube(
                 (params.x_mid_left, params.x_mid_right),
                 (params.y_top - 3.0, params.y_top),
@@ -639,51 +639,6 @@ class SocketHolderGenerator:
                 name="right_edge",
             )
             blender_util.union(obj, right_edge)
-
-        return obj
-
-    def top_base_plate(self) -> bpy.types.Object:
-        params = SocketParams()
-
-        x_bottom_right = 6.8
-
-        y_left_top = 3.5
-        y_left_bottom = -2.8
-        y_right_top = 5.0
-        y_right_bottom = -1.0
-        y_bottom_right_top = -5.0
-
-        z_range = (params.z_bottom, params.z_top)
-
-        obj = blender_range_cube(
-            (params.x_mid_left, params.x_mid_right),
-            (y_left_bottom, y_left_top),
-            z_range,
-            name="socket_holder",
-        )
-        bottom = blender_range_cube(
-            (params.x_mid_left, params.x_mid_right),
-            (params.y_bottom + 1.7, y_left_bottom),
-            z_range,
-            name="bottom",
-        )
-        blender_util.union(obj, bottom)
-        bottom_right = blender_range_cube(
-            (params.x_mid_right, x_bottom_right),
-            (params.y_bottom + 1.7, y_bottom_right_top),
-            z_range,
-            name="bottom_right",
-        )
-        blender_util.union(obj, bottom_right)
-
-        z_edge_range = (params.z_bottom - 1.0, params.z_top)
-        bottom_edge = blender_range_cube(
-            (params.x_mid_left, x_bottom_right),
-            (params.y_bottom, params.y_bottom + 1.7),
-            z_edge_range,
-            name="bottom",
-        )
-        blender_util.union(obj, bottom_edge)
 
         return obj
 
@@ -738,16 +693,13 @@ class SocketHolderGenerator:
         thickness = params.thickness
 
         # Base
-        if type == SocketType.TOP:
-            obj = self.top_base_plate()
-        else:
-            obj = self.base_plate(type)
+        obj = self.base_plate(type)
 
         top_clip = self.top_clip()
         blender_util.union(obj, top_clip)
         bottom_clip = self.bottom_clip()
         blender_util.union(obj, bottom_clip)
-        if type != SocketType.TOP:
+        if type != SocketType.SMALL_TOP:
             diode_clip_right = self.diode_clip_right()
             blender_util.union(obj, diode_clip_right)
             if type != SocketType.LEFT:
@@ -891,8 +843,8 @@ class SocketHolder:
 
 class SocketType(enum.IntEnum):
     NORMAL = 0
-    TOP = 1
-    BOTTOM = 2
+    SMALL_TOP = 1
+    TOP = 2
     LEFT = 3
     RIGHT = 4
 

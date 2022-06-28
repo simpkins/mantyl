@@ -40,8 +40,6 @@ def right_socket_underlay() -> bpy.types.Object:
 
     builder = SocketHolderBuilder()
     top_builder = SocketHolderBuilder(SocketType.TOP)
-    bottom_builder = SocketHolderBuilder(SocketType.BOTTOM)
-    left_builder = SocketHolderBuilder(SocketType.LEFT)
     mesh = cad.Mesh()
 
     kbd = Keyboard()
@@ -56,14 +54,10 @@ def right_socket_underlay() -> bpy.types.Object:
         # Flip all socket holders, except for the top row where they would
         # otherwise hit the back walls
         tf = base_transform.transform(kbd._keys[col][row].transform)
-        if col == 0:
-            h = left_builder.gen(mesh, tf)
-        elif row == 0:
+        if row == 0:
             h = top_builder.gen(mesh, tf)
-        elif row == 5 or (col in (0, 1) and row == 4):
-            h = bottom_builder.gen(mesh, tf, flip=True)
         else:
-            h = builder.gen(mesh, tf, flip=True)
+            h = builder.gen(mesh, tf)
         holders[col][row] = h
 
     # Connections between vertical keys on each column
@@ -80,7 +74,7 @@ def right_socket_underlay() -> bpy.types.Object:
     holders[0][3].join_right(holders[1][3])
     holders[0][4].join_right(holders[1][4])
     for col in range(1, 6):
-        for row in range(1, 5):
+        for row in range(5):
             holders[col][row].join_right(holders[col + 1][row])
     for col in range(2, 6):
         holders[col][5].join_right(holders[col + 1][5])
@@ -93,7 +87,14 @@ def right_socket_underlay() -> bpy.types.Object:
     holders[0][4].close_left_face()
     holders[2][5].close_left_face()
 
-    # The bottom faces are already closed by bottom_builder
+    # Bottom faces
+    holders[0][4].close_bottom_face()
+    holders[1][4].close_bottom_face()
+    holders[2][5].close_bottom_face()
+    holders[3][5].close_bottom_face()
+    holders[4][5].close_bottom_face()
+    holders[5][5].close_bottom_face()
+    holders[6][5].close_bottom_face()
 
     # Right faces
     for row in range(6):
@@ -112,8 +113,6 @@ def right_thumb_underlay() -> bpy.types.Object:
     from . import cad
 
     builder = SocketHolderBuilder()
-    top_builder = SocketHolderBuilder(SocketType.TOP)
-    left_builder = SocketHolderBuilder(SocketType.LEFT)
     mesh = cad.Mesh()
 
     kbd = Keyboard()
@@ -123,9 +122,9 @@ def right_thumb_underlay() -> bpy.types.Object:
         tf = base_transform.transform(k.transform)
         return builder.gen(mesh, tf)
 
-    h00 = make_holder(left_builder, kbd.t00)
-    h01 = make_holder(left_builder, kbd.t01)
-    h02 = make_holder(left_builder, kbd.t02)
+    h00 = make_holder(builder, kbd.t00)
+    h01 = make_holder(builder, kbd.t01)
+    h02 = make_holder(builder, kbd.t02)
 
     h10 = make_holder(builder, kbd.t10)
     h11 = make_holder(builder, kbd.t11)
