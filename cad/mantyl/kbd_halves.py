@@ -40,6 +40,7 @@ def right_socket_underlay() -> bpy.types.Object:
 
     builder = SocketHolderBuilder()
     top_builder = SocketHolderBuilder(top_only=True)
+    bottom_builder = SocketHolderBuilder(short_top=True)
     mesh = cad.Mesh()
 
     kbd = Keyboard()
@@ -53,11 +54,11 @@ def right_socket_underlay() -> bpy.types.Object:
     for col, row in kbd.key_indices():
         # Flip all socket holders, except for the top row where they would
         # otherwise hit the back walls
-        flip = row != 0
-
         tf = base_transform.transform(kbd._keys[col][row].transform)
-        if not flip:
+        if row == 0:
             h = top_builder.gen(mesh, tf)
+        elif row == 5 or (col in (0, 1) and row == 4):
+            h = bottom_builder.gen(mesh, tf, flip=True)
         else:
             h = builder.gen(mesh, tf, flip=True)
         holders[col][row] = h
@@ -89,11 +90,7 @@ def right_socket_underlay() -> bpy.types.Object:
     holders[0][4].close_left_face()
     holders[2][5].close_left_face()
 
-    # Bottom faces
-    holders[0][4].close_bottom_face()
-    holders[1][4].close_bottom_face()
-    for col in range(2, 7):
-        holders[col][5].close_bottom_face()
+    # The bottom faces are already closed by bottom_builder
 
     # Right faces
     for row in range(6):

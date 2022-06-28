@@ -534,7 +534,7 @@ class SocketHolderGenerator:
             ctx.rotate(180, "Z", center=(clip.diode_x, clip.diode_y, 0.0))
         return obj
 
-    def base_plate(self) -> bpy.types.Object:
+    def base_plate(self, short_top: bool = False) -> bpy.types.Object:
         params = SocketParams()
 
         x_bottom_right = 6.8
@@ -590,13 +590,14 @@ class SocketHolderGenerator:
         blender_util.union(obj, bottom_right)
 
         z_edge_range = (params.z_bottom - 1.0, params.z_top)
-        top_edge = blender_range_cube(
-            (params.x_mid_left, params.x_mid_right),
-            (params.y_top - 3.0, params.y_top),
-            z_edge_range,
-            name="top_edge",
-        )
-        blender_util.union(obj, top_edge)
+        if not short_top:
+            top_edge = blender_range_cube(
+                (params.x_mid_left, params.x_mid_right),
+                (params.y_top - 3.0, params.y_top),
+                z_edge_range,
+                name="top_edge",
+            )
+            blender_util.union(obj, top_edge)
 
         bottom_edge = blender_range_cube(
             (params.x_mid_left, x_bottom_right),
@@ -714,7 +715,7 @@ class SocketHolderGenerator:
             ctx.translate(7.3, 2.0, 0.0)
         blender_util.union(obj, right_tower)
 
-    def gen(self, top_only: bool = False) -> bpy.types.Object:
+    def gen(self, top_only: bool = False, short_top: bool = False) -> bpy.types.Object:
         params = SocketParams()
         thickness = params.thickness
 
@@ -722,7 +723,7 @@ class SocketHolderGenerator:
         if top_only:
             obj = self.top_base_plate()
         else:
-            obj = self.base_plate()
+            obj = self.base_plate(short_top=short_top)
 
         top_clip = self.top_clip()
         blender_util.union(obj, top_clip)
@@ -863,7 +864,7 @@ class SocketHolder:
 
 
 class SocketHolderBuilder:
-    def __init__(self, top_only: bool = False) -> None:
+    def __init__(self, top_only: bool = False, short_top: bool = False) -> None:
         self.points: List[cad.Point] = []
         self.faces: List[Tuple[int, int, int]] = []
 
@@ -891,7 +892,7 @@ class SocketHolderBuilder:
         # Therefore we just use blender's boolean operators to produce a single
         # socket, then we create our own cad.Mesh object from this, and
         # manually create the explicit faces we want to connect them in a grid.
-        obj = SocketHolderGenerator().gen(top_only=top_only)
+        obj = SocketHolderGenerator().gen(top_only=top_only, short_top=short_top)
         tol = 0.00001
         with blender_util.TransformContext(obj) as ctx:
             ctx.triangulate()
@@ -1021,6 +1022,14 @@ def cad_top_socket_holder() -> bpy.types.Object:
     it into a cad.Mesh.
     """
     return SocketHolderGenerator().gen_top()
+
+
+def cad_bottom_socket_holder() -> bpy.types.Object:
+    """
+    Return the original socket holder object that we generate, before turning
+    it into a cad.Mesh.
+    """
+    return SocketHolderGenerator().gen(short_top=True)
 
 
 def socket_holder(flip: bool = False) -> bpy.types.Object:

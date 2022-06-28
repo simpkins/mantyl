@@ -11,9 +11,9 @@ from . import key_socket_holder
 
 def test() -> None:
     # kbd_halves.right_half()
-    # kbd_halves.right_socket_underlay()
+    kbd_halves.right_socket_underlay()
     # kbd_halves.right_thumb_underlay()
-    key_socket_holder.cad_socket_holder()
+    # key_socket_holder.cad_bottom_socket_holder()
 
     bpy.ops.object.mode_set(mode="EDIT")
     # blender_util.set_shading_mode("WIREFRAME")
