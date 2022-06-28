@@ -1436,6 +1436,11 @@ class Keyboard:
         self._bevel_edge(bu2, c2_out2, 0.5)
         self._bevel_edge(bu3, c3_out2)
 
+        self._bevel_edge(bl0, bl1)
+        self._bevel_edge(bl1, bl2)
+        self._bevel_edge(bl2, bl3)
+        self._bevel_edge(bl3, c3_in2)
+
         # This is a flat edge, but enabling the bevel here improves the bevel
         # on the inner corner up the thumb connecting wall
         self._bevel_edge(bu2, self.t20.u_tr, 0.5)
@@ -1477,6 +1482,8 @@ class Keyboard:
         # This edge is flat, but enabling a bevel on it improves how
         # the beveled edge between the thumb wall joins the front wall.
         self._bevel_edge(front_wall[0].out2, o, self._bevel_outer_ring)
+
+        self._bevel_edge(i, ig)
 
         return o, i
 
@@ -1539,10 +1546,10 @@ class Keyboard:
     ]:
         KH = KeyHole
         c0_out1 = self.k25.add_point(
-            -KH.outer_w - 1.5, -KH.outer_h - 1.5, KH.height
+            -KH.outer_w - 2.5, -KH.outer_h - 3.5, KH.height
         )
         c0_out2 = self.k25.add_point(
-            -KH.outer_w - 1.5, -KH.outer_h - 1.5, KH.height - 7.0
+            -KH.outer_w - 2.5, -KH.outer_h - 3.5, KH.height - 7.0
         )
         self.mesh.add_quad(
             self.k25.u_bl, self.k25.u_br, front_wall[0].out1, c0_out1
@@ -1550,11 +1557,16 @@ class Keyboard:
         self.mesh.add_tri(c0_out1, front_wall[0].out1, c0_out2)
 
         c0_in1 = self.k25.add_point(
-            -KH.outer_w - 0.25, -KH.outer_h - 0.25, KH.mid_height
+            -KH.outer_w - 0.25, -KH.outer_h - 1.5, KH.mid_height
         )
         c0_in2 = self.k25.add_point(
-            -KH.outer_w - 0.25, -KH.outer_h - 0.25, KH.mid_height - 3.0
+            -KH.outer_w - 0.25, -KH.outer_h - 1.5, KH.mid_height - 3.0
         )
+
+        # Give a little more clearance on the inner wall at front_wall[0]
+        front_wall[0].in0.point.y -= 1.5
+        front_wall[0].in1.point.y -= 2.0
+        front_wall[0].in2.point.y -= 1.0
 
         # The top portion of wall in front of k25
         self.mesh.add_quad(
@@ -1583,16 +1595,16 @@ class Keyboard:
 
         # The wall down between k14 and k04
         c2_out1 = self.k04.add_point(
-            KH.outer_w - 1.5, -KH.outer_h - 2.0, KH.height
+            KH.outer_w - 1.5, -KH.outer_h - 2.5, KH.height
         )
         c2_out2 = self.k04.add_point(
-            KH.outer_w - 1.5, -KH.outer_h - 2.0, KH.height - 7.0
+            KH.outer_w - 1.5, -KH.outer_h - 2.5, KH.height - 7.0
         )
         c2_in1 = self.k04.add_point(
-            KH.outer_w - 0.25, -KH.outer_h - 0.50, KH.mid_height
+            KH.outer_w - 0.25, -KH.outer_h - 1.00, KH.mid_height
         )
         c2_in2 = self.k04.add_point(
-            KH.outer_w - 0.25, -KH.outer_h - 0.50, KH.mid_height - 3.0
+            KH.outer_w - 0.25, -KH.outer_h - 1.00, KH.mid_height - 3.0
         )
         self.mesh.add_quad(self.k04.l_br, c2_in1, c1_in1, self.k14.l_bl)
         self.mesh.add_quad(c2_in1, c2_in2, c1_in2, c1_in1)
@@ -1601,16 +1613,16 @@ class Keyboard:
 
         # The wall down the front of k04
         c3_out1 = self.k04.add_point(
-            -KH.outer_w - 2.0, -KH.outer_h - 2.0, KH.height
+            -KH.outer_w - 2.0, -KH.outer_h - 3.0, KH.height
         )
         c3_out2 = self.k04.add_point(
-            -KH.outer_w - 4.0, -KH.outer_h - 3.0, KH.height - 5.0
+            -KH.outer_w - 4.0, -KH.outer_h - 4.0, KH.height - 5.0
         )
         c3_in1 = self.k04.add_point(
-            -KH.outer_w - 0.5, -KH.outer_h - 0.50, KH.mid_height
+            -KH.outer_w - 0.5, -KH.outer_h - 1.50, KH.mid_height
         )
         c3_in2 = self.k04.add_point(
-            -KH.outer_w - 1.5, -KH.outer_h - 0.50, KH.mid_height - 3.0
+            -KH.outer_w - 1.5, -KH.outer_h - 1.50, KH.mid_height - 3.0
         )
         self.mesh.add_quad(self.k04.l_bl, c3_in1, c2_in1, self.k04.l_br)
         self.mesh.add_quad(c3_in1, c3_in2, c2_in2, c2_in1)
