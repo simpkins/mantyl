@@ -11,7 +11,8 @@ from . import key_socket_holder
 
 def test() -> None:
     # kbd_halves.right_half()
-    kbd_halves.right_socket_grid()
+    # kbd_halves.right_socket_underlay()
+    kbd_halves.right_thumb_underlay()
     # key_socket_holder.socket_holder()
     # key_socket_holder.cad_top_socket_holder()
 
