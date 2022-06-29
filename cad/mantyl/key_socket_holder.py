@@ -850,7 +850,7 @@ class SocketType(enum.IntEnum):
 
 
 class SocketHolderBuilder:
-    def __init__(self, type: SocketType = SocketType.NORMAL) -> None:
+    def __init__(self, type: SocketType = SocketType.NORMAL, mirror: bool = False) -> None:
         self.points: List[cad.Point] = []
         self.faces: List[Tuple[int, int, int]] = []
 
@@ -879,6 +879,10 @@ class SocketHolderBuilder:
         # socket, then we create our own cad.Mesh object from this, and
         # manually create the explicit faces we want to connect them in a grid.
         obj = SocketHolderGenerator().gen(type)
+        if mirror:
+            with blender_util.TransformContext(obj) as ctx:
+                ctx.mirror_x()
+
         tol = 0.00001
         with blender_util.TransformContext(obj) as ctx:
             ctx.triangulate()

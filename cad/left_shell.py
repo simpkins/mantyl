@@ -3,8 +3,8 @@
 # Copyright (c) 2022, Adam Simpkins
 #
 
-"""Generate the underlay that holds the switch sockets for the right thumb
-section.  To use, run "blender -P right_underlay.py"
+"""Generate the outer shell for the left half of the keyboard.
+To use, run "blender -P left_shell.py"
 """
 
 import os, sys
@@ -16,4 +16,4 @@ from mantyl import auto_update, blender_util
 # Adjust the camera to better show the keyboard
 blender_util.set_view_distance(350)
 
-auto_update.main("mantyl.kbd_halves.right_thumb_underlay")
+auto_update.main("mantyl.kbd_halves.left_half")

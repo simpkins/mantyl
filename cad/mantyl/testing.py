@@ -13,7 +13,10 @@ def test() -> None:
     kbd_halves.right_socket_underlay()
     kbd_halves.right_half()
     kbd_halves.right_thumb_underlay()
-    #key_socket_holder.cad_socket_holder(key_socket_holder.SocketType.TOP)
+
+    #kbd_halves.left_half()
+    #kbd_halves.left_socket_underlay()
+    #kbd_halves.left_thumb_underlay()
 
     bpy.ops.object.mode_set(mode="EDIT")
     # blender_util.set_shading_mode("WIREFRAME")

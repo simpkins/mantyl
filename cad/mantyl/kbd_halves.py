@@ -8,6 +8,7 @@ from __future__ import annotations
 import bpy
 
 from . import blender_util
+from . import cad
 from .foot import add_feet
 from .i2c_conn import add_i2c_connector
 from .keyboard import Keyboard, gen_keyboard
@@ -50,12 +51,9 @@ def right_keyboard_grid() -> bpy.types.Object:
     return blender_util.new_mesh_obj("keyboard2", mesh)
 
 
-def right_socket_underlay() -> bpy.types.Object:
-    from . import blender_util
-    from . import cad
-
-    builder = SocketHolderBuilder()
-    top_builder = SocketHolderBuilder(SocketType.TOP)
+def socket_underlay(mirror: bool = False) -> bpy.types.Object:
+    builder = SocketHolderBuilder(mirror=mirror)
+    top_builder = SocketHolderBuilder(SocketType.TOP, mirror=mirror)
     mesh = cad.Mesh()
 
     kbd = Keyboard()
@@ -121,14 +119,15 @@ def right_socket_underlay() -> bpy.types.Object:
     for col in range(1, 7):
         holders[col][0].close_top_face()
 
-    return blender_util.new_mesh_obj("underlay", mesh)
+    obj = blender_util.new_mesh_obj("underlay", mesh)
+    if mirror:
+        with blender_util.TransformContext(obj) as ctx:
+            ctx.mirror_x()
+    return obj
 
 
-def right_thumb_underlay() -> bpy.types.Object:
-    from . import blender_util
-    from . import cad
-
-    builder = SocketHolderBuilder()
+def thumb_underlay(mirror: bool = False) -> bpy.types.Object:
+    builder = SocketHolderBuilder(mirror=mirror)
     mesh = cad.Mesh()
 
     kbd = Keyboard()
@@ -182,4 +181,24 @@ def right_thumb_underlay() -> bpy.types.Object:
     mesh.add_quad(h10.right_points[0][0], h10.right_points[0][1], h20.top_points[0][0], h20.top_points[0][1])
     mesh.add_quad(h10.right_points[1][1], h10.right_points[1][0], h20.top_points[1][1], h20.top_points[1][0])
 
-    return blender_util.new_mesh_obj("thumb_underlay", mesh)
+    obj = blender_util.new_mesh_obj("thumb_underlay", mesh)
+    if mirror:
+        with blender_util.TransformContext(obj) as ctx:
+            ctx.mirror_x()
+    return obj
+
+
+def right_socket_underlay() -> bpy.types.Object:
+    return socket_underlay(mirror=False)
+
+
+def right_thumb_underlay() -> bpy.types.Object:
+    return thumb_underlay(mirror=False)
+
+
+def left_socket_underlay() -> bpy.types.Object:
+    return socket_underlay(mirror=True)
+
+
+def left_thumb_underlay() -> bpy.types.Object:
+    return thumb_underlay(mirror=True)

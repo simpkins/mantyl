@@ -196,7 +196,9 @@ class TransformContext:
     def mirror_x(self) -> None:
         geom = self.bmesh.faces[:] + self.bmesh.verts[:] + self.bmesh.edges[:]
         # Mirror creates new mirrored geometry
-        bmesh.ops.mirror(self.bmesh, geom=geom, axis="X")
+        # Set merge_dist to a negative value to prevent any of the new mirrored
+        # geometry from being merged with the original vertices.
+        ret = bmesh.ops.mirror(self.bmesh, geom=geom, axis="X", merge_dist=-1.0)
         # Delete the original geometry
         bmesh.ops.delete(self.bmesh, geom=geom)
 
