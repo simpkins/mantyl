@@ -25,9 +25,9 @@ class I2cCutout:
     # If printing the holder face down, h = 4.5 is a good value.
     # However, if printing vertically with support needed to hold up the top
     # of the opening, then this value needs to be a little bit bigger.
-    h = 4.8
+    h = 4.75
     d = 4.05
-    w = 20.6
+    w = 20.5
 
     flange_d = 2.25
     flange_offset = 0.90
