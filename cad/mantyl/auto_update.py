@@ -115,7 +115,10 @@ class MonitorOperatorBase(bpy.types.Operator):
         for _path, module_name in self._monitor_modules:
             if module_name is None:
                 continue
-            mod = sys.modules[module_name]
+            mod = sys.modules.get(module_name, None)
+            if mod is None:
+                # This module isn't loaded, so we don't need to reload it.
+                continue
             try:
                 importlib.reload(mod)
             except Exception as ex:
