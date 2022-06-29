@@ -804,11 +804,10 @@ class Keyboard:
         return columns
 
     def _left_wall_helper(
-        self, indices: List[Tuple[int, int]], x_aligned: bool
+        self, indices: List[Tuple[int, int]], x_aligned: bool, far_off: Point
     ) -> List[WallColumn]:
         u_near_off = -2.0
         l_near_off = -1.0
-        far_off = Point(-7.0, 0.0, -2.0)
 
         columns: List[WallColumn] = []
         for col_idx, row_idx in indices:
@@ -929,10 +928,14 @@ class Keyboard:
         ic = self._left_wall_inner_corner()
 
         # The top-most vertical segment
-        segment0 = self._left_wall_helper([(1, 0), (1, 1)], x_aligned=False)
+        segment0 = self._left_wall_helper(
+            [(1, 0), (1, 1)], x_aligned=False, far_off=Point(-7.0, 0.0, -2.0)
+        )
         # The bottom vertical segment
         segment2 = self._left_wall_helper(
-            [(0, 2), (0, 3), (0, 4)], x_aligned=False
+            [(0, 2), (0, 3), (0, 4)],
+            x_aligned=False,
+            far_off=Point(-7.8, 0.0, -2.0),
         )
 
         oc = self._left_wall_outer_corner(segment2[0].out3.x)
@@ -943,10 +946,13 @@ class Keyboard:
         # Straighten out segment0 between its first point and the inner corner
         self._left_wall_straighten(segment0)
 
+        segment2 = [oc] + segment2[1:-1]
+        self._left_wall_straighten(segment2)
+
         # Fill in one gap left where we connected the concave corner
         KeyHole.top_bottom_tri(self.k02.tl, self.k11.bl, self.k02.tr)
 
-        columns = segment0[:-1] + [ic, oc] + segment2[1:-1]
+        columns = segment0 + segment2
 
         self._bevel_edge(oc.out3, oc.out2, self._bevel_outer_vert_corner)
         self._bevel_edge(oc.in3, oc.in2, self._bevel_inner_vert_corner)
@@ -954,7 +960,9 @@ class Keyboard:
         self._bevel_edge(ic.in3, ic.in2, self._bevel_outer_vert_corner)
 
         for n in range(1, 5):
-            self._bevel_edge(segment2[n].out2, segment2[n].out3, self._bevel_ring_flat)
+            self._bevel_edge(
+                segment2[n].out2, segment2[n].out3, self._bevel_ring_flat
+            )
 
         return columns
 

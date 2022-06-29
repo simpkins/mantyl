@@ -10,8 +10,8 @@ from . import key_socket_holder
 
 
 def test() -> None:
-    kbd_halves.right_socket_underlay()
     kbd_halves.right_half()
+    kbd_halves.right_socket_underlay()
     kbd_halves.right_thumb_underlay()
 
     #kbd_halves.left_half()
