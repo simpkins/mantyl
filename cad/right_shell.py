@@ -4,7 +4,7 @@
 #
 
 """Generate the outer shell for the right half of the keyboard.
-To use, run "blender -P right.py"
+To use, run "blender -P right_shell.py"
 """
 
 import os, sys
