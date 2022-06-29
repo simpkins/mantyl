@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import bpy
 
+from . import blender_util
 from .foot import add_feet
 from .i2c_conn import add_i2c_connector
 from .keyboard import Keyboard, gen_keyboard
@@ -22,6 +23,21 @@ def right_half() -> bpy.types.Object:
     add_feet(kbd, kbd_obj)
     add_i2c_connector(kbd, kbd_obj)
     add_screw_holes(kbd, kbd_obj)
+
+    return kbd_obj
+
+
+def left_half() -> bpy.types.Object:
+    kbd = Keyboard()
+    kbd.gen_mesh()
+
+    kbd_obj = gen_keyboard(kbd)
+    add_feet(kbd, kbd_obj)
+    add_i2c_connector(kbd, kbd_obj)
+    add_screw_holes(kbd, kbd_obj)
+
+    with blender_util.TransformContext(kbd_obj) as ctx:
+        ctx.mirror_x()
 
     return kbd_obj
 

@@ -193,6 +193,13 @@ class TransformContext:
     def triangulate(self) -> None:
         bmesh.ops.triangulate(self.bmesh, faces=self.bmesh.faces[:])
 
+    def mirror_x(self) -> None:
+        geom = self.bmesh.faces[:] + self.bmesh.verts[:] + self.bmesh.edges[:]
+        # Mirror creates new mirrored geometry
+        bmesh.ops.mirror(self.bmesh, geom=geom, axis="X")
+        # Delete the original geometry
+        bmesh.ops.delete(self.bmesh, geom=geom)
+
 
 def set_shading_mode(mode: str) -> None:
     for area in bpy.context.workspace.screens[0].areas:
