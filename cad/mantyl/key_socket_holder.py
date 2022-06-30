@@ -12,34 +12,7 @@ import math
 from typing import Callable, List, Tuple
 
 from . import blender_util, cad
-
-
-def blender_cube(
-    x: float, y: float, z: float, name: str = "cube"
-) -> bpy.types.Object:
-    mesh = cad.cube(x, y, z)
-    return blender_util.new_mesh_obj(name, mesh)
-
-
-def blender_range_cube(
-    x_range: Tuple[float, float],
-    y_range: Tuple[float, float],
-    z_range: Tuple[float, float],
-    name: str = "cube",
-) -> bpy.types.Object:
-    mesh = cad.range_cube(x_range, y_range, z_range)
-    return blender_util.new_mesh_obj(name, mesh)
-
-
-def blender_cylinder(
-    r: float,
-    h: float,
-    fn: int = 24,
-    rotation: float = 360.0,
-    name: str = "cylinder",
-) -> bpy.types.Object:
-    mesh = cad.cylinder(r, h, fn=fn, rotation=rotation)
-    return blender_util.new_mesh_obj(name, mesh)
+from .blender_util import range_cube as blender_range_cube, cylinder as blender_cylinder
 
 
 class SocketParams:

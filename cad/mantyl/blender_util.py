@@ -198,7 +198,9 @@ class TransformContext:
         # Mirror creates new mirrored geometry
         # Set merge_dist to a negative value to prevent any of the new mirrored
         # geometry from being merged with the original vertices.
-        ret = bmesh.ops.mirror(self.bmesh, geom=geom, axis="X", merge_dist=-1.0)
+        ret = bmesh.ops.mirror(
+            self.bmesh, geom=geom, axis="X", merge_dist=-1.0
+        )
         # Delete the original geometry
         bmesh.ops.delete(self.bmesh, geom=geom)
 
@@ -208,3 +210,29 @@ def set_shading_mode(mode: str) -> None:
         for space in area.spaces:
             if space.type == "VIEW_3D":
                 space.shading.type = mode
+
+
+def cube(x: float, y: float, z: float, name: str = "cube") -> bpy.types.Object:
+    mesh = cad.cube(x, y, z)
+    return new_mesh_obj(name, mesh)
+
+
+def range_cube(
+    x_range: Tuple[float, float],
+    y_range: Tuple[float, float],
+    z_range: Tuple[float, float],
+    name: str = "cube",
+) -> bpy.types.Object:
+    mesh = cad.range_cube(x_range, y_range, z_range)
+    return new_mesh_obj(name, mesh)
+
+
+def cylinder(
+    r: float,
+    h: float,
+    fn: int = 24,
+    rotation: float = 360.0,
+    name: str = "cylinder",
+) -> bpy.types.Object:
+    mesh = cad.cylinder(r, h, fn=fn, rotation=rotation)
+    return new_mesh_obj(name, mesh)

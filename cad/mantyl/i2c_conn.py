@@ -10,9 +10,9 @@ import bpy
 import math
 from typing import List
 
-import mantyl.cad as cad
-from mantyl.blender_util import apply_to_wall, difference, new_mesh_obj
-from mantyl.keyboard import Keyboard
+from . import blender_util
+from . import cad
+from .keyboard import Keyboard
 
 
 class I2cCutout:
@@ -174,7 +174,7 @@ class I2cCutout:
         mesh.add_quad(back_tro, back_tlo, back_blo, back_bro)
         mesh.add_quad(back_tlo, back_tl, back_bl, back_blo)
 
-        return new_mesh_obj("i2c_cutout", mesh)
+        return blender_util.new_mesh_obj("i2c_cutout", mesh)
 
     @classmethod
     def nub(
@@ -201,7 +201,7 @@ class I2cCutout:
             nub_mesh.mirror_x()
 
         nub_mesh.translate(x, y, z)
-        return new_mesh_obj("i2c_cutout_nub", nub_mesh)
+        return blender_util.new_mesh_obj("i2c_cutout_nub", nub_mesh)
 
     @classmethod
     def gen(cls) -> bpy.types.Object:
@@ -212,12 +212,12 @@ class I2cCutout:
             cls.flange_d + cls.flange_offset,
             cls.h * 0.5 - cls.nub_z,
         )
-        difference(main, nub_tr)
+        blender_util.difference(main, nub_tr)
 
         nub_br = cls.nub(
             cls.w * 0.5, cls.flange_d + cls.flange_offset, cls.h * -0.5
         )
-        difference(main, nub_br)
+        blender_util.difference(main, nub_br)
 
         nub_tl = cls.nub(
             -cls.w * 0.5,
@@ -225,7 +225,7 @@ class I2cCutout:
             cls.h * 0.5 - cls.nub_z,
             mirror_x=True,
         )
-        difference(main, nub_tl)
+        blender_util.difference(main, nub_tl)
 
         nub_bl = cls.nub(
             -cls.w * 0.5,
@@ -233,7 +233,7 @@ class I2cCutout:
             cls.h * -0.5,
             mirror_x=True,
         )
-        difference(main, nub_bl)
+        blender_util.difference(main, nub_bl)
         return main
 
 
@@ -242,8 +242,17 @@ def add_i2c_connector(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
 
     x_off = 0.0
     z_off = 5 + I2cCutout.h * 0.5
-    apply_to_wall(
+    blender_util.apply_to_wall(
         i2c_cutout, kbd.thumb_tr_connect, kbd.thumb_tl.out2, x=x_off, z=z_off
     )
 
-    difference(kbd_obj, i2c_cutout)
+    blender_util.difference(kbd_obj, i2c_cutout)
+
+
+def test() -> None:
+    wall = blender_util.range_cube((-15, 15), (0, 4), (0, 10))
+    i2c_cutout = I2cCutout.gen()
+    blender_util.apply_to_wall(
+        i2c_cutout, cad.Point(-10, 0, 0), cad.Point(10, 0, 0), x=0.0, z=5.0
+    )
+    blender_util.difference(wall, i2c_cutout)
