@@ -249,10 +249,11 @@ def add_i2c_connector(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
     blender_util.difference(kbd_obj, i2c_cutout)
 
 
-def test() -> None:
+def test() -> bpy.types.Object:
     wall = blender_util.range_cube((-15, 15), (0, 4), (0, 10))
     i2c_cutout = I2cCutout.gen()
     blender_util.apply_to_wall(
         i2c_cutout, cad.Point(-10, 0, 0), cad.Point(10, 0, 0), x=0.0, z=5.0
     )
     blender_util.difference(wall, i2c_cutout)
+    return wall
