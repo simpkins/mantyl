@@ -1,0 +1,52 @@
+#!/usr/bin/python3 -tt
+#
+# Copyright (c) 2022, Adam Simpkins
+#
+
+"""Export STL files for all of the parts.
+To use, run "blender -b -P export_all.py"
+"""
+
+from __future__ import annotations
+
+import os, sys
+
+base_dir = os.path.dirname(__file__)
+sys.path.insert(0, base_dir)
+
+from mantyl import blender_util, kbd_halves, sx1509_holder
+
+import bpy
+
+from pathlib import Path
+from typing import Callable
+
+out_dir = Path(base_dir) / "_out"
+
+
+def export_stl(name: str, obj_fn: Callable[[], bpy.types.Object]) -> None:
+    print(f"Exporting {name}...")
+    blender_util.delete_all()
+    obj = obj_fn()
+
+    out_path = out_dir / f"{name}.stl"
+    bpy.ops.export_mesh.stl(filepath=str(out_path))
+
+
+def main() -> None:
+    blender_util.set_view_distance(350)
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    export_stl("sx1509_holder", sx1509_holder.upside_down)
+    export_stl("right_shell", kbd_halves.right_shell)
+    export_stl("right_underlay", kbd_halves.right_socket_underlay)
+    export_stl("right_thumb_underlay", kbd_halves.right_thumb_underlay)
+    export_stl("left_shell", kbd_halves.left_shell)
+    export_stl("left_underlay", kbd_halves.left_socket_underlay)
+    export_stl("left_thumb_underlay", kbd_halves.left_thumb_underlay)
+
+    sys.exit(0)
+
+
+main()
