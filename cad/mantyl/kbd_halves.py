@@ -14,24 +14,30 @@ from .i2c_conn import add_i2c_connector
 from .keyboard import Keyboard, gen_keyboard
 from .key_socket_holder import SocketHolderBuilder, SocketType
 from .screw_holes import add_screw_holes
+from . import sx1509_holder
 
 
-def right_half() -> bpy.types.Object:
+def right_shell() -> bpy.types.Object:
     kbd = Keyboard()
     kbd.gen_mesh()
+    return right_shell_obj(kbd)
 
+
+def right_shell_obj(kbd: Keyboard) -> bpy.types.Object:
     kbd_obj = gen_keyboard(kbd)
     add_feet(kbd, kbd_obj)
     add_i2c_connector(kbd, kbd_obj)
     add_screw_holes(kbd, kbd_obj)
-
     return kbd_obj
 
 
-def left_half() -> bpy.types.Object:
+def left_shell() -> bpy.types.Object:
     kbd = Keyboard()
     kbd.gen_mesh()
+    return left_shell_obj(kbd)
 
+
+def left_shell_obj(kbd: Keyboard) -> bpy.types.Object:
     kbd_obj = gen_keyboard(kbd)
     add_feet(kbd, kbd_obj)
     add_i2c_connector(kbd, kbd_obj)
@@ -51,12 +57,11 @@ def right_keyboard_grid() -> bpy.types.Object:
     return blender_util.new_mesh_obj("keyboard2", mesh)
 
 
-def socket_underlay(mirror: bool = False) -> bpy.types.Object:
+def socket_underlay(kbd: Keyboard, mirror: bool = False) -> bpy.types.Object:
     builder = SocketHolderBuilder(mirror=mirror)
     top_builder = SocketHolderBuilder(SocketType.TOP, mirror=mirror)
     mesh = cad.Mesh()
 
-    kbd = Keyboard()
     base_transform = cad.Transform().translate(0.0, 0.0, -0.5)
 
     holders: List[List[Optional[SocketHolder]]] = []
@@ -126,11 +131,10 @@ def socket_underlay(mirror: bool = False) -> bpy.types.Object:
     return obj
 
 
-def thumb_underlay(mirror: bool = False) -> bpy.types.Object:
+def thumb_underlay(kbd: Keyboard, mirror: bool = False) -> bpy.types.Object:
     builder = SocketHolderBuilder(mirror=mirror)
     mesh = cad.Mesh()
 
-    kbd = Keyboard()
     base_transform = cad.Transform().translate(0.0, 0.0, -0.5)
 
     def make_holder(builder: SocketHolderBuilder, k: KeyHole) -> SocketHolder:
@@ -176,10 +180,30 @@ def thumb_underlay(mirror: bool = False) -> bpy.types.Object:
     h12.join_right(h21)
 
     # Join the right of h10 to the top of h20
-    mesh.add_quad(h10.right_points[0][0], h20.top_points[0][1], h20.top_points[1][1], h10.right_points[1][0])
-    mesh.add_quad(h10.right_points[0][1], h10.right_points[1][1], h20.top_points[1][0], h20.top_points[0][0])
-    mesh.add_quad(h10.right_points[0][0], h10.right_points[0][1], h20.top_points[0][0], h20.top_points[0][1])
-    mesh.add_quad(h10.right_points[1][1], h10.right_points[1][0], h20.top_points[1][1], h20.top_points[1][0])
+    mesh.add_quad(
+        h10.right_points[0][0],
+        h20.top_points[0][1],
+        h20.top_points[1][1],
+        h10.right_points[1][0],
+    )
+    mesh.add_quad(
+        h10.right_points[0][1],
+        h10.right_points[1][1],
+        h20.top_points[1][0],
+        h20.top_points[0][0],
+    )
+    mesh.add_quad(
+        h10.right_points[0][0],
+        h10.right_points[0][1],
+        h20.top_points[0][0],
+        h20.top_points[0][1],
+    )
+    mesh.add_quad(
+        h10.right_points[1][1],
+        h10.right_points[1][0],
+        h20.top_points[1][1],
+        h20.top_points[1][0],
+    )
 
     obj = blender_util.new_mesh_obj("thumb_underlay", mesh)
     if mirror:
@@ -189,16 +213,36 @@ def thumb_underlay(mirror: bool = False) -> bpy.types.Object:
 
 
 def right_socket_underlay() -> bpy.types.Object:
-    return socket_underlay(mirror=False)
+    return socket_underlay(Keyboard(), mirror=False)
 
 
 def right_thumb_underlay() -> bpy.types.Object:
-    return thumb_underlay(mirror=False)
+    return thumb_underlay(Keyboard(), mirror=False)
 
 
 def left_socket_underlay() -> bpy.types.Object:
-    return socket_underlay(mirror=True)
+    return socket_underlay(Keyboard(), mirror=True)
 
 
 def left_thumb_underlay() -> bpy.types.Object:
-    return thumb_underlay(mirror=True)
+    return thumb_underlay(Keyboard(), mirror=True)
+
+
+def right_full() -> List[bpy.types.Object]:
+    kbd = Keyboard()
+    kbd.gen_mesh()
+
+    breakout_holder = sx1509_holder.sx1509_holder()
+    blender_util.apply_to_wall(
+        breakout_holder,
+        kbd.left_wall[-1].in3,
+        kbd.left_wall[-5].in3,
+        x=-5.0,
+        z=6.0,
+    )
+
+    return [
+        right_shell_obj(kbd),
+        socket_underlay(kbd, mirror=False),
+        thumb_underlay(kbd, mirror=False),
+    ]

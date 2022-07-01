@@ -16,4 +16,4 @@ from mantyl import auto_update, blender_util
 # Adjust the camera to better show the keyboard
 blender_util.set_view_distance(350)
 
-auto_update.main("mantyl.kbd_halves.left_half")
+auto_update.main("mantyl.kbd_halves.left_shell")

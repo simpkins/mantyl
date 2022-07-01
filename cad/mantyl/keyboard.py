@@ -502,33 +502,37 @@ class Keyboard:
 
     def gen_walls(self) -> None:
         # Main grid walls
-        front_wall = self.gen_front_wall()
-        right_wall = self.gen_right_wall()
-        back_wall = self.gen_back_wall()
-        left_wall = self.gen_left_wall()
+        self.front_wall = self.gen_front_wall()
+        self.right_wall = self.gen_right_wall()
+        self.back_wall = self.gen_back_wall()
+        self.left_wall = self.gen_left_wall()
 
-        self.fl = front_wall[0]
+        self.fl = self.front_wall[0]
 
         # The main wall corners
         # Note that these methods do mutate the walls slightly,
         # so only call add_wall_faces() after these are done.
-        self._front_right_wall_corner(front_wall[-1], right_wall[0])
-        self._back_right_wall_corner(right_wall[-1], back_wall[0])
-        self._back_left_wall_corner(back_wall[-1], left_wall)
+        self._front_right_wall_corner(self.front_wall[-1], self.right_wall[0])
+        self._back_right_wall_corner(self.right_wall[-1], self.back_wall[0])
+        self._back_left_wall_corner(self.back_wall[-1], self.left_wall)
 
-        self.apply_wall_bevels(front_wall, right_wall, back_wall, left_wall)
+        self.apply_wall_bevels(
+            self.front_wall, self.right_wall, self.back_wall, self.left_wall
+        )
 
-        self.add_wall_faces(front_wall)
-        self.add_wall_faces(right_wall)
-        self.add_wall_faces(back_wall)
-        self.add_wall_faces(left_wall)
+        self.add_wall_faces(self.front_wall)
+        self.add_wall_faces(self.right_wall)
+        self.add_wall_faces(self.back_wall)
+        self.add_wall_faces(self.left_wall)
 
         # Thumb walls
-        thumb_wall = self.gen_thumb_wall()
-        self.add_wall_faces(list(reversed(thumb_wall)))
+        self.thumb_wall = self.gen_thumb_wall()
+        self.add_wall_faces(list(reversed(self.thumb_wall)))
 
         # Connections between the thumb area and main grid area
-        self.gen_thumb_connect(thumb_wall, front_wall, left_wall)
+        self.gen_thumb_connect(
+            self.thumb_wall, self.front_wall, self.left_wall
+        )
 
     def add_wall_faces(
         self, columns: Union[List[WallColumn], List[ThumbColumn]]
@@ -1972,7 +1976,7 @@ class ThumbColumn:
     """A class representing a vertical column of points in the thumb walls.
     """
 
-    __slots__ = ["out0", "out1", "out2", "out3", "in0", "in1", "in2", "in3"]
+    __slots__ = ["out0", "out1", "out2", "in0", "in1", "in2"]
 
     def __init__(self) -> None:
         # Outer wall points, from the top of the wall to the bottom
