@@ -226,4 +226,5 @@ def add_feet(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
         kbd.thumb_tl.out2.x + (mid_dir.x * f),
         kbd.thumb_tl.out2.y + (mid_dir.y * f),
         angle,
+        1.0
     )

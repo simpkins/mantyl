@@ -1451,7 +1451,6 @@ class Keyboard:
         self._bevel_edge(bl0, bl1)
         self._bevel_edge(bl1, bl2)
         self._bevel_edge(bl2, bl3)
-        self._bevel_edge(bl3, c3_in2)
 
         # This is a flat edge, but enabling the bevel here improves the bevel
         # on the inner corner up the thumb connecting wall
@@ -1576,7 +1575,6 @@ class Keyboard:
         )
 
         # Give a little more clearance on the inner wall at front_wall[0]
-        front_wall[0].in0.point.y -= 1.5
         front_wall[0].in1.point.y -= 2.0
         front_wall[0].in2.point.y -= 1.0
 
