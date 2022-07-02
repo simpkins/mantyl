@@ -59,11 +59,12 @@ def add_screw_hole(
 
 
 def add_screw_holes(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
-    x_spacing = 40
-    add_screw_hole(kbd, kbd_obj, x=-x_spacing * 0.5, z=10)
-    add_screw_hole(kbd, kbd_obj, x=x_spacing * 0.5, z=10)
-    add_screw_hole(kbd, kbd_obj, x=-x_spacing * 0.5, z=25)
-    add_screw_hole(kbd, kbd_obj, x=x_spacing * 0.5, z=25)
+    x_spacing = 45
+    x_offset = 0
+    add_screw_hole(kbd, kbd_obj, x=x_offset - (x_spacing * 0.5), z=8)
+    add_screw_hole(kbd, kbd_obj, x=x_offset + (x_spacing * 0.5), z=8)
+    add_screw_hole(kbd, kbd_obj, x=x_offset - (x_spacing * 0.5), z=22)
+    add_screw_hole(kbd, kbd_obj, x=x_offset + (x_spacing * 0.5), z=22)
 
     # An extra screw hole on the thumb section
     if False:
