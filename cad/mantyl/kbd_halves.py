@@ -15,6 +15,7 @@ from .keyboard import Keyboard, gen_keyboard
 from .key_socket_holder import SocketHolderBuilder, SocketType
 from .screw_holes import add_screw_holes
 from . import sx1509_holder
+from . import wrist_rest
 
 
 def right_shell() -> bpy.types.Object:
@@ -245,4 +246,5 @@ def right_full() -> List[bpy.types.Object]:
         right_shell_obj(kbd),
         socket_underlay(kbd, mirror=False),
         thumb_underlay(kbd, mirror=False),
+        wrist_rest(kbd, mirror=False),
     ]

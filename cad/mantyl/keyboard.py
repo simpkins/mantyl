@@ -1474,7 +1474,7 @@ class Keyboard:
             thumb_wall[0].out1, thumb_wall[1].out1, front_wall[0].out1.y
         )
         og = self.mesh.add_point(Point(o.x, o.y, 0.0))
-        self.thumb_br_connect = og
+        self.thumb_br_connect = o
 
         # Find the intersection point between the two inner walls
         i = find_y_intersect(
