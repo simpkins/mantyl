@@ -1,12 +1,23 @@
-I printed everything with PLA, on a Prusa MK3S.  Most parts require support,
-and I just used detachable PLA support.  On Prusaslicer I did increase the
-default support Z distance slightly to make it a bit easier to detach.
+# Printing
 
-- Underlay
+I printed everything on a Prusa MK3S.
 
-  I printed this using the Ultimaker Cura slicer, with tree supports.
-  Cura does a much better job generating supports for this model than
-  Prusaslicer.
+## Shells & Thumb Underlays
+
+I printed these with PLA.  The shells require support; I just used simple PLA
+supports that break away.
+
+## Underlays
+
+Prusaslicer did not do a very good job generating supports for these, so I
+used the Cura slicer.  It's tree support functionality does a good job adding
+supports for this part, and they broke away fairly easily, despite the fact
+that this part is somewhat thin and fragile.
+
+## SX1509 Clips
+
+I printed these out of TPU, since I had some available from a previous project.
+I was concerned that the clips would be more likely to break with PLA.
 
 
 # Wiring

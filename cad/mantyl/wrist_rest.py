@@ -71,4 +71,4 @@ def left(kbd: Keyboard) -> bpy.types.Object:
 def test() -> bpy.types.Object:
     kbd = Keyboard()
     kbd.gen_mesh()
-    return right(kbd, mirror=False)
+    return right(kbd)

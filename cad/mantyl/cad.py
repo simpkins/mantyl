@@ -365,3 +365,44 @@ def cylinder(
         )
 
     return mesh
+
+
+def cone(r: float, h: float, fn: int = 24, rotation: float = 360.0) -> Mesh:
+    top_z = h * 0.5
+    bottom_z = -h * 0.5
+
+    if rotation >= 360.0:
+        rotation = 360.0
+        end = fn
+    else:
+        end = fn + 1
+
+    mesh = Mesh()
+    top_center = mesh.add_xyz(0.0, 0.0, top_z)
+    bottom_center = mesh.add_xyz(0.0, 0.0, bottom_z)
+    bottom_points: List[MeshPoint] = []
+
+    for n in range(end):
+        angle = (rotation / fn) * n
+        rad = math.radians(angle)
+
+        circle_x = math.sin(rad) * r
+        circle_y = math.cos(rad) * r
+
+        bottom_points.append(mesh.add_xyz(circle_x, circle_y, bottom_z))
+
+    for idx in range(1, len(bottom_points)):
+        # Note: this intentionally wraps around to -1 when idx == 0
+        prev_b = bottom_points[idx - 1]
+
+        mesh.add_tri(bottom_center, bottom_points[idx], prev_b)
+        mesh.add_tri(prev_b, bottom_points[idx], top_center)
+
+    if rotation >= 360.0:
+        mesh.add_tri(bottom_center, bottom_points[0], bottom_points[-1])
+        mesh.add_tri(bottom_points[-1], bottom_points[0], top_center)
+    else:
+        mesh.add_tri(bottom_center, bottom_points[0], top_center)
+        mesh.add_tri(top_center, bottom_points[-1], bottom_center)
+
+    return mesh

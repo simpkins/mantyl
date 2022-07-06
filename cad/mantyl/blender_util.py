@@ -236,3 +236,14 @@ def cylinder(
 ) -> bpy.types.Object:
     mesh = cad.cylinder(r, h, fn=fn, rotation=rotation)
     return new_mesh_obj(name, mesh)
+
+
+def cone(
+    r: float,
+    h: float,
+    fn: int = 24,
+    rotation: float = 360.0,
+    name: str = "cylinder",
+) -> bpy.types.Object:
+    mesh = cad.cone(r, h, fn=fn, rotation=rotation)
+    return new_mesh_obj(name, mesh)

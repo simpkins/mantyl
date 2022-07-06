@@ -12,7 +12,7 @@ from . import wrist_rest
 
 
 def test() -> None:
-    kbd_halves.right_shell()
+    #kbd_halves.right_shell()
     #kbd_halves.right_socket_underlay()
     #kbd_halves.right_thumb_underlay()
 
@@ -20,9 +20,9 @@ def test() -> None:
     #kbd_halves.left_socket_underlay()
     #kbd_halves.left_thumb_underlay()
 
-    #sx1509_holder.test()
+    sx1509_holder.test()
 
-    wrist_rest.test()
+    #wrist_rest.test()
 
     bpy.ops.object.mode_set(mode="EDIT")
     # blender_util.set_shading_mode("WIREFRAME")

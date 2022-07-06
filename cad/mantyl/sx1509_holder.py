@@ -33,85 +33,98 @@ def sx1509_breakout() -> bpy.types.Object:
     blender_util.difference(obj, hole(-15.367, -10.287))
     blender_util.difference(obj, hole(15.367, -10.287))
 
-    with blender_util.TransformContext(obj) as ctx:
-        ctx.translate(0.0, (d * -0.5) + y_off, (h * 0.5) + 2.0)
-
     return obj
 
 
-def extrude_face(
-    points: List[Tuple[float, float]], y_front: float, y_back: float
-) -> cad.Mesh:
-    front = []
-    back = []
-    mesh = cad.Mesh()
-    for (x, z) in points:
-        front.append(mesh.add_xyz(x, y_front, z))
-        back.append(mesh.add_xyz(x, y_back, z))
+def clip_pin() -> bpy.types.Object:
+    hole_d = 3.302
 
-    mesh.faces.append(tuple(f.index for f in front))
-    mesh.faces.append(tuple(reversed([b.index for b in back])))
-    for idx in range(len(front)):
-        mesh.add_quad(back[idx - 1], back[idx], front[idx], front[idx - 1])
+    base_r = 2.2
+    base_h = 3.0
 
-    return mesh
+    mid_r = 1.55
+    mid_h = 2.0
 
+    top_r = 2.0
+    top_h = 2.5
 
-def right_bracket() -> bpy.types.Object:
-    y_face = -6.0
-    y_back = -1.0
+    base = blender_util.cylinder(r=base_r, h=base_h)
+    with blender_util.TransformContext(base) as ctx:
+        ctx.translate(0.0, 0.0, base_h * 0.5)
 
-    points = [
-        (12.0, 30.0),
-        (21.0, 30.0),
-        (21.0, 0.0),
-        (21.0, -2.0),
-        (20.0, -2.0),
-        (16.0, 0.0),
-        (16.0, 1.0),
-        (18.0, 6.0),
-        (18.0, 24.0),
-        (12.0, 29.0),
-    ]
-    mesh = extrude_face(points, y_face, y_back)
-    bracket = blender_util.new_mesh_obj("bracket", mesh)
+    mid = blender_util.cylinder(r=mid_r, h=mid_h)
+    with blender_util.TransformContext(mid) as ctx:
+        ctx.translate(0.0, 0.0, base_h + (mid_h * 0.5))
+    blender_util.union(base, mid)
 
-    y_off = (y_face + y_back) * 0.5
-    w = 36.2 + 0.4
-    h = 26 + 0.4
-    d = 1.57 + 0.4
-    board_slot = blender_util.cube(w, d, h)
-    with blender_util.TransformContext(board_slot) as ctx:
-        ctx.translate(0.0, y_off, (h * 0.5) + 2.0)
-    blender_util.difference(bracket, board_slot)
+    top = blender_util.cone(r=top_r, h=top_h)
+    with blender_util.TransformContext(top) as ctx:
+        ctx.translate(0.0, 0.0, base_h + mid_h + (top_h * 0.5))
+    blender_util.union(base, top)
 
-    return bracket
+    top_invert = blender_util.cone(r=top_r, h=top_h)
+    with blender_util.TransformContext(top_invert) as ctx:
+        ctx.rotate(180.0, "X")
+        ctx.translate(0.0, 0.0, base_h + mid_h - (top_h * 0.5))
+    blender_util.union(base, top_invert)
+
+    cutout = blender_util.range_cube(
+        (-base_r * 2, base_r * 2),
+        (-0.3, 0.3),
+        (base_h + mid_h - 1.0, base_h + mid_h + top_h + 1.0),
+    )
+    blender_util.difference(base, cutout)
+
+    return base
 
 
 def sx1509_holder() -> bpy.types.Object:
-    holder = blender_util.range_cube((-21.0, 21.0), (-1.0, 0.0), (22.0, 30.0))
+    x = 10.287
+    y = 15.367
 
-    right = right_bracket()
-    left = right_bracket()
-    with blender_util.TransformContext(left) as ctx:
-        ctx.mirror_x()
+    tl = clip_pin()
+    tr = clip_pin()
+    bl = clip_pin()
+    br = clip_pin()
+    with blender_util.TransformContext(tl) as ctx:
+        ctx.translate(-x, y, 0.0)
+    with blender_util.TransformContext(tr) as ctx:
+        ctx.translate(x, y, 0.0)
+    with blender_util.TransformContext(bl) as ctx:
+        ctx.translate(-x, -y, 0.0)
+    with blender_util.TransformContext(br) as ctx:
+        ctx.translate(x, -y, 0.0)
 
-    blender_util.union(holder, left)
-    blender_util.union(holder, right)
-    return holder
+    # Print a very thin base layer.  This does not need to be very substantial,
+    # it exists just to hold the clips in place and to provide slightly more
+    # surface area to glue it to the keyboard wall.
+    # .45mm is enough for 3 layers if printing with .15mm layers.
+    base_h = 0.45
+    base_x = x + 2.5
+    base_y = y + 2.5
+    base = blender_util.range_cube(
+        (-base_x, base_x), (-base_y, base_y), (0.0, base_h)
+    )
+
+    blender_util.union(base, tl)
+    blender_util.union(base, tr)
+    blender_util.union(base, bl)
+    blender_util.union(base, br)
+    return base
 
 
-def upside_down() -> bpy.types.Object:
-    # The holder is easier to print upside down
+def test(show_breakout: bool = True) -> bpy.types.Object:
+    if show_breakout:
+        breakout = sx1509_breakout()
+
     holder = sx1509_holder()
     with blender_util.TransformContext(holder) as ctx:
-        ctx.rotate(180.0, "Y")
-        ctx.translate(0.0, 0.0, 30.0)
+        ctx.rotate(90, "Z")
+        ctx.rotate(90, "X")
+        ctx.translate(0.0, 3.81, 0.0)
 
-    return holder
 
-
-def test(show_breakout: bool = False) -> bpy.types.Object:
+def x_test(show_breakout: bool = False) -> bpy.types.Object:
     if show_breakout:
         breakout = sx1509_breakout()
         with blender_util.TransformContext(breakout) as ctx:

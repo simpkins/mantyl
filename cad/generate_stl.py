@@ -38,7 +38,7 @@ def main() -> None:
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    export_stl("sx1509_holder", sx1509_holder.upside_down)
+    export_stl("sx1509_holder", sx1509_holder.sx1509_holder)
     export_stl("right_shell", kbd_halves.right_shell)
     export_stl("right_underlay", kbd_halves.right_socket_underlay)
     export_stl("right_thumb_underlay", kbd_halves.right_thumb_underlay)
