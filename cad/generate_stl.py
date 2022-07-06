@@ -4,7 +4,7 @@
 #
 
 """Export STL files for all of the parts.
-To use, run "blender -b -P export_all.py"
+To use, run "blender -b -P generate_stl.py"
 """
 
 from __future__ import annotations
