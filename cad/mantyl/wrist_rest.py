@@ -57,8 +57,15 @@ class WristRest:
         self.mesh.add_tri(corner_tl, corner_tr, self.top_bl)
 
 
-def right(kbd: Keyboard, mirror: bool) -> bpy.types.Object:
+def right(kbd: Keyboard) -> bpy.types.Object:
     return WristRest(kbd).gen()
+
+
+def left(kbd: Keyboard) -> bpy.types.Object:
+    obj = WristRest(kbd).gen()
+    with blender_util.TransformContext(obj) as ctx:
+        ctx.mirror_x()
+    return obj
 
 
 def test() -> bpy.types.Object:

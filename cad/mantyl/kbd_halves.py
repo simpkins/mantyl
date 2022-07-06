@@ -246,5 +246,28 @@ def right_full() -> List[bpy.types.Object]:
         right_shell_obj(kbd),
         socket_underlay(kbd, mirror=False),
         thumb_underlay(kbd, mirror=False),
-        wrist_rest(kbd, mirror=False),
+        wrist_rest.right(kbd),
+    ]
+
+
+def left_full() -> List[bpy.types.Object]:
+    kbd = Keyboard()
+    kbd.gen_mesh()
+
+    breakout_holder = sx1509_holder.sx1509_holder()
+    blender_util.apply_to_wall(
+        breakout_holder,
+        kbd.left_wall[-1].in3,
+        kbd.left_wall[-5].in3,
+        x=-5.0,
+        z=6.0,
+    )
+    with blender_util.TransformContext(breakout_holder) as ctx:
+        ctx.mirror_x()
+
+    return [
+        left_shell_obj(kbd),
+        socket_underlay(kbd, mirror=True),
+        thumb_underlay(kbd, mirror=True),
+        wrist_rest.left(kbd),
     ]
