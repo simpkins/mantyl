@@ -122,19 +122,3 @@ def test(show_breakout: bool = True) -> bpy.types.Object:
         ctx.rotate(90, "Z")
         ctx.rotate(90, "X")
         ctx.translate(0.0, 3.81, 0.0)
-
-
-def x_test(show_breakout: bool = False) -> bpy.types.Object:
-    if show_breakout:
-        breakout = sx1509_breakout()
-        with blender_util.TransformContext(breakout) as ctx:
-            ctx.translate(0.0, 0.0, 3.0)
-
-    wall = blender_util.range_cube((-25, 25), (0, 4), (0, 38))
-    holder = sx1509_holder()
-    with blender_util.TransformContext(holder) as ctx:
-        ctx.translate(0.0, 0.0, 3.0)
-
-    blender_util.union(wall, holder)
-
-    return wall
