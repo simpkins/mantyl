@@ -203,6 +203,10 @@ class TransformContext:
         )
         # Delete the original geometry
         bmesh.ops.delete(self.bmesh, geom=geom)
+        # Reverse the faces to restore the correct normal direction
+        bmesh.ops.reverse_faces(
+            self.bmesh, faces=self.bmesh.faces[:]
+        )
 
 
 def set_shading_mode(mode: str) -> None:

@@ -14,6 +14,7 @@ from .i2c_conn import add_i2c_connector
 from .keyboard import Keyboard, gen_keyboard
 from .key_socket_holder import SocketHolderBuilder, SocketType
 from .screw_holes import add_screw_holes
+from . import oled_holder
 from . import sx1509_holder
 from . import wrist_rest
 
@@ -40,6 +41,13 @@ def left_shell() -> bpy.types.Object:
 
 def left_shell_obj(kbd: Keyboard) -> bpy.types.Object:
     kbd_obj = gen_keyboard(kbd)
+
+    oled_cutout = oled_holder.oled_holder_parts()
+    with blender_util.TransformContext(oled_cutout) as ctx:
+        ctx.mirror_x()
+    blender_util.apply_to_wall(oled_cutout, kbd.thumb_tl.out2, kbd.thumb_bl.out2, x=0.0, z=30.0)
+    blender_util.difference(kbd_obj, oled_cutout)
+
     add_feet(kbd, kbd_obj)
     add_i2c_connector(kbd, kbd_obj)
     add_screw_holes(kbd, kbd_obj)
