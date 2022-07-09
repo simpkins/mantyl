@@ -42,12 +42,12 @@ def left_shell() -> bpy.types.Object:
 def left_shell_obj(kbd: Keyboard) -> bpy.types.Object:
     kbd_obj = gen_keyboard(kbd)
 
-    oled_cutout = oled_holder.oled_holder_parts()
-    with blender_util.TransformContext(oled_cutout) as ctx:
-        ctx.mirror_x()
-    blender_util.apply_to_wall(oled_cutout, kbd.thumb_tl.out2, kbd.thumb_bl.out2, x=0.0, z=30.0)
-    blender_util.difference(kbd_obj, oled_cutout)
-
+    oled_holder.apply_oled_holder(
+        kbd_obj,
+        kbd.thumb_tl.out2.point,
+        kbd.thumb_bl.out2.point,
+        mirror_x=True,
+    )
     add_feet(kbd, kbd_obj)
     add_i2c_connector(kbd, kbd_obj)
     add_screw_holes(kbd, kbd_obj)

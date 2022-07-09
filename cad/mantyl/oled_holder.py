@@ -12,7 +12,7 @@ import bpy
 from typing import Tuple
 
 
-def oled_holder_parts(wall_thickness: float = 4.0) -> bpy.types.Object:
+def oled_cutout(wall_thickness: float = 4.0) -> bpy.types.Object:
     front_y = -0.1
     back_y = wall_thickness + 0.2
 
@@ -35,7 +35,7 @@ def oled_holder_parts(wall_thickness: float = 4.0) -> bpy.types.Object:
         (-display_x_r, display_x_r),
         (front_y, display_thickness),
         (-display_h_r, display_h_r),
-        name = "oled_cutout",
+        name="oled_cutout",
     )
 
     pcb_x_r = (pcb_w + pcb_tolerance) * 0.5
@@ -88,9 +88,7 @@ def oled_holder_parts(wall_thickness: float = 4.0) -> bpy.types.Object:
         pcb_x_r + display_offset + oled_cutout_x, back_y, -display_h_r
     )
     b_tr = mesh.add_xyz(
-        pcb_x_r + display_offset + oled_cutout_x,
-        back_y,
-        display_h_r - 2.0,
+        pcb_x_r + display_offset + oled_cutout_x, back_y, display_h_r - 2.0
     )
 
     mesh.add_quad(f_tl, f_bl, b_bl, b_tl)
@@ -124,9 +122,64 @@ def oled_holder_parts(wall_thickness: float = 4.0) -> bpy.types.Object:
     return display_cutout
 
 
-def test() -> bpy.types.Object:
-    wall = blender_util.range_cube((-25, 25), (0.0, 4.0), (-20.0, 20.0))
-    neg = oled_holder_parts(4.0)
-    blender_util.difference(wall, neg)
+def hat_cutout(
+    wall_thickness: float = 4.0
+) -> Tuple[bpy.types.Object, bpy.types.Object]:
+    front_y = -0.2
+    back_y = wall_thickness + 0.2
 
+    base_w = 12.8
+    base_h = 12.8
+
+    hole_w = 9.5
+    hole_h = 9.5
+    cutout = blender_util.range_cube(
+        (hole_w * -0.5, hole_w * 0.5),
+        (front_y, back_y),
+        (hole_h * -0.5, hole_h * 0.5),
+    )
+
+    full_d = 13.0
+    protrude_d = 3.0
+    nub_d = 7.0
+    pos_d = full_d - protrude_d - 1.0
+
+    pos_w = base_w + 4.0
+    pos_h = base_h + 4.0
+    pos = blender_util.range_cube(
+        (pos_w * -0.5, pos_w * 0.5),
+        (0.5, pos_d),
+        (base_h * -0.5 - 2.0, base_h * 0.5),
+    )
+
+    pos_w = base_w + 4.0
+    pos_h = base_h + 4.0
+    base_cutout = blender_util.range_cube(
+        (base_w * -0.5, base_w * 0.5),
+        (nub_d - protrude_d, pos_d + 1.0),
+        (base_h * -0.5, base_h * 0.5),
+    )
+    blender_util.union(cutout, base_cutout)
+
+    return pos, cutout
+
+
+def apply_oled_holder(wall: bpy.types.Object, p1: cad.Point, p2: cad.Point, mirror_x: bool = False) -> None:
+    oled_neg = oled_cutout(4.0)
+    if mirror_x:
+        with blender_util.TransformContext(oled_neg) as ctx:
+            ctx.mirror_x()
+    blender_util.apply_to_wall(oled_neg, p1, p2, x=0.0, z=27.0)
+    blender_util.difference(wall, oled_neg)
+
+    hat_pos, hat_neg = hat_cutout()
+    blender_util.apply_to_wall(hat_pos, p1, p2, x=0.0, z=9.0)
+    blender_util.apply_to_wall(hat_neg, p1, p2, x=0.0, z=9.0)
+    blender_util.union(wall, hat_pos)
+    blender_util.difference(wall, hat_neg)
+
+
+def test() -> bpy.types.Object:
+    wall = blender_util.range_cube((-22, 22), (0.0, 4.0), (0.0, 42.0))
+    apply_oled_holder(wall, cad.Point(0.0, 0.0, -25), cad.Point(0.0, 0.0, 25.0))
     return wall
