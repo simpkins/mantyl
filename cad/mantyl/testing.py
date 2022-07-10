@@ -18,9 +18,9 @@ def test() -> None:
     # kbd_halves.right_socket_underlay()
     # kbd_halves.right_thumb_underlay()
 
-    # kbd_halves.left_shell()
-    # kbd_halves.left_socket_underlay()
-    # kbd_halves.left_thumb_underlay()
+    #kbd_halves.left_shell()
+    #kbd_halves.left_socket_underlay()
+    #kbd_halves.left_thumb_underlay()
 
     # sx1509_holder.test()
     oled_holder.test()
