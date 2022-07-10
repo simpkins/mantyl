@@ -76,6 +76,8 @@ def left_oled_backplate(kbd: Optional[Keyboard] = None) -> bpy.types.Object:
     with blender_util.TransformContext(backplate) as ctx:
         ctx.mirror_x()
 
+    return backplate
+
 
 def right_keyboard_grid() -> bpy.types.Object:
     kbd = Keyboard()

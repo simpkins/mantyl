@@ -200,22 +200,40 @@ def oled_backplate(left: bool = True) -> bpy.types.Object:
 
         blender_util.union(base, standoff)
 
+    top_screw_plate_r = 4.5
+    top_plate_y_off = 6.5 * 0.5
     if left:
-        top_plate_offset = 13.75
+        top_plate_offset = (base_w * 0.5) + display_offset - top_screw_plate_r
     else:
-        top_plate_offset = -11.25
+        top_plate_offset = (base_w * -0.5) + display_offset + top_screw_plate_r
     top_screw_plate = blender_util.range_cube(
-        (-4.0 + top_plate_offset, 4.0 + top_plate_offset),
+        (
+            -top_screw_plate_r + top_plate_offset,
+            top_screw_plate_r + top_plate_offset,
+        ),
         base_y_range,
-        (base_h * 0.5, (base_h * 0.5) + 6.5),
+        (base_h * 0.5, (base_h * 0.5) + top_plate_y_off),
     )
+    blender_util.union(base, top_screw_plate)
+
+    top_screw_cyl = blender_util.cylinder(
+        r=top_screw_plate_r, h=base_y_range[1] - base_y_range[0]
+    )
+    with blender_util.TransformContext(top_screw_cyl) as ctx:
+        ctx.rotate(90, "X")
+        ctx.translate(
+            top_plate_offset,
+            (base_y_range[0] + base_y_range[1]) * 0.5,
+            (base_h * 0.5) + top_plate_y_off,
+        )
+    blender_util.union(base, top_screw_cyl)
+
     screw_hole = blender_util.cylinder(r=screw_hole_r, h=4)
     with blender_util.TransformContext(screw_hole) as ctx:
         ctx.rotate(90, "X")
         ctx.translate(
             top_plate_offset, 2 + standoff_h - 0.2, (base_h * 0.5) + 3.0
         )
-    blender_util.union(base, top_screw_plate)
     blender_util.difference(base, screw_hole)
 
     bottom_plate = blender_util.range_cube(
@@ -257,16 +275,26 @@ def oled_backplate_left() -> bpy.types.Object:
 
 
 def screw_standoff() -> bpy.types.Object:
-    fn=64
+    """These screw standoffs are designed to fit 1/4" #6-32 UNC screws."""
+    fn = 64
     d = 5.5
     hole_d = 3.25
     h = 4.5
 
-    standoff = blender_util.cylinder(r=d * 0.5, h=h, fn=fn)
+    r = d * 0.5
+    standoff = blender_util.cylinder(r=r, h=h, fn=fn)
     hole = blender_util.cylinder(r=hole_d * 0.5, h=h, fn=fn)
     blender_util.difference(standoff, hole)
     with blender_util.TransformContext(standoff) as ctx:
         ctx.translate(0.0, 0.0, h * 0.5)
+
+    base_h = 0.3
+    base_r = r * 1.10
+    base = blender_util.cylinder(r=base_r, h=base_h, fn=fn)
+    with blender_util.TransformContext(base) as ctx:
+        ctx.translate(0.0, 0.0, base_h * 0.5)
+    blender_util.union(standoff, base)
+
     return standoff
 
 
@@ -282,7 +310,7 @@ def test() -> bpy.types.Object:
         with blender_util.TransformContext(backplate) as ctx:
             ctx.translate(0, 0, 27.0)
 
-    standoff_positions = [(12.0, 8.5), (-11.5, 8.5), (13.75, 41.0)]
+    standoff_positions = [(12.0, 8.5), (-11.5, 8.5), (13.25, 41.0)]
     for (x, z) in standoff_positions:
         standoff = screw_standoff()
         with blender_util.TransformContext(standoff) as ctx:
