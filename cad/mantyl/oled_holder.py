@@ -166,24 +166,16 @@ def apply_oled_holder(
     blender_util.difference(wall, hat_neg)
 
 
-def oled_backplate(left: bool = True) -> bpy.types.Object:
-    z_offset = 0.0
-    y_offset = 3.3
-
+class Backplate:
     standoff_d = 4.25
     standoff_h = 6
 
-    screw_hole_r = 4.25 * 0.5
+    y_front = standoff_h - 0.1
+    y_back = standoff_h + 2.0
+    base_y_range = (y_front, y_back)
 
     display_offset = 2.5 * 0.5
     base_w = 33
-    base_h = 22
-    base_y_range = (standoff_h - 0.1, standoff_h + 2.0)
-    base = blender_util.range_cube(
-        ((base_w * -0.5) + display_offset, (base_w * 0.5) + display_offset),
-        base_y_range,
-        (base_h * -0.5, base_h * 0.5),
-    )
 
     stud_positions = [
         (-14.0, -8.325),
@@ -191,87 +183,127 @@ def oled_backplate(left: bool = True) -> bpy.types.Object:
         (14.0, 8.175),
         (-14.0, 8.175),
     ]
-    standoff_y = standoff_h * 0.5
-    for x, z in stud_positions:
-        standoff = blender_util.cylinder(r=standoff_d * 0.5, h=standoff_h)
-        with blender_util.TransformContext(standoff) as ctx:
+
+    screw_hole_r = 4.25 * 0.5
+    screw_plate_r = 4.5
+
+    # The OLED display is centered at Z=0
+    # The directional hat button is centered at Z=hat_z
+    hat_z = 9.0 - 27.0
+
+    z_top = 11.0
+
+    bottom_screw_x = (-12.0, 12.0)
+
+    def __init__(self, left: bool) -> None:
+        self.left = left
+
+        self.x_left = (self.base_w * -0.5)
+        self.x_right = (self.base_w * 0.5) + self.display_offset
+
+        if left:
+            self.top_screw_x = self.x_right - self.screw_plate_r
+        else:
+            self.top_screw_x = self.x_left + self.screw_plate_r
+        self.top_screw_z = self.z_top + 3.25
+
+        self.screw_positions = [
+            (self.top_screw_x, self.top_screw_z),
+            (self.bottom_screw_x[0], self.hat_z),
+            (self.bottom_screw_x[1], self.hat_z),
+        ]
+
+    def gen_backplate(self) -> bpy.types.Object:
+        z_bottom = self.hat_z
+
+        # Central base plate
+        base_x_range = (self.x_left, self.x_right)
+        base_z_range = (z_bottom, self.z_top)
+        base = blender_util.range_cube(
+            base_x_range, self.base_y_range, base_z_range
+        )
+
+        # Standoffs to hold OLED PCB
+        standoff_y = self.standoff_h * 0.5
+        for x, z in self.stud_positions:
+            standoff = blender_util.cylinder(
+                r=self.standoff_d * 0.5, h=self.standoff_h
+            )
+            with blender_util.TransformContext(standoff) as ctx:
+                ctx.rotate(90, "X")
+                ctx.translate(x + self.display_offset, standoff_y, z)
+            blender_util.union(base, standoff)
+
+        # Top screw plate
+        top_plate_square = blender_util.range_cube(
+            (
+                self.top_screw_x - self.screw_plate_r,
+                self.top_screw_x + self.screw_plate_r,
+            ),
+            self.base_y_range,
+            (self.z_top, self.top_screw_z),
+        )
+        blender_util.union(base, top_plate_square)
+        top_plate_cyl = self.base_cyl(
+            r=self.screw_plate_r, x=self.top_screw_x, z=self.top_screw_z
+        )
+        blender_util.union(base, top_plate_cyl)
+        top_screw_hole = self.base_cyl(
+            r=self.screw_hole_r,
+            thick_factor=1.5,
+            x=self.top_screw_x,
+            z=self.top_screw_z,
+        )
+        blender_util.difference(base, top_screw_hole)
+
+        # Bottom square plate
+        bottom_plate = blender_util.range_cube(
+            (self.bottom_screw_x[0], self.bottom_screw_x[1]),
+            self.base_y_range,
+            (z_bottom - 7.5, z_bottom)
+        )
+        blender_util.union(base, bottom_plate)
+
+        # Bottom screw holes
+        for x in self.bottom_screw_x:
+            screw_plate = self.base_cyl(
+                r=self.screw_plate_r, x=x, z=self.hat_z
+            )
+            blender_util.union(base, screw_plate)
+            screw_hole = self.base_cyl(
+                r=self.screw_hole_r, x=x, z=self.hat_z,
+                thick_factor=1.5,
+            )
+            blender_util.difference(base, screw_hole)
+
+        # Holes for the directional hat pins
+        x_pin_width = 10.5
+        for x_pin_off in (x_pin_width * -0.5, x_pin_width * 0.5):
+            pin_hole = blender_util.range_cube(
+                (x_pin_off - 1, x_pin_off + 1),
+                (self.y_front - 1.0, self.y_back + 1.0),
+                (self.hat_z - 4.5, self.hat_z + 4.5),
+            )
+            blender_util.difference(base, pin_hole)
+
+        y_offset = 3.3
+        with blender_util.TransformContext(base) as ctx:
+            ctx.translate(0.0, y_offset, 0.0)
+        return base
+
+    def base_cyl(
+        self, r: float, x: float, z: float, thick_factor: float = 1.0
+    ) -> bpy.types.Object:
+        thickness = (self.y_back - self.y_front) * thick_factor
+        cyl = blender_util.cylinder(r=r, h=thickness)
+        with blender_util.TransformContext(cyl) as ctx:
             ctx.rotate(90, "X")
-            ctx.translate(x + display_offset, standoff_y, z)
-
-        blender_util.union(base, standoff)
-
-    top_screw_plate_r = 4.5
-    top_plate_y_off = 6.5 * 0.5
-    if left:
-        top_plate_offset = (base_w * 0.5) + display_offset - top_screw_plate_r
-    else:
-        top_plate_offset = (base_w * -0.5) + display_offset + top_screw_plate_r
-    top_screw_plate = blender_util.range_cube(
-        (
-            -top_screw_plate_r + top_plate_offset,
-            top_screw_plate_r + top_plate_offset,
-        ),
-        base_y_range,
-        (base_h * 0.5, (base_h * 0.5) + top_plate_y_off),
-    )
-    blender_util.union(base, top_screw_plate)
-
-    top_screw_cyl = blender_util.cylinder(
-        r=top_screw_plate_r, h=base_y_range[1] - base_y_range[0]
-    )
-    with blender_util.TransformContext(top_screw_cyl) as ctx:
-        ctx.rotate(90, "X")
-        ctx.translate(
-            top_plate_offset,
-            (base_y_range[0] + base_y_range[1]) * 0.5,
-            (base_h * 0.5) + top_plate_y_off,
-        )
-    blender_util.union(base, top_screw_cyl)
-
-    screw_hole = blender_util.cylinder(r=screw_hole_r, h=4)
-    with blender_util.TransformContext(screw_hole) as ctx:
-        ctx.rotate(90, "X")
-        ctx.translate(
-            top_plate_offset, 2 + standoff_h - 0.2, (base_h * 0.5) + 3.0
-        )
-    blender_util.difference(base, screw_hole)
-
-    bottom_plate = blender_util.range_cube(
-        (-16.0 + display_offset, 15.0 + display_offset),
-        base_y_range,
-        ((base_h * -0.5) - 12, (base_h * -0.5)),
-    )
-    blender_util.union(base, bottom_plate)
-
-    bottom_plate2 = blender_util.range_cube(
-        (-8, 8), base_y_range, (((base_h * -0.5) - 15), (base_h * -0.5) - 12)
-    )
-    blender_util.union(base, bottom_plate2)
-
-    y_pin_off = 9 - 27
-    x_pin_width = 10.5
-    for x_pin_off in (x_pin_width * -0.5, x_pin_width * 0.5):
-        pin_hole = blender_util.range_cube(
-            (x_pin_off - 1, x_pin_off + 1),
-            (base_y_range[0] - 1.0, base_y_range[1] + 1.0),
-            (y_pin_off - 4.5, y_pin_off + 4.5),
-        )
-        blender_util.difference(base, pin_hole)
-
-    for pos in (-11.5, 12.0):
-        screw_hole = blender_util.cylinder(r=screw_hole_r, h=4)
-        with blender_util.TransformContext(screw_hole) as ctx:
-            ctx.rotate(90, "X")
-            ctx.translate(pos, 2 + standoff_h - 0.2, (base_h * -0.5) - 7.5)
-        blender_util.difference(base, screw_hole)
-
-    with blender_util.TransformContext(base) as ctx:
-        ctx.translate(0.0, y_offset, z_offset)
-    return base
+            ctx.translate(x, (self.y_back + self.y_front) * 0.5, z)
+        return cyl
 
 
 def oled_backplate_left() -> bpy.types.Object:
-    return oled_backplate(left=True)
+    return Backplate(left=True).gen_backplate()
 
 
 def screw_standoff() -> bpy.types.Object:
@@ -304,17 +336,17 @@ def test() -> bpy.types.Object:
         wall, cad.Point(0.0, 0.0, -25), cad.Point(0.0, 0.0, 25.0)
     )
 
+    backplate = Backplate(left=True)
     show_backplate = True
     if show_backplate:
-        backplate = oled_backplate(left=True)
-        with blender_util.TransformContext(backplate) as ctx:
+        backplate_obj = backplate.gen_backplate()
+        with blender_util.TransformContext(backplate_obj) as ctx:
             ctx.translate(0, 0, 27.0)
 
-    standoff_positions = [(12.0, 8.5), (-11.5, 8.5), (13.25, 41.0)]
-    for (x, z) in standoff_positions:
+    for (x, z) in backplate.screw_positions:
         standoff = screw_standoff()
         with blender_util.TransformContext(standoff) as ctx:
             ctx.rotate(-90, "X")
-            ctx.translate(x, 4.0, z)
+            ctx.translate(x, 4.0, z + 27.0)
 
     return wall
