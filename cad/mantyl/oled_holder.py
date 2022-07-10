@@ -123,7 +123,7 @@ def hat_cutout(
         ctx.rotate(90, "X")
         ctx.translate(0.0, wall_thickness * 0.5, 0.0)
 
-    full_d = 13.0
+    full_d = 12.0
     protrude_d = 3.0
     nub_d = 7.0
     pos_d = full_d - protrude_d - 1.0
@@ -231,24 +231,21 @@ def oled_backplate(left: bool = True) -> bpy.types.Object:
     blender_util.union(base, bottom_plate2)
 
     y_pin_off = 9 - 27
-    for x_pin_off in (10.3 * -0.5, 10.3 * 0.5):
+    x_pin_width = 10.5
+    for x_pin_off in (x_pin_width * -0.5, x_pin_width * 0.5):
         pin_hole = blender_util.range_cube(
-            (x_pin_off - 0.5, x_pin_off + 0.5),
+            (x_pin_off - 1, x_pin_off + 1),
             (base_y_range[0] - 1.0, base_y_range[1] + 1.0),
             (y_pin_off - 4.5, y_pin_off + 4.5),
         )
         blender_util.difference(base, pin_hole)
 
-    screw_hole_l = blender_util.cylinder(r=screw_hole_r, h=4)
-    with blender_util.TransformContext(screw_hole_l) as ctx:
-        ctx.rotate(90, "X")
-        ctx.translate(12.0, 2 + standoff_h - 0.2, (base_h * -0.5) - 7.5)
-    blender_util.difference(base, screw_hole_l)
-    screw_hole_r = blender_util.cylinder(r=screw_hole_r, h=4)
-    with blender_util.TransformContext(screw_hole_r) as ctx:
-        ctx.rotate(90, "X")
-        ctx.translate(-11.5, 2 + standoff_h - 0.2, (base_h * -0.5) - 7.5)
-    blender_util.difference(base, screw_hole_r)
+    for pos in (-11.5, 12.0):
+        screw_hole = blender_util.cylinder(r=screw_hole_r, h=4)
+        with blender_util.TransformContext(screw_hole) as ctx:
+            ctx.rotate(90, "X")
+            ctx.translate(pos, 2 + standoff_h - 0.2, (base_h * -0.5) - 7.5)
+        blender_util.difference(base, screw_hole)
 
     with blender_util.TransformContext(base) as ctx:
         ctx.translate(0.0, y_offset, z_offset)
