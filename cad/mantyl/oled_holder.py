@@ -118,7 +118,7 @@ def hat_cutout(
 
     hole_w = 9.5
     hole_h = 9.5
-    cutout = blender_util.cylinder(r=hole_w * 0.5, h=wall_thickness + 1)
+    cutout = blender_util.cylinder(r=hole_w * 0.5, h=wall_thickness + 1, fn=64)
     with blender_util.TransformContext(cutout) as ctx:
         ctx.rotate(90, "X")
         ctx.translate(0.0, wall_thickness * 0.5, 0.0)
@@ -131,9 +131,7 @@ def hat_cutout(
     pos_w = base_w + 4.0
     pos_h = base_h + 4.0
     pos = blender_util.range_cube(
-        (pos_w * -0.5, pos_w * 0.5),
-        (0.5, pos_d),
-        (-9.0, base_h * 0.5),
+        (pos_w * -0.5, pos_w * 0.5), (0.5, pos_d), (-9.0, base_h * 0.5)
     )
 
     pos_w = base_w + 4.0
@@ -228,9 +226,7 @@ def oled_backplate(left: bool = True) -> bpy.types.Object:
     blender_util.union(base, bottom_plate)
 
     bottom_plate2 = blender_util.range_cube(
-        (-8, 8),
-        base_y_range,
-        (((base_h * -0.5) - 15), (base_h * -0.5) - 12),
+        (-8, 8), base_y_range, (((base_h * -0.5) - 15), (base_h * -0.5) - 12)
     )
     blender_util.union(base, bottom_plate2)
 
@@ -259,8 +255,26 @@ def oled_backplate(left: bool = True) -> bpy.types.Object:
     return base
 
 
+def oled_backplate_left() -> bpy.types.Object:
+    return oled_backplate(left=True)
+
+
+def screw_standoff() -> bpy.types.Object:
+    fn=64
+    d = 5.5
+    hole_d = 3.25
+    h = 4.5
+
+    standoff = blender_util.cylinder(r=d * 0.5, h=h, fn=fn)
+    hole = blender_util.cylinder(r=hole_d * 0.5, h=h, fn=fn)
+    blender_util.difference(standoff, hole)
+    with blender_util.TransformContext(standoff) as ctx:
+        ctx.translate(0.0, 0.0, h * 0.5)
+    return standoff
+
+
 def test() -> bpy.types.Object:
-    wall = blender_util.range_cube((-22, 22), (0.0, 4.0), (0.0, 42.0))
+    wall = blender_util.range_cube((-22, 22), (0.0, 4.0), (0.0, 45.0))
     apply_oled_holder(
         wall, cad.Point(0.0, 0.0, -25), cad.Point(0.0, 0.0, 25.0)
     )
@@ -270,5 +284,12 @@ def test() -> bpy.types.Object:
         backplate = oled_backplate(left=True)
         with blender_util.TransformContext(backplate) as ctx:
             ctx.translate(0, 0, 27.0)
+
+    standoff_positions = [(12.0, 8.5), (-11.5, 8.5), (13.75, 41.0)]
+    for (x, z) in standoff_positions:
+        standoff = screw_standoff()
+        with blender_util.TransformContext(standoff) as ctx:
+            ctx.rotate(-90, "X")
+            ctx.translate(x, 4.0, z)
 
     return wall

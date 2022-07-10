@@ -261,12 +261,15 @@ def right_full() -> List[bpy.types.Object]:
     kbd.gen_mesh()
 
     breakout_holder = sx1509_holder.sx1509_holder()
+    with blender_util.TransformContext(breakout_holder) as ctx:
+        ctx.rotate(90, "X")
+        ctx.rotate(90, "Y")
     blender_util.apply_to_wall(
         breakout_holder,
         kbd.left_wall[-1].in3,
         kbd.left_wall[-5].in3,
         x=-5.0,
-        z=6.0,
+        z=20.0,
     )
 
     return [
@@ -282,12 +285,15 @@ def left_full() -> List[bpy.types.Object]:
     kbd.gen_mesh()
 
     breakout_holder = sx1509_holder.sx1509_holder()
+    with blender_util.TransformContext(breakout_holder) as ctx:
+        ctx.rotate(90, "X")
+        ctx.rotate(90, "Y")
     blender_util.apply_to_wall(
         breakout_holder,
         kbd.left_wall[-1].in3,
         kbd.left_wall[-5].in3,
         x=-5.0,
-        z=6.0,
+        z=20.0,
     )
     with blender_util.TransformContext(breakout_holder) as ctx:
         ctx.mirror_x()
