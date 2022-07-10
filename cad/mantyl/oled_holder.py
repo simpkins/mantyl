@@ -173,7 +173,7 @@ def oled_backplate(left: bool = True) -> bpy.types.Object:
     standoff_d = 4.25
     standoff_h = 6
 
-    screw_hole_r = 4.75 * 0.5
+    screw_hole_r = 4.25 * 0.5
 
     display_offset = 2.5 * 0.5
     base_w = 33
