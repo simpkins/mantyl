@@ -58,6 +58,25 @@ def left_shell_obj(kbd: Keyboard) -> bpy.types.Object:
     return kbd_obj
 
 
+def left_oled_backplate(kbd: Optional[Keyboard] = None) -> bpy.types.Object:
+    if kbd is None:
+        kbd = Keyboard()
+        kbd.gen_mesh()
+
+    backplate = oled_holder.oled_backplate(left=True)
+    with blender_util.TransformContext(backplate) as ctx:
+        ctx.mirror_x()
+    blender_util.apply_to_wall(
+        backplate,
+        kbd.thumb_tl.out2.point,
+        kbd.thumb_bl.out2.point,
+        x=0.0,
+        z=27.0,
+    )
+    with blender_util.TransformContext(backplate) as ctx:
+        ctx.mirror_x()
+
+
 def right_keyboard_grid() -> bpy.types.Object:
     kbd = Keyboard()
     kbd.gen_main_grid()
@@ -275,6 +294,7 @@ def left_full() -> List[bpy.types.Object]:
 
     return [
         left_shell_obj(kbd),
+        left_oled_backplate(kbd),
         socket_underlay(kbd, mirror=True),
         thumb_underlay(kbd, mirror=True),
         wrist_rest.left(kbd),

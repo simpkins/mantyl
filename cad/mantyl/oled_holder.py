@@ -167,19 +167,8 @@ def apply_oled_holder(
     blender_util.union(wall, hat_pos)
     blender_util.difference(wall, hat_neg)
 
-    show_backplate = False
-    if show_backplate:
-        backplate = oled_backplate(mirror_x=mirror_x)
-        if mirror_x:
-            with blender_util.TransformContext(backplate) as ctx:
-                ctx.mirror_x()
-        blender_util.apply_to_wall(backplate, p1, p2, x=0.0, z=27.0)
-        if mirror_x:
-            with blender_util.TransformContext(backplate) as ctx:
-                ctx.mirror_x()
 
-
-def oled_backplate(mirror_x: bool = False) -> bpy.types.Object:
+def oled_backplate(left: bool = True) -> bpy.types.Object:
     z_offset = 0.0
     y_offset = 3.3
 
@@ -213,7 +202,7 @@ def oled_backplate(mirror_x: bool = False) -> bpy.types.Object:
 
         blender_util.union(base, standoff)
 
-    if mirror_x:
+    if left:
         top_plate_offset = 13.75
     else:
         top_plate_offset = -11.25
@@ -275,5 +264,11 @@ def test() -> bpy.types.Object:
     apply_oled_holder(
         wall, cad.Point(0.0, 0.0, -25), cad.Point(0.0, 0.0, 25.0)
     )
+
+    show_backplate = True
+    if show_backplate:
+        backplate = oled_backplate(left=True)
+        with blender_util.TransformContext(backplate) as ctx:
+            ctx.translate(0, 0, 27.0)
 
     return wall
