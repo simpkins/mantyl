@@ -198,7 +198,7 @@ class Backplate:
     def __init__(self, left: bool) -> None:
         self.left = left
 
-        self.x_left = (self.base_w * -0.5)
+        self.x_left = self.base_w * -0.5
         self.x_right = (self.base_w * 0.5) + self.display_offset
 
         if left:
@@ -220,7 +220,8 @@ class Backplate:
         base_x_range = (self.x_left, self.x_right)
         base_z_range = (z_bottom, self.z_top)
         base = blender_util.range_cube(
-            base_x_range, self.base_y_range, base_z_range
+            base_x_range, self.base_y_range, base_z_range,
+            name="oled_backplate",
         )
 
         # Standoffs to hold OLED PCB
@@ -233,6 +234,37 @@ class Backplate:
                 ctx.rotate(90, "X")
                 ctx.translate(x + self.display_offset, standoff_y, z)
             blender_util.union(base, standoff)
+
+        if self.left:
+            # Bevel the corner opposite the top screw hole
+            # This provides more clearance between it and the thumb keys
+            center_x = (self.stud_positions[3][0] + self.display_offset)
+            r = center_x - self.x_left
+            center_z = self.z_top - r
+
+            stud_cutout = blender_util.range_cube(
+                (self.x_left, center_x),
+                self.base_y_range,
+                (center_z, self.z_top),
+            )
+            blender_util.difference(base, stud_cutout)
+            stud_circle = self.base_cyl(r=r, x=center_x, z=center_z)
+            blender_util.union(base, stud_circle)
+        else:
+            # Bevel the corner opposite the top screw hole
+            # This provides more clearance between it and the thumb keys
+            center_x = (self.stud_positions[2][0] + self.display_offset)
+            r = self.x_right - center_x
+            center_z = self.z_top - r
+
+            stud_cutout = blender_util.range_cube(
+                (center_x, self.x_right),
+                self.base_y_range,
+                (center_z, self.z_top),
+            )
+            blender_util.difference(base, stud_cutout)
+            stud_circle = self.base_cyl(r=r, x=center_x, z=center_z)
+            blender_util.union(base, stud_circle)
 
         # Top screw plate
         top_plate_square = blender_util.range_cube(
@@ -260,7 +292,7 @@ class Backplate:
         bottom_plate = blender_util.range_cube(
             (self.bottom_screw_x[0], self.bottom_screw_x[1]),
             self.base_y_range,
-            (z_bottom - 7.5, z_bottom)
+            (z_bottom - 7.5, z_bottom),
         )
         blender_util.union(base, bottom_plate)
 
@@ -271,8 +303,7 @@ class Backplate:
             )
             blender_util.union(base, screw_plate)
             screw_hole = self.base_cyl(
-                r=self.screw_hole_r, x=x, z=self.hat_z,
-                thick_factor=1.5,
+                r=self.screw_hole_r, x=x, z=self.hat_z, thick_factor=1.5
             )
             blender_util.difference(base, screw_hole)
 
@@ -292,10 +323,11 @@ class Backplate:
         return base
 
     def base_cyl(
-        self, r: float, x: float, z: float, thick_factor: float = 1.0
+        self, r: float, x: float, z: float, thick_factor: float = 1.0,
+        name: str = "cylinder"
     ) -> bpy.types.Object:
         thickness = (self.y_back - self.y_front) * thick_factor
-        cyl = blender_util.cylinder(r=r, h=thickness)
+        cyl = blender_util.cylinder(r=r, h=thickness, name=name)
         with blender_util.TransformContext(cyl) as ctx:
             ctx.rotate(90, "X")
             ctx.translate(x, (self.y_back + self.y_front) * 0.5, z)
@@ -314,7 +346,7 @@ def screw_standoff() -> bpy.types.Object:
     h = 4.5
 
     r = d * 0.5
-    standoff = blender_util.cylinder(r=r, h=h, fn=fn)
+    standoff = blender_util.cylinder(r=r, h=h, fn=fn, name="screw_standoff")
     hole = blender_util.cylinder(r=hole_d * 0.5, h=h, fn=fn)
     blender_util.difference(standoff, hole)
     with blender_util.TransformContext(standoff) as ctx:
@@ -331,7 +363,9 @@ def screw_standoff() -> bpy.types.Object:
 
 
 def test() -> bpy.types.Object:
-    wall = blender_util.range_cube((-22, 22), (0.0, 4.0), (0.0, 45.0))
+    wall = blender_util.range_cube(
+        (-22, 22), (0.0, 4.0), (0.0, 45.0), name="wall"
+    )
     apply_oled_holder(
         wall, cad.Point(0.0, 0.0, -25), cad.Point(0.0, 0.0, 25.0)
     )

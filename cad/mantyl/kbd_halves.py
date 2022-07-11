@@ -63,7 +63,7 @@ def left_oled_backplate(kbd: Optional[Keyboard] = None) -> bpy.types.Object:
         kbd = Keyboard()
         kbd.gen_mesh()
 
-    backplate = oled_holder.oled_backplate(left=True)
+    backplate = oled_holder.Backplate(left=True).gen_backplate()
     with blender_util.TransformContext(backplate) as ctx:
         ctx.mirror_x()
     blender_util.apply_to_wall(
