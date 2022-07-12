@@ -10,16 +10,53 @@ import bpy
 import math
 from typing import List
 
-import mantyl.cad as cad
-from mantyl.blender_util import apply_to_wall, difference, new_mesh_obj
-from mantyl.keyboard import Keyboard
+from . import blender_util
+from . import cad
+from .keyboard import Keyboard
 
 
-def gen_screw_hole(kbd: Keyboard) -> bpy.types.Object:
-    # Big enough to fit a US #6 screw
+def screw_standoff(
+    h: float, hole_h: float, outer_d: float, hole_d: float
+) -> bpy.types.Object:
+    """
+    A stand-off designed to fit a 1/4" #6-32 UNC screw.
+    """
+    fn = 64
+
+    r = outer_d * 0.5
+    standoff = blender_util.cylinder(r=r, h=h, fn=fn, name="screw_standoff")
+    hole = blender_util.cylinder(r=hole_d * 0.5, h=h, fn=fn)
+    blender_util.difference(standoff, hole)
+    with blender_util.TransformContext(standoff) as ctx:
+        ctx.translate(0.0, 0.0, h * 0.5)
+
+    base_h = h - hole_h
+    base = blender_util.cylinder(r=r, h=base_h, fn=fn)
+    with blender_util.TransformContext(base) as ctx:
+        ctx.translate(0.0, 0.0, base_h * 0.5)
+    blender_util.union(standoff, base)
+
+    return standoff
+
+
+def unc6_32_screw_standoff(
+    h: float = 4.5, hole_h=4.2, outer_d: float = 6.0
+) -> bpy.types.Object:
+    """
+    A stand-off designed to fit a 1/4" #6-32 UNC screw.
+    """
+    # hole_h is less than 1/4" since the screw also has to fit a couple mm
+    # through a backplate
+    return screw_standoff(h=h, hole_h=hole_h, outer_d=outer_d, hole_d=3.25)
+
+
+def gen_screw_hole(wall_thickness: float) -> bpy.types.Object:
+    """
+    Create a hole for a wall, big enough to fit a US #6 screw.
+    """
     mesh = cad.Mesh()
     front_y = -1.0
-    back_y = kbd.wall_thickness + 1.0
+    back_y = wall_thickness + 1.0
 
     front_center = mesh.add_xyz(0.0, front_y, 0.0)
     back_center = mesh.add_xyz(0.0, back_y, 0.0)
@@ -47,15 +84,15 @@ def gen_screw_hole(kbd: Keyboard) -> bpy.types.Object:
         mesh.add_tri(back_center, back_points[idx], prev_b)
         mesh.add_quad(prev_f, prev_b, back_points[idx], fp)
 
-    return new_mesh_obj("screw_hole", mesh)
+    return blender_util.new_mesh_obj("screw_hole", mesh)
 
 
 def add_screw_hole(
     kbd: Keyboard, kbd_obj: bpy.types.Object, x: float, z: float
 ) -> None:
-    screw_hole = gen_screw_hole(kbd)
-    apply_to_wall(screw_hole, kbd.fl.out2, kbd.fr.out2, x=x, z=z)
-    difference(kbd_obj, screw_hole)
+    screw_hole = gen_screw_hole(kbd.wall_thickness)
+    blender_util.apply_to_wall(screw_hole, kbd.fl.out2, kbd.fr.out2, x=x, z=z)
+    blender_util.difference(kbd_obj, screw_hole)
 
 
 def add_screw_holes(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
@@ -68,8 +105,8 @@ def add_screw_holes(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
 
     # An extra screw hole on the thumb section
     if False:
-        screw_hole = gen_screw_hole(kbd)
-        apply_to_wall(
+        screw_hole = gen_screw_hole(kbd.wall_thickness)
+        blender_util.apply_to_wall(
             screw_hole, kbd.thumb_bl.out2, kbd.thumb_br_connect, x=30, z=10
         )
-        difference(kbd_obj, screw_hole)
+        blender_util.difference(kbd_obj, screw_hole)

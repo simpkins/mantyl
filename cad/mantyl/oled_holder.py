@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from . import cad
 from . import blender_util
+from . import screw_holes
 
 import bpy
 from typing import Tuple
@@ -338,30 +339,6 @@ def oled_backplate_left() -> bpy.types.Object:
     return Backplate(left=True).gen_backplate()
 
 
-def screw_standoff() -> bpy.types.Object:
-    """These screw standoffs are designed to fit 1/4" #6-32 UNC screws."""
-    fn = 64
-    d = 5.5
-    hole_d = 3.25
-    h = 4.5
-
-    r = d * 0.5
-    standoff = blender_util.cylinder(r=r, h=h, fn=fn, name="screw_standoff")
-    hole = blender_util.cylinder(r=hole_d * 0.5, h=h, fn=fn)
-    blender_util.difference(standoff, hole)
-    with blender_util.TransformContext(standoff) as ctx:
-        ctx.translate(0.0, 0.0, h * 0.5)
-
-    base_h = 0.3
-    base_r = r * 1.10
-    base = blender_util.cylinder(r=base_r, h=base_h, fn=fn)
-    with blender_util.TransformContext(base) as ctx:
-        ctx.translate(0.0, 0.0, base_h * 0.5)
-    blender_util.union(standoff, base)
-
-    return standoff
-
-
 def test() -> bpy.types.Object:
     wall = blender_util.range_cube(
         (-22, 22), (0.0, 4.0), (0.0, 45.0), name="wall"
@@ -378,7 +355,7 @@ def test() -> bpy.types.Object:
             ctx.translate(0, 0, 27.0)
 
     for (x, z) in backplate.screw_positions:
-        standoff = screw_standoff()
+        standoff = screw_holes.unc6_32_screw_standoff()
         with blender_util.TransformContext(standoff) as ctx:
             ctx.rotate(-90, "X")
             ctx.translate(x, 4.0, z + 27.0)
