@@ -14,7 +14,14 @@ import os, sys
 base_dir = os.path.dirname(__file__)
 sys.path.insert(0, base_dir)
 
-from mantyl import blender_util, kbd_halves, oled_holder, sx1509_holder
+from mantyl import (
+    blender_util,
+    kbd_halves,
+    oled_holder,
+    screw_holes,
+    sx1509_holder,
+    usb_cutout,
+)
 
 import bpy
 
@@ -46,7 +53,8 @@ def main() -> None:
     export_stl("left_underlay", kbd_halves.left_socket_underlay)
     export_stl("left_thumb_underlay", kbd_halves.left_thumb_underlay)
     export_stl("oled_backplate", oled_holder.oled_backplate_left)
-    export_stl("oled_screw_standoff", oled_holder.screw_standoff)
+    export_stl("oled_screw_standoff", screw_holes.unc6_32_screw_standoff)
+    export_stl("usb_backplate", usb_cutout.backplate)
 
     sys.exit(0)
 

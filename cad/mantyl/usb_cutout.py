@@ -202,9 +202,38 @@ class Cutout:
             blender_util.difference(f, hole)
         return f
 
+    def backplate(self) -> bpy.types.Object:
+        corner_r = 3.5
+        backplate = blender_util.range_cube(
+            (0, 8.75), (0, 3.0), (-10 - corner_r, 10 + corner_r)
+        )
+        section = blender_util.range_cube((-corner_r, 0), (0, 3.0), (-10, 10))
+        blender_util.union(backplate, section)
+
+        standoff_d = self.full_depth - self.wall_thickness - 1.0
+        for z in (-10, 10):
+            ring = blender_util.cylinder(r=corner_r, h=3.0)
+            with blender_util.TransformContext(ring) as ctx:
+                ctx.rotate(-90, "X")
+                ctx.translate(0, 1.5, z)
+            blender_util.union(backplate, ring)
+
+            hole = blender_util.cylinder(r=2.0, h=20.0)
+            with blender_util.TransformContext(hole) as ctx:
+                ctx.rotate(-90, "X")
+                ctx.translate(0, 0, z)
+            blender_util.difference(backplate, hole)
+
+        return backplate
+
+
+def backplate() -> bpy.types.Object:
+    return Cutout().backplate()
+
 
 def test() -> bpy.types.Object:
     left_side = True
+    z_offset = 15.0
 
     wall = blender_util.range_cube(
         (-5, 70), (0.0, 4.0), (0.0, 30.0), name="wall"
@@ -217,7 +246,7 @@ def test() -> bpy.types.Object:
         mirror_x=left_side,
         flip=left_side,
         x=0.0,
-        z=15.0,
+        z=z_offset,
     )
 
     show_feather = True
@@ -229,10 +258,16 @@ def test() -> bpy.types.Object:
             ctx.translate(x_off, y_off, 0)
             if left_side:
                 ctx.rotate(180, "Y")
-            ctx.translate(0, 0, 15)
+            ctx.translate(0, 0, z_offset)
 
     if left_side:
         with blender_util.TransformContext(wall) as ctx:
             ctx.mirror_x()
+
+    backplate = c.backplate()
+    with blender_util.TransformContext(backplate) as ctx:
+        if left_side:
+            ctx.rotate(180, "Y")
+        ctx.translate(0, c.full_depth, z_offset)
 
     return wall
