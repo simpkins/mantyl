@@ -16,6 +16,7 @@ from .key_socket_holder import SocketHolderBuilder, SocketType
 from .screw_holes import add_screw_holes
 from . import oled_holder
 from . import sx1509_holder
+from . import usb_cutout
 from . import wrist_rest
 
 
@@ -47,6 +48,10 @@ def left_shell_obj(kbd: Keyboard) -> bpy.types.Object:
         kbd.thumb_tl.out2.point,
         kbd.thumb_bl.out2.point,
         mirror_x=True,
+    )
+    usb_cutout.Cutout().apply(
+        kbd_obj, kbd.br.out3.point, kbd.bl.out3.point, mirror_x=True, flip=True,
+        x=-46, z=20,
     )
     add_feet(kbd, kbd_obj)
     add_i2c_connector(kbd, kbd_obj)

@@ -6,12 +6,13 @@
 from __future__ import annotations
 
 from . import blender_util
+from . import cad
 from . import screw_holes
 
 import bpy
 
 
-def apply_usb_cutout(wall: bpy.types.Object) -> None:
+class Cutout:
     """
     A cut-out that fits some cheap, small USB-C right-angle connectors I found:
     https://www.amazon.com/AGVEE-Degree-Angled-Adapter-Converter/dp/B09FJTTZWY
@@ -25,10 +26,7 @@ def apply_usb_cutout(wall: bpy.types.Object) -> None:
       This still requires designing a bracket to hold it in place, and
       soldering a cable to it to connect the microcontroller.
     """
-    return Cutout().apply(wall, z_off=15.0)
 
-
-class Cutout:
     z_tolerance = 0.45
     xy_tolerance = 0.2
     cutout_h = 11.67 + z_tolerance
@@ -54,32 +52,52 @@ class Cutout:
 
     feather_y_offset = 8.2
 
-    def apply(self, wall: bpy.types.Object, z_off: float) -> None:
-        self.apply_cutout_and_screws(wall, z_off)
-        self.apply_feather_supports(wall, z_off)
-
-    def apply_cutout_and_screws(
-        self, wall: bpy.types.Object, z_off: float
+    def apply(
+        self,
+        wall: bpy.types.Object,
+        p1: cad.Point,
+        p2: cad.Point,
+        mirror_x: bool = False,
+        flip: bool = False,
+        x: float = 0.0,
+        z: float = 0.0,
     ) -> None:
-        # Just to ensure all of the pieces connect if we apply it at an angle,
-        # add a small section of wall to attach everything to before applying it
-        # to the actual wall.
-        wall_block = blender_util.range_cube(
-            (-5, 10),
-            (3.0, 4.0),
-            (z_off - 15.0, z_off + 15.0),
-            name="usb_cutout",
-        )
+        pos = self.generate_positive_shape(flip=flip)
 
-        # A block to prevent the USB connector from being pulled through the wall
+        # The cutout for the connector
+        cutout_d = self.wall_thickness + 1.0
+        cutout = blender_util.cube(self.cutout_w, cutout_d, self.cutout_h)
+        with blender_util.TransformContext(cutout) as ctx:
+            ctx.translate(0, cutout_d * 0.5, 0.0)
+
+        if mirror_x or flip:
+            with blender_util.TransformContext(
+                pos
+            ) as ctx1, blender_util.TransformContext(cutout) as ctx2:
+                if mirror_x:
+                    ctx1.mirror_x()
+                    ctx2.mirror_x()
+                if flip:
+                    ctx1.rotate(180, "Y")
+                    ctx2.rotate(180, "Y")
+
+        # Now apply everything to the actual wall
+        blender_util.apply_to_wall(pos, p1, p2, x=x, z=z)
+        blender_util.apply_to_wall(cutout, p1, p2, x=x, z=z)
+        blender_util.union(wall, pos)
+        blender_util.difference(wall, cutout)
+
+    def generate_positive_shape(self, flip: bool) -> bpy.types.Object:
+        # A block to prevent the USB connector from being pulled through the
+        # wall
         stop_d = self.stem_depth - self.wall_thickness
         stop_x_off = (self.cutout_w * 0.5) + 0.5
-        stem_stop = blender_util.range_cube(
+        pos = blender_util.range_cube(
             (stop_x_off, stop_x_off + self.stem_stop_w),
             (self.wall_thickness * 0.5, self.wall_thickness + stop_d),
-            (z_off - (self.cutout_h * 0.5), z_off + (self.cutout_h * 0.5)),
+            (self.cutout_h * -0.5, self.cutout_h * 0.5),
+            name="usb_cutout",
         )
-        blender_util.union(wall_block, stem_stop)
 
         # Add screw stand-offs above and below, so we can screw a backplate
         # to hold the connector in the wall.
@@ -88,26 +106,17 @@ class Cutout:
             screw_hole = screw_holes.unc6_32_screw_standoff(h=standoff_d)
             with blender_util.TransformContext(screw_hole) as ctx:
                 ctx.rotate(-90, "X")
-                ctx.translate(0, self.wall_thickness - 0.1, z_off + z)
-            blender_util.union(wall_block, screw_hole)
+                ctx.translate(0, self.wall_thickness - 0.1, z)
+            blender_util.union(pos, screw_hole)
 
-        # The cutout for the connector
-        cutout_d = self.wall_thickness + 1.0
-        cutout = blender_util.cube(self.cutout_w, cutout_d, self.cutout_h)
-        with blender_util.TransformContext(cutout) as ctx:
-            ctx.translate(0, cutout_d * 0.5, z_off)
+        self.add_feather_supports(pos, flip=flip)
+        return pos
 
-        # Now apply everything to the actual wall
-        blender_util.union(wall, wall_block)
-        blender_util.difference(wall, cutout)
-
-    def apply_feather_supports(
-        self, wall: bpy.types.Object, z_off: float
-    ) -> None:
+    def add_feather_supports(self, pos: bpy.types.Object, flip: bool) -> None:
         left_end = (self.cutout_w * -0.5) + self.total_len
         right_end = left_end - self.feather_l
-        bottom = z_off - (self.feather_h * 0.5)
-        top = z_off + (self.feather_h * 0.5)
+        top = self.feather_h * 0.5
+        bottom = -top
 
         screw_overlap_x = 4.0
         screw_overlap_z = 4.0
@@ -119,23 +128,20 @@ class Cutout:
         )
 
         def cut_slot(obj: bpy.types.Object) -> None:
+            if flip:
+                z_range = (bottom - 0.3, top + 0.1)
+            else:
+                z_range = (bottom - 0.1, top + 0.3)
+
             cutout = blender_util.range_cube(
                 (right_end - 0.3, left_end + 20),
                 (
                     self.feather_y_offset - 0.3,
                     self.feather_y_offset + self.feather_thickness + 0.25,
                 ),
-                (bottom - 0.1, top + 0.4),
+                z_range,
             )
             blender_util.difference(obj, cutout)
-
-        left_support = blender_util.range_cube(
-            (left_end - screw_overlap_x, left_end + 2.0),
-            y_range,
-            (bottom - 3, bottom + screw_overlap_z),
-        )
-        cut_slot(left_support)
-        blender_util.union(wall, left_support)
 
         right_bottom_support = blender_util.range_cube(
             (right_end - 2.0, right_end + screw_overlap_x),
@@ -143,7 +149,7 @@ class Cutout:
             (bottom - 3, bottom + screw_overlap_z),
         )
         cut_slot(right_bottom_support)
-        blender_util.union(wall, right_bottom_support)
+        blender_util.union(pos, right_bottom_support)
 
         right_top_support = blender_util.range_cube(
             (right_end - 2.0, right_end + screw_overlap_x),
@@ -151,7 +157,29 @@ class Cutout:
             (top - screw_overlap_z, top + 3),
         )
         cut_slot(right_top_support)
-        blender_util.union(wall, right_top_support)
+        blender_util.union(pos, right_top_support)
+
+        if flip:
+            # When flipping, the bottom becomes the top.
+            # We want to put a support on the actual bottom at the back, not
+            # the top.  However, there is no screw hole on this side, and the
+            # antenna is in the way instead, so use a very small z overlap
+            left_overlap_z = 0.8
+            left_bottom_support = blender_util.range_cube(
+                (left_end - screw_overlap_x, left_end + 2.0),
+                y_range,
+                (top - left_overlap_z, top + 3.0),
+            )
+            cut_slot(left_bottom_support)
+            blender_util.union(pos, left_bottom_support)
+        else:
+            left_support = blender_util.range_cube(
+                (left_end - screw_overlap_x, left_end + 2.0),
+                y_range,
+                (bottom - 3, bottom + screw_overlap_z),
+            )
+            cut_slot(left_support)
+            blender_util.union(pos, left_support)
 
     def feather(self) -> bpy.types.Object:
         f = blender_util.cube(
@@ -176,18 +204,35 @@ class Cutout:
 
 
 def test() -> bpy.types.Object:
+    left_side = True
+
     wall = blender_util.range_cube(
         (-5, 70), (0.0, 4.0), (0.0, 30.0), name="wall"
     )
     c = Cutout()
-    c.apply(wall, z_off=15.0)
+    c.apply(
+        wall,
+        p1=cad.Point(-1, 0, 0),
+        p2=cad.Point(1, 0, 0),
+        mirror_x=left_side,
+        flip=left_side,
+        x=0.0,
+        z=15.0,
+    )
 
-    show_feather = False
+    show_feather = True
     if show_feather:
         f = c.feather()
         x_off = ((c.feather_l + c.cutout_w) * -0.5) + c.total_len
         y_off = (c.feather_thickness * 0.5) + c.feather_y_offset
         with blender_util.TransformContext(f) as ctx:
-            ctx.translate(x_off, y_off, 15)
+            ctx.translate(x_off, y_off, 0)
+            if left_side:
+                ctx.rotate(180, "Y")
+            ctx.translate(0, 0, 15)
+
+    if left_side:
+        with blender_util.TransformContext(wall) as ctx:
+            ctx.mirror_x()
 
     return wall
