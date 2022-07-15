@@ -172,6 +172,22 @@ class Cutout:
             )
             cut_slot(left_bottom_support)
             blender_util.union(pos, left_bottom_support)
+
+            # Add a screw standoff at the top
+            standoff_h = self.feather_y_offset - 0.3
+            standoff = screw_holes.screw_standoff(
+                h=standoff_h, hole_h=standoff_h - 0.3, outer_d=5, hole_d=2.15
+            )
+            with blender_util.TransformContext(standoff) as ctx:
+                ctx.rotate(-90, "X")
+
+                standoff_x = (
+                    left_end
+                    - (self.feather_l - self.feather_hole_x_dist) * 0.5
+                )
+                standoff_z = self.feather_hole_z_dist * -0.5
+                ctx.translate(standoff_x, 0, standoff_z)
+            blender_util.union(pos, standoff)
         else:
             left_support = blender_util.range_cube(
                 (left_end - screw_overlap_x, left_end + 2.0),
