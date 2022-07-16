@@ -174,7 +174,8 @@ class Cutout:
             blender_util.union(pos, left_bottom_support)
 
             # Add a screw standoff at the top
-            standoff_h = self.feather_y_offset - 0.3
+            wall_offset = self.wall_thickness - 1.0
+            standoff_h = self.feather_y_offset - wall_offset - 0.3
             standoff = screw_holes.screw_standoff(
                 h=standoff_h, hole_h=standoff_h - 0.3, outer_d=5, hole_d=2.15
             )
@@ -186,7 +187,7 @@ class Cutout:
                     - (self.feather_l - self.feather_hole_x_dist) * 0.5
                 )
                 standoff_z = self.feather_hole_z_dist * -0.5
-                ctx.translate(standoff_x, 0, standoff_z)
+                ctx.translate(standoff_x, wall_offset, standoff_z)
             blender_util.union(pos, standoff)
         else:
             left_support = blender_util.range_cube(
