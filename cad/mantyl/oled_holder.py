@@ -166,6 +166,15 @@ def apply_oled_holder(
     blender_util.union(wall, hat_pos)
     blender_util.difference(wall, hat_neg)
 
+    backplate = Backplate(left=mirror_x)
+    for (x, z) in backplate.screw_positions:
+        standoff = screw_holes.unc6_32_screw_standoff(h=4.7)
+        with blender_util.TransformContext(standoff) as ctx:
+            ctx.rotate(-90, "X")
+            ctx.translate(x, 3.9, z + 27.0)
+        blender_util.apply_to_wall(standoff, p1, p2)
+        blender_util.union(wall, standoff)
+
 
 class Backplate:
     standoff_d = 4.25
@@ -221,7 +230,9 @@ class Backplate:
         base_x_range = (self.x_left, self.x_right)
         base_z_range = (z_bottom, self.z_top)
         base = blender_util.range_cube(
-            base_x_range, self.base_y_range, base_z_range,
+            base_x_range,
+            self.base_y_range,
+            base_z_range,
             name="oled_backplate",
         )
 
@@ -239,7 +250,7 @@ class Backplate:
         if self.left:
             # Bevel the corner opposite the top screw hole
             # This provides more clearance between it and the thumb keys
-            center_x = (self.stud_positions[3][0] + self.display_offset)
+            center_x = self.stud_positions[3][0] + self.display_offset
             r = center_x - self.x_left
             center_z = self.z_top - r
 
@@ -254,7 +265,7 @@ class Backplate:
         else:
             # Bevel the corner opposite the top screw hole
             # This provides more clearance between it and the thumb keys
-            center_x = (self.stud_positions[2][0] + self.display_offset)
+            center_x = self.stud_positions[2][0] + self.display_offset
             r = self.x_right - center_x
             center_z = self.z_top - r
 
@@ -324,8 +335,12 @@ class Backplate:
         return base
 
     def base_cyl(
-        self, r: float, x: float, z: float, thick_factor: float = 1.0,
-        name: str = "cylinder"
+        self,
+        r: float,
+        x: float,
+        z: float,
+        thick_factor: float = 1.0,
+        name: str = "cylinder",
     ) -> bpy.types.Object:
         thickness = (self.y_back - self.y_front) * thick_factor
         cyl = blender_util.cylinder(r=r, h=thickness, name=name)
@@ -340,24 +355,22 @@ def oled_backplate_left() -> bpy.types.Object:
 
 
 def test() -> bpy.types.Object:
+    left = True
     wall = blender_util.range_cube(
         (-22, 22), (0.0, 4.0), (0.0, 45.0), name="wall"
     )
     apply_oled_holder(
-        wall, cad.Point(0.0, 0.0, -25), cad.Point(0.0, 0.0, 25.0)
+        wall,
+        cad.Point(0.0, 0.0, -25),
+        cad.Point(0.0, 0.0, 25.0),
+        mirror_x=left,
     )
 
-    backplate = Backplate(left=True)
     show_backplate = True
     if show_backplate:
+        backplate = Backplate(left=left)
         backplate_obj = backplate.gen_backplate()
         with blender_util.TransformContext(backplate_obj) as ctx:
             ctx.translate(0, 0, 27.0)
-
-    for (x, z) in backplate.screw_positions:
-        standoff = screw_holes.unc6_32_screw_standoff()
-        with blender_util.TransformContext(standoff) as ctx:
-            ctx.rotate(-90, "X")
-            ctx.translate(x, 4.0, z + 27.0)
 
     return wall
