@@ -45,7 +45,6 @@ def main() -> None:
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    export_stl("sx1509_holder", sx1509_holder.sx1509_holder)
     export_stl("right_shell", kbd_halves.right_shell)
     export_stl("right_underlay", kbd_halves.right_socket_underlay)
     export_stl("right_thumb_underlay", kbd_halves.right_thumb_underlay)
@@ -53,7 +52,6 @@ def main() -> None:
     export_stl("left_underlay", kbd_halves.left_socket_underlay)
     export_stl("left_thumb_underlay", kbd_halves.left_thumb_underlay)
     export_stl("oled_backplate", oled_holder.oled_backplate_left)
-    export_stl("oled_screw_standoff", screw_holes.unc6_32_screw_standoff)
     export_stl("usb_backplate", usb_cutout.backplate)
 
     sys.exit(0)

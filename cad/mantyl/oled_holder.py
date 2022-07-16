@@ -172,6 +172,8 @@ def apply_oled_holder(
         with blender_util.TransformContext(standoff) as ctx:
             ctx.rotate(-90, "X")
             ctx.translate(x, 3.9, z + 27.0)
+            if mirror_x:
+                ctx.mirror_x()
         blender_util.apply_to_wall(standoff, p1, p2)
         blender_util.union(wall, standoff)
 
@@ -365,6 +367,10 @@ def test() -> bpy.types.Object:
         cad.Point(0.0, 0.0, 25.0),
         mirror_x=left,
     )
+
+    if left:
+        with blender_util.TransformContext(wall) as ctx:
+            ctx.mirror_x()
 
     show_backplate = True
     if show_backplate:

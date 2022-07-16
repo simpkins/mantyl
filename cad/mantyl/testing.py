@@ -14,19 +14,20 @@ from . import wrist_rest
 
 
 def test() -> None:
+    # kbd_halves.right_full()
     # kbd_halves.right_shell()
     # kbd_halves.right_socket_underlay()
     # kbd_halves.right_thumb_underlay()
 
     # kbd_halves.left_full()
-    kbd_halves.left_shell()
+    # kbd_halves.left_shell()
     # kbd_halves.left_socket_underlay()
     # kbd_halves.left_thumb_underlay()
     # kbd_halves.left_oled_backplate()
 
     # wrist_rest.test()
     # sx1509_holder.test_screw_holder()
-    # oled_holder.test()
+    oled_holder.test()
     # usb_cutout.test()
 
     bpy.ops.object.mode_set(mode="EDIT")
