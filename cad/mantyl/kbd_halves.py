@@ -31,6 +31,10 @@ def right_shell_obj(kbd: Keyboard) -> bpy.types.Object:
     add_feet(kbd, kbd_obj)
     add_i2c_connector(kbd, kbd_obj)
     add_screw_holes(kbd, kbd_obj)
+
+    sx1509_holder.apply_screw_holder(
+        kbd_obj, kbd.left_wall[-5].in3, kbd.left_wall[-1].in3, x=5.0, z=20.0
+    )
     return kbd_obj
 
 
@@ -50,8 +54,16 @@ def left_shell_obj(kbd: Keyboard) -> bpy.types.Object:
         mirror_x=True,
     )
     usb_cutout.Cutout().apply(
-        kbd_obj, kbd.br.out3.point, kbd.bl.out3.point, mirror_x=True, flip=True,
-        x=-46, z=20,
+        kbd_obj,
+        kbd.br.out3.point,
+        kbd.bl.out3.point,
+        mirror_x=True,
+        flip=True,
+        x=-46,
+        z=20,
+    )
+    sx1509_holder.apply_screw_holder(
+        kbd_obj, kbd.left_wall[-5].in3, kbd.left_wall[-1].in3, x=5.0, z=20.0
     )
     add_feet(kbd, kbd_obj)
     add_i2c_connector(kbd, kbd_obj)
