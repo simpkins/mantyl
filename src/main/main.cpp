@@ -3,6 +3,9 @@
 #include "config.h"
 #include "sdkconfig.h"
 
+#include "I2cMaster.h"
+#include "SX1509.h"
+
 #include <chrono>
 
 #include <stdio.h>
@@ -44,63 +47,6 @@ void print_info() {
            esp_get_minimum_free_heap_size());
 }
 
-class I2cMaster {
-public:
-  I2cMaster(int sda, int scl, int port = 0)
-      : port_{port}, sda_{sda}, scl_{scl} {}
-
-  esp_err_t init() {
-    i2c_config_t conf = {};
-    conf.mode = I2C_MODE_MASTER;
-    conf.sda_io_num = sda_;
-    conf.scl_io_num = scl_;
-    conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.master.clk_speed = I2cClockSpeed;
-
-    auto rc = i2c_driver_install(port_, conf.mode, /*slv_rx_buf_len=*/0,
-                                 /*slv_tx_buf_len=*/0, /*intr_alloc_flags=*/0);
-    ESP_RETURN_ON_ERROR(rc, LogTag, "failed to initialize I2C driver: %d", rc);
-
-    i2c_param_config(port_, &conf);
-    ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure I2C bus: %d", rc);
-    return ESP_OK;
-  }
-
-  esp_err_t write(i2c_port_t i2c_num, uint8_t device_address,
-                  const void *write_buffer, size_t write_size,
-                  std::chrono::milliseconds timeout) {
-    return i2c_master_write_to_device(
-        port_, device_address, reinterpret_cast<const uint8_t *>(write_buffer),
-        write_size, timeout.count() / portTICK_PERIOD_MS);
-  }
-
-  esp_err_t read(i2c_port_t i2c_num, uint8_t device_address,
-                  void *read_buffer, size_t read_size,
-                  std::chrono::milliseconds timeout) {
-    return i2c_master_read_from_device(
-        port_, device_address, reinterpret_cast<uint8_t *>(read_buffer), read_size,
-        timeout.count() / portTICK_PERIOD_MS);
-  }
-
-  /**
-   * Perform a write followed by a read, without releasing the bus in between.
-   */
-  esp_err_t write_read(uint8_t device_address, const void *write_buffer,
-                       size_t write_size, void *read_buffer,
-                       size_t read_size, std::chrono::milliseconds timeout) {
-    return i2c_master_write_read_device(
-        port_, device_address, reinterpret_cast<const uint8_t *>(write_buffer),
-        write_size, reinterpret_cast<uint8_t *>(read_buffer), read_size,
-        timeout.count() / portTICK_PERIOD_MS);
-  }
-
-private:
-  int port_{0};
-  int sda_{0};
-  int scl_{0};
-};
-
 class App {
 public:
   esp_err_t init();
@@ -108,18 +54,17 @@ public:
 
 private:
   I2cMaster i2c_{PinConfig::I2cSDA, PinConfig::I2cSCL};
+  SX1509 left_{i2c_, 0x3e};
+  SX1509 right_{i2c_, 0x3f};
 };
 
 esp_err_t App::init() {
-  return i2c_.init();
+  return i2c_.init(I2cClockSpeed);
 }
 
 esp_err_t App::test() {
-  static constexpr uint8_t kScreenAddress = 0x3c;
-  static constexpr uint8_t kSX1509AddressLeft = 0x3e;
-  static constexpr uint8_t kSX1509AddressRight = 0x3f;
-
   printf("attempting left SX1509 read:\n");
+#if 0
   uint8_t reg_addr = 0x13;
   uint8_t data[2];
   auto rc = i2c_.write_read(kSX1509AddressLeft, &reg_addr, 1, data, 2, 1000ms);
@@ -128,14 +73,31 @@ esp_err_t App::test() {
   } else {
     printf("read failure: %d: %s\n", rc, esp_err_to_name(rc));
   }
+#else
+  auto rc = left_.init();
+  if (rc == ESP_OK) {
+    printf("init success\n");
+  } else {
+    printf("read failure: %d: %s\n", rc, esp_err_to_name(rc));
+  }
+#endif
 
   printf("attempting right SX1509 read:\n");
+#if 0
   rc = i2c_.write_read(kSX1509AddressRight, &reg_addr, 1, data, 2, 1000ms);
   if (rc == ESP_OK) {
     printf("read success: %#0x, %#0x\n", data[0], data[1]);
   } else {
     printf("read failure: %d: %s\n", rc, esp_err_to_name(rc));
   }
+#else
+  rc = right_.init();
+  if (rc == ESP_OK) {
+    printf("init success\n");
+  } else {
+    printf("read failure: %d: %s\n", rc, esp_err_to_name(rc));
+  }
+#endif
 
   return ESP_OK;
 }
