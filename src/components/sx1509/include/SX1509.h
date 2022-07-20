@@ -2,9 +2,9 @@
 #pragma once
 
 #include "I2cDevice.h"
+#include "Result.h"
 
 #include <utility>
-#include <variant>
 
 namespace mantyl {
 
@@ -14,6 +14,8 @@ public:
   explicit SX1509(I2cDevice &&device) : dev_{std::move(device)} {}
 
   [[nodiscard]] esp_err_t init();
+
+  Result<uint16_t> read_keypad();
 
 private:
   // Register addresses
@@ -91,10 +93,10 @@ private:
    *   - 0xf: 0Hz, permanent 1 logic level
    *   - otherwise: fOSCOUT = fOSC / (2^(oscout_freq-1))
    */
-  bool configure_clock(ClockSource source,
-                       uint8_t led_divider = 1,
-                       OscPinFuncion pin_fn = OscPinFuncion::Input,
-                       uint8_t oscout_freq = 0);
+  esp_err_t configure_clock(ClockSource source,
+                            uint8_t led_divider = 1,
+                            OscPinFuncion pin_fn = OscPinFuncion::Input,
+                            uint8_t oscout_freq = 0);
 
   bool prepare_read(uint8_t addr, uint8_t size);
 
@@ -108,17 +110,24 @@ private:
   }
 
   esp_err_t read_data(uint8_t addr, void *data, size_t size);
-  std::variant<uint16_t, esp_err_t> read_u16(uint8_t addr) {
-      uint16_t value;
-      auto rc = read_data(addr, &value, sizeof(value));
-      if (rc == ESP_OK) {
-        return value;
-      }
-      return rc;
+  template<typename IntType>
+  Result<IntType, esp_err_t> read_int(uint8_t addr) {
+    IntType value;
+    auto rc = read_data(addr, &value, sizeof(value));
+    if (rc == ESP_OK) {
+      return make_result(value);
+    }
+    return make_error<IntType>(rc);
+  }
+  Result<uint8_t, esp_err_t> read_u8(uint8_t addr) {
+    return read_int<uint8_t>(addr);
+  }
+  Result<uint16_t, esp_err_t> read_u16(uint8_t addr) {
+    return read_int<uint16_t>(addr);
   }
 
   I2cDevice dev_;
-  bool keypad_configured_{false};
+  bool initialized_{false};
 };
 
 } // namespace mantyl
