@@ -93,12 +93,11 @@ private:
    *   - 0xf: 0Hz, permanent 1 logic level
    *   - otherwise: fOSCOUT = fOSC / (2^(oscout_freq-1))
    */
-  esp_err_t configure_clock(ClockSource source,
-                            uint8_t led_divider = 1,
-                            OscPinFuncion pin_fn = OscPinFuncion::Input,
-                            uint8_t oscout_freq = 0);
-
-  bool prepare_read(uint8_t addr, uint8_t size);
+  [[nodiscard]] esp_err_t
+  configure_clock(ClockSource source,
+                  uint8_t led_divider = 1,
+                  OscPinFuncion pin_fn = OscPinFuncion::Input,
+                  uint8_t oscout_freq = 0);
 
   [[nodiscard]] esp_err_t
   write_data(uint8_t addr, const void *data, size_t size);

@@ -37,6 +37,16 @@ public:
                        size_t write_size, void *read_buffer,
                        size_t read_size, std::chrono::milliseconds timeout);
 
+  /**
+   * Write data that is non-contiguous in memory
+   */
+  esp_err_t write2(uint8_t device_address,
+                   const void *write1_buffer,
+                   size_t write1_size,
+                   const void *write2_buffer,
+                   size_t write2_size,
+                   std::chrono::milliseconds timeout);
+
 private:
   I2cMaster(I2cMaster const &) = delete;
   I2cMaster &operator=(I2cMaster const &) = delete;

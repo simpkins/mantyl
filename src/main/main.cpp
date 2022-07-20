@@ -4,6 +4,7 @@
 #include "sdkconfig.h"
 
 #include "I2cMaster.h"
+#include "SSD1306.h"
 #include "SX1509.h"
 
 #include <chrono>
@@ -54,6 +55,7 @@ public:
 
 private:
   I2cMaster i2c_{PinConfig::I2cSDA, PinConfig::I2cSCL};
+  SSD1306 display_{i2c_, 0x3c};
   SX1509 left_{i2c_, 0x3e};
   SX1509 right_{i2c_, 0x3f};
 };
@@ -63,41 +65,39 @@ esp_err_t App::init() {
 }
 
 esp_err_t App::test() {
-  printf("attempting left SX1509 read:\n");
-#if 0
-  uint8_t reg_addr = 0x13;
-  uint8_t data[2];
-  auto rc = i2c_.write_read(kSX1509AddressLeft, &reg_addr, 1, data, 2, 1000ms);
-  if (rc == ESP_OK) {
-    printf("read success: %#0x, %#0x\n", data[0], data[1]);
-  } else {
-    printf("read failure: %d: %s\n", rc, esp_err_to_name(rc));
-  }
-#else
+  ESP_LOGV(LogTag, "attempting left SX1509 init:");
   auto rc = left_.init();
   if (rc == ESP_OK) {
-    printf("init success\n");
+    ESP_LOGI(LogTag, "successfully initialized left key matrix");
   } else {
-    printf("read failure: %d: %s\n", rc, esp_err_to_name(rc));
+    ESP_LOGE(LogTag,
+             "failed to initialize left key matrix: %d: %s",
+             rc,
+             esp_err_to_name(rc));
   }
-#endif
 
-  printf("attempting right SX1509 read:\n");
-#if 0
-  rc = i2c_.write_read(kSX1509AddressRight, &reg_addr, 1, data, 2, 1000ms);
-  if (rc == ESP_OK) {
-    printf("read success: %#0x, %#0x\n", data[0], data[1]);
-  } else {
-    printf("read failure: %d: %s\n", rc, esp_err_to_name(rc));
-  }
-#else
+  ESP_LOGV(LogTag, "attempting right SX1509 init:");
   rc = right_.init();
   if (rc == ESP_OK) {
-    printf("init success\n");
+    ESP_LOGI(LogTag, "successfully initialized right key matrix");
   } else {
-    printf("read failure: %d: %s\n", rc, esp_err_to_name(rc));
+    // Maybe the right key matrix is not connected.
+    ESP_LOGE(LogTag,
+             "failed to initialize right key matrix: %d: %s",
+             rc,
+             esp_err_to_name(rc));
   }
-#endif
+
+  ESP_LOGI(LogTag, "attempting display init:");
+  rc = display_.init();
+  if (rc == ESP_OK) {
+    ESP_LOGI(LogTag, "successfully initialized display");
+  } else {
+    ESP_LOGE(LogTag,
+             "failed to initialize display matrix: %d: %s",
+             rc,
+             esp_err_to_name(rc));
+  }
 
   return ESP_OK;
 }

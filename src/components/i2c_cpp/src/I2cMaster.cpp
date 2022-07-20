@@ -70,4 +70,58 @@ esp_err_t I2cMaster::write_read(uint8_t device_address,
       timeout.count() / portTICK_PERIOD_MS);
 }
 
+esp_err_t I2cMaster::write2(uint8_t device_address,
+                            const void *write1_buffer,
+                            size_t write1_size,
+                            const void *write2_buffer,
+                            size_t write2_size,
+                            std::chrono::milliseconds timeout) {
+  // 2 transactions
+  // I2C_LINK_RECOMMENDED_SIZE already takes into account space for the start,
+  // stop, and device address write.
+  const auto bufsize = I2C_LINK_RECOMMENDED_SIZE(2);
+
+  auto* buf = static_cast<uint8_t*>(malloc(bufsize));
+  if (buf == nullptr) {
+    return ESP_ERR_NO_MEM;
+  }
+  i2c_cmd_handle_t cmd = i2c_cmd_link_create_static(buf, bufsize);
+  auto rc = i2c_master_start(cmd);
+  if (rc != ESP_OK) {
+    goto err;
+  }
+
+  rc = i2c_master_write_byte(cmd, device_address << 1 | I2C_MASTER_WRITE, true);
+  if (rc != ESP_OK) {
+    goto err;
+  }
+
+  rc = i2c_master_write(
+      cmd, static_cast<const uint8_t *>(write1_buffer), write1_size, true);
+  if (rc != ESP_OK) {
+    goto err;
+  }
+
+  rc = i2c_master_write(
+      cmd, static_cast<const uint8_t *>(write2_buffer), write2_size, true);
+  if (rc != ESP_OK) {
+    goto err;
+  }
+
+  rc = i2c_master_stop(cmd);
+  if (rc != ESP_OK) {
+    goto err;
+  }
+
+  rc = i2c_master_cmd_begin(port_, cmd, timeout.count() / portTICK_PERIOD_MS);
+  goto done;
+
+err:
+
+done:
+  i2c_cmd_link_delete_static(cmd);
+  free(buf);
+  return rc;
+}
+
 } // namespace mantyl

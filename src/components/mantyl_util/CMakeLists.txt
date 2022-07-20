@@ -1,7 +1,7 @@
-set(component_srcs "src/SX1509.cpp")
+set(component_srcs "")
 
 idf_component_register(SRCS "${component_srcs}"
                        INCLUDE_DIRS "include"
                        PRIV_INCLUDE_DIRS ""
                        PRIV_REQUIRES ""
-                       REQUIRES "mantyl_util" "i2c_cpp")
+                       REQUIRES "")

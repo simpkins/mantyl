@@ -79,50 +79,12 @@ esp_err_t SX1509::configure_clock(ClockSource source,
 }
 
 esp_err_t SX1509::write_data(uint8_t addr, const void *data, size_t size) {
-  // 2 transactions: the register address write, followed by the data write
-  // I2C_LINK_RECOMMENDED_SIZE already takes into account space for the start,
-  // stop, and device address write.
-  const auto bufsize = I2C_LINK_RECOMMENDED_SIZE(2);
-
-  auto* buf = static_cast<uint8_t*>(malloc(bufsize));
-  if (buf == nullptr) {
-    return ESP_ERR_NO_MEM;
-  }
-  i2c_cmd_handle_t cmd = i2c_cmd_link_create_static(buf, bufsize);
-  auto rc = i2c_master_start(cmd);
-  if (rc != ESP_OK) {
-    goto err;
-  }
-
-  rc = i2c_master_write_byte(cmd, dev_.address() << 1 | I2C_MASTER_WRITE, true);
-  if (rc != ESP_OK) {
-    goto err;
-  }
-
-  rc = i2c_master_write_byte(cmd, addr, true);
-  if (rc != ESP_OK) {
-    goto err;
-  }
-
-  rc = i2c_master_write(cmd, static_cast<const uint8_t *>(data), size, true);
-  if (rc != ESP_OK) {
-    goto err;
-  }
-
-  rc = i2c_master_stop(cmd);
-  if (rc != ESP_OK) {
-    goto err;
-  }
-
-  rc = i2c_master_cmd_begin(dev_.bus().port(), cmd, 1000 / portTICK_PERIOD_MS);
-  goto done;
-
-err:
-
-done:
-  i2c_cmd_link_delete_static(cmd);
-  free(buf);
-  return rc;
+  return dev_.bus().write2(dev_.address(),
+                           &addr,
+                           sizeof(addr),
+                           data,
+                           size,
+                           std::chrono::milliseconds(1000));
 }
 
 esp_err_t SX1509::read_data(uint8_t addr, void *data, size_t size) {
