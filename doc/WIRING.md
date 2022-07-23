@@ -1,3 +1,5 @@
+# Key Matrix
+
 For the main underlay, simply wire the rows and columns straight across.
 This uses 6 rows (R0-R5), and 7 columns (C0-C6).
 
@@ -20,3 +22,16 @@ Left thumb (viewed from the bottom):
  C7R1  C6R1
              C5R5
  C7R5  C6R5
+
+
+For the hat switch use columns 0-4 on row 6.
+
+# I2C Connection
+
+From the outside of the keyboard to inside, the pins are:
+
+  GND SCL VCC SDA INT
+
+Having GND on the outside hopefully makes it a little more likely that it has
+contact first before other pins when connecting/disconnecting, if it ever
+happens to be pulled off while powered on.
