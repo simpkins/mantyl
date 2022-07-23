@@ -6,7 +6,7 @@
 namespace mantyl {
 
 enum : uint32_t {
-  I2cClockSpeed = 100000,
+  I2cClockSpeed = 400000,
 };
 
 enum PinConfig : int {

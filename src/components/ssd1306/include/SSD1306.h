@@ -4,19 +4,26 @@
 #include "I2cDevice.h"
 
 #include <array>
+#include <memory>
 #include <utility>
 
 namespace mantyl {
 
 /**
  * A driver for an SSD1036 OLED controller
+ *
+ * Note that the ESP-IDF does come with an SSD1306 implementation if we did
+ * want to use that: esp_lcd_new_panel_ssd1306().  However, it does not appear
+ * to have a way to configure timeouts and handle the display not being
+ * present.
  */
 class SSD1306 {
 public:
-  SSD1306(I2cMaster &bus, uint8_t addr) : dev_{bus, addr} {}
-  explicit SSD1306(I2cDevice &&device) : dev_{std::move(device)} {}
+  SSD1306(I2cMaster &bus, uint8_t addr);
+  explicit SSD1306(I2cDevice &&device);
 
   [[nodiscard]] esp_err_t init();
+  [[nodiscard]] esp_err_t flush();
 
 private:
   enum Command : uint8_t {
@@ -69,12 +76,17 @@ private:
       return send_commands(data.data(), data.size());
   }
 
+  size_t buffer_size() const {
+    return width_ * ((height_ + 7) / 8);
+  }
+
   I2cDevice dev_;
   bool external_vcc_{false};
   uint8_t com_pin_flags_{0};
   uint8_t contrast_{0};
   uint8_t width_{128};
-  uint8_t height_{3};
+  uint8_t height_{32};
+  std::unique_ptr<uint8_t[]> buffer_;
 };
 
 } // namespace mantyl

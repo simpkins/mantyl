@@ -98,6 +98,15 @@ esp_err_t App::test() {
              rc,
              esp_err_to_name(rc));
   }
+  rc = display_.flush();
+  if (rc == ESP_OK) {
+    ESP_LOGI(LogTag, "successfully wrote to display");
+  } else {
+    ESP_LOGE(LogTag,
+             "failed to perform display write: %d: %s",
+             rc,
+             esp_err_to_name(rc));
+  }
 
   return ESP_OK;
 }
