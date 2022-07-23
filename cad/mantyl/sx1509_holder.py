@@ -166,6 +166,41 @@ def test_clip_holder(show_breakout: bool = True) -> bpy.types.Object:
         ctx.translate(0.0, 3.81, 0.0)
 
 
+def gen_cross_wall() -> bpy.types.Object:
+    hole_x = 15.367
+    hole_z = 10.287
+    outer_r = 4.5 * 0.5 * 1.1
+    h = 0.29
+    h_offset = 4.01 - h
+
+    cyls = []
+    for x_mul in (-1, 1):
+        for z_mul in (-1, 1):
+            cyl = blender_util.cylinder(r=outer_r, h=h)
+            with blender_util.TransformContext(cyl) as ctx:
+                ctx.rotate(-90, "X")
+                ctx.translate(hole_x * x_mul, h_offset, hole_z * z_mul)
+            cyls.append(cyl)
+
+    blender_util.union(cyls[0], cyls[3])
+    blender_util.union(cyls[1], cyls[2])
+
+    import bmesh
+    for idx in 0, 1:
+        with blender_util.TransformContext(cyls[idx]) as ctx:
+            old_faces = ctx.bmesh.faces[:]
+            ret = bmesh.ops.convex_hull(
+                ctx.bmesh,
+                input=ctx.bmesh.verts,
+                use_existing_faces=True,
+            )
+            # bmesh.ops.delete(ctx.bmesh, geom=old_faces, context="FACES")
+            bmesh.ops.delete(ctx.bmesh, geom=ret["geom_unused"] + ret["geom_interior"], context="VERTS")
+
+    blender_util.union(cyls[0], cyls[1])
+    return cyls[0]
+
+
 def test_screw_holder(show_breakout: bool = True) -> bpy.types.Object:
     show_breakout=False
     if show_breakout:
@@ -173,8 +208,12 @@ def test_screw_holder(show_breakout: bool = True) -> bpy.types.Object:
         with blender_util.TransformContext(breakout) as ctx:
             ctx.translate(0, 9, 0)
 
-    wall = blender_util.range_cube(
-        (-22, 22), (0.0, 4.0), (-15, 15), name="wall"
-    )
+    cross_wall = True
+    if cross_wall:
+        wall = gen_cross_wall()
+    else:
+        wall = blender_util.range_cube(
+            (-18, 18), (0.0, 4.0), (-13.0, 13.0), name="wall"
+        )
 
     holder = apply_screw_holder(wall, cad.Point(-1, 4, 0), cad.Point(1, 4, 0))

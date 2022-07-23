@@ -26,8 +26,8 @@ def test() -> None:
     # kbd_halves.left_oled_backplate()
 
     # wrist_rest.test()
-    # sx1509_holder.test_screw_holder()
-    oled_holder.test()
+    sx1509_holder.test_screw_holder()
+    # oled_holder.test()
     # usb_cutout.test()
 
     bpy.ops.object.mode_set(mode="EDIT")
