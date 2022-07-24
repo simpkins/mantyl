@@ -62,7 +62,7 @@ private:
       SetDisplayClockDiv = 0xd5,
       SetPrecharge = 0xd9,
       SetComPins = 0xda,
-      SetVComDetect = 0xd8,
+      SetVComDeselect = 0xdb,
   };
 
   SSD1306(SSD1306 const &) = delete;
@@ -82,8 +82,8 @@ private:
 
   I2cDevice dev_;
   bool external_vcc_{false};
-  uint8_t com_pin_flags_{0};
-  uint8_t contrast_{0};
+  uint8_t com_pin_flags_{0x02};
+  uint8_t contrast_{0x7f};
   uint8_t width_{128};
   uint8_t height_{32};
   std::unique_ptr<uint8_t[]> buffer_;

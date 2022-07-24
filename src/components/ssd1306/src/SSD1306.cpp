@@ -26,27 +26,24 @@ esp_err_t SSD1306::init() {
   auto rc =
       send_commands(Command::DisplayOff,
                     Command::SetDisplayClockDiv,
-                    0x80_u8, // reset oscillator frequence and divide ratio
-                    Command::SetMultiplex);
+                    0x80_u8); // reset oscillator frequence and divide ratio
   ESP_RETURN_ON_ERROR(
       rc, LogTag, "(1) error initializing SSD1306 %u", dev_.address());
 
-  rc = send_commands(static_cast<uint8_t>(height_ - 1));
+  rc = send_commands(Command::SetMultiplex, static_cast<uint8_t>(height_ - 1));
   ESP_RETURN_ON_ERROR(
       rc, LogTag, "(2) error initializing SSD1306 %u", dev_.address());
 
   rc = send_commands(Command::SetDisplayOffset,
                      0x0_u8,
-                     static_cast<uint8_t>(Command::SetStartLine | 0x0),
-                     Command::ChargePump);
+                     static_cast<uint8_t>(Command::SetStartLine | 0x0));
   ESP_RETURN_ON_ERROR(
       rc, LogTag, "(3) error initializing SSD1306 %u", dev_.address());
-  rc = send_commands(charge_pump);
+  rc = send_commands(Command::ChargePump, charge_pump);
   ESP_RETURN_ON_ERROR(
       rc, LogTag, "(4) error initializing SSD1306 %u", dev_.address());
 
-  rc = send_commands(
-                     Command::SetMemoryMode,
+  rc = send_commands(Command::SetMemoryMode,
                      0x00_u8, // horizontal addressing mode
                      static_cast<uint8_t>(Command::SegRemap | 0x1),
                      Command::ComScanDec);
@@ -62,7 +59,7 @@ esp_err_t SSD1306::init() {
   ESP_RETURN_ON_ERROR(
       rc, LogTag, "(6) error initializing SSD1306 %u", dev_.address());
 
-  rc = send_commands(Command::SetVComDetect,
+  rc = send_commands(Command::SetVComDeselect,
                      0x40_u8,
                      Command::DisplayAllOn_RAM,
                      Command::NormalDisplay,
