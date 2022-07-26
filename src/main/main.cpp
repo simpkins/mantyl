@@ -55,7 +55,7 @@ public:
 
 private:
   I2cMaster i2c_{PinConfig::I2cSDA, PinConfig::I2cSCL};
-  SSD1306 display_{i2c_, 0x3c};
+  SSD1306 display_{i2c_, 0x3c, GPIO_NUM_38};
   SX1509 left_{i2c_, 0x3e};
   SX1509 right_{i2c_, 0x3f};
 };

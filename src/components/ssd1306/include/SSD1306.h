@@ -3,6 +3,8 @@
 
 #include "I2cDevice.h"
 
+#include <hal/gpio_types.h>
+
 #include <array>
 #include <memory>
 #include <utility>
@@ -19,8 +21,9 @@ namespace mantyl {
  */
 class SSD1306 {
 public:
-  SSD1306(I2cMaster &bus, uint8_t addr);
-  explicit SSD1306(I2cDevice &&device);
+  SSD1306(I2cMaster &bus, uint8_t addr, gpio_num_t reset_pin);
+  SSD1306(I2cDevice &&device, gpio_num_t reset_pin);
+  ~SSD1306();
 
   [[nodiscard]] esp_err_t init();
   [[nodiscard]] esp_err_t flush();
@@ -86,6 +89,7 @@ private:
   uint8_t contrast_{0x7f};
   uint8_t width_{128};
   uint8_t height_{32};
+  gpio_num_t reset_pin_{GPIO_NUM_NC};
   std::unique_ptr<uint8_t[]> buffer_;
 };
 

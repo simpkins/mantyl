@@ -3,6 +3,7 @@
 
 #include "mantyl_literals.h"
 
+#include <driver/gpio.h>
 #include <esp_check.h>
 #include <string.h>
 
@@ -12,10 +13,19 @@ const char *LogTag = "mantyl.ssd1306";
 
 namespace mantyl {
 
-SSD1306::SSD1306(I2cMaster &bus, uint8_t addr) : SSD1306{I2cDevice{bus, addr}} {}
-SSD1306::SSD1306(I2cDevice &&device)
-    : dev_{std::move(device)}, buffer_{new uint8_t[buffer_size()]} {
+SSD1306::SSD1306(I2cMaster &bus, uint8_t addr, gpio_num_t reset_pin)
+    : SSD1306{I2cDevice{bus, addr}, reset_pin} {}
+SSD1306::SSD1306(I2cDevice &&device, gpio_num_t reset_pin)
+    : dev_{std::move(device)},
+      reset_pin_{reset_pin},
+      buffer_{new uint8_t[buffer_size()]} {
   memset(buffer_.get(), 0x00, buffer_size());
+}
+
+SSD1306::~SSD1306() {
+  if (reset_pin_ >= 0) {
+    gpio_reset_pin(reset_pin_);
+  }
 }
 
 esp_err_t SSD1306::init() {
@@ -23,10 +33,31 @@ esp_err_t SSD1306::init() {
   const uint8_t charge_pump = external_vcc_ ? 0x10_u8 : 0x14_u8;
   const uint8_t precharge = external_vcc_ ? 0x22_u8 : 0xf1_u8;
 
-  auto rc =
-      send_commands(Command::DisplayOff,
-                    Command::SetDisplayClockDiv,
-                    0x80_u8); // reset oscillator frequence and divide ratio
+  esp_err_t rc;
+
+  if (reset_pin_ >= 0) {
+    gpio_config_t io_conf = {
+        .pin_bit_mask = 1ULL << reset_pin_,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    rc = gpio_config(&io_conf);
+    ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure SSD1306 reset pin");
+
+    gpio_set_level(reset_pin_, 0);
+    // Minimum reset low pulse width is 3us, according to the datasheet
+    vTaskDelay(pdMS_TO_TICKS(1));
+    gpio_set_level(reset_pin_, 1);
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
+
+  rc = send_commands(Command::DisplayOff);
+  ESP_RETURN_ON_ERROR(
+      rc, LogTag, "(0) error initializing SSD1306 %u", dev_.address());
+  rc = send_commands(Command::SetDisplayClockDiv,
+                     0x80_u8); // reset oscillator frequency and divide ratio
   ESP_RETURN_ON_ERROR(
       rc, LogTag, "(1) error initializing SSD1306 %u", dev_.address());
 
