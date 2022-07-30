@@ -9,14 +9,16 @@
 
 #include <chrono>
 
-#include <stdio.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
+#include <driver/i2c.h>
 #include <esp_check.h>
-#include <esp_log.h>
 #include <esp_chip_info.h>
 #include <esp_flash.h>
-#include <driver/i2c.h>
+#include <esp_log.h>
+#include <esp_mac.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <stdio.h>
+#include <tinyusb.h>
 
 using namespace std::chrono_literals;
 
@@ -52,6 +54,7 @@ class App {
 public:
   esp_err_t init();
   esp_err_t test();
+  esp_err_t init_usb();
 
 private:
   I2cMaster i2c_{PinConfig::I2cSDA, PinConfig::I2cSCL};
@@ -111,6 +114,79 @@ esp_err_t App::test() {
   return ESP_OK;
 }
 
+static std::array<char, 14> serial_str = {};
+
+static char hexlify(uint8_t n) {
+  if (n < 10) {
+    return '0' + n;
+  }
+  return 'a' + (n - 10);
+}
+
+esp_err_t init_serial_str() {
+  std::array<uint8_t, 6> mac_bytes;
+  auto rc = esp_read_mac(mac_bytes.data(), ESP_MAC_WIFI_STA);
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to get MAC");
+
+  size_t out_idx = 0;
+  for (size_t n = 0; n < mac_bytes.size(); ++n) {
+    serial_str[out_idx] = hexlify((mac_bytes[n] >> 4) & 0xf);
+    serial_str[out_idx + 1] = hexlify(mac_bytes[n] & 0xf);
+    out_idx += 2;
+    if (n == 2) {
+      serial_str[out_idx] = '-';
+      ++out_idx;
+    }
+  }
+  serial_str[out_idx] = '\0';
+  assert(out_idx + 1 == serial_str.size());
+
+  return ESP_OK;
+}
+
+esp_err_t App::init_usb() {
+  ESP_LOGI(LogTag, "USB initialization");
+
+  tusb_desc_device_t usb_descriptor = {
+      .bLength = sizeof(usb_descriptor),
+      .bDescriptorType = TUSB_DESC_DEVICE,
+      .bcdUSB = 0x0200, // USB version. 0x0200 means version 2.0
+      .bDeviceClass = TUSB_CLASS_HID,
+      .bDeviceSubClass = 1, // Boot
+      .bDeviceProtocol = 1, // Keyboard
+      .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
+
+      .idVendor = 0x303A, // Espressif's Vendor ID
+      .idProduct = 0x9999,
+      .bcdDevice = 0x0001, // Device FW version
+
+      // String descriptor indices
+      .iManufacturer = 0x01,
+      .iProduct = 0x02,
+      .iSerialNumber = 0x03,
+
+      .bNumConfigurations = 0x01};
+
+  tusb_desc_strarray_device_t descriptor_strings = {
+      "\x09\x04",        // 0: is supported language is English (0x0409)
+      "Adam Simpkins",   // 1: Manufacturer
+      "Mantyl Keyboard", // 2: Product
+      serial_str.data(),    // 3: Serial
+  };
+
+  tinyusb_config_t tusb_cfg = {
+      .descriptor = &usb_descriptor,
+      .string_descriptor = descriptor_strings,
+      .external_phy = false,
+      .configuration_descriptor = nullptr,
+  };
+
+  ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
+  ESP_LOGI(LogTag, "USB initialization DONE");
+
+  return ESP_OK;
+}
+
 void main() {
   printf("Hello world!\n");
   esp_log_level_set("mantyl.main", ESP_LOG_DEBUG);
@@ -120,6 +196,7 @@ void main() {
   App app;
   ESP_ERROR_CHECK(app.init());
   app.test();
+  // app.init_usb();
 
   for (int i = 10; i >= 0; i--) {
     printf("Restarting in %d seconds...\n", i);
