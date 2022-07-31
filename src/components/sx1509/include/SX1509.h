@@ -15,6 +15,7 @@ public:
 
   [[nodiscard]] esp_err_t init();
 
+  [[nodiscard]] esp_err_t configure_keypad(uint8_t rows, uint8_t columns);
   Result<uint16_t> read_keypad();
 
 private:
@@ -127,6 +128,7 @@ private:
 
   I2cDevice dev_;
   bool initialized_{false};
+  bool keypad_configured_{false};
 };
 
 } // namespace mantyl

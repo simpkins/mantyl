@@ -54,4 +54,26 @@ Result<std::remove_reference_t<T>, std::remove_reference_t<E>> make_error(E&& er
   return ResultType{ResultType::ConstructError, std::forward<E>(error)};
 }
 
+template <typename T, typename E = esp_err_t>
+bool operator==(const Result<T, E> &a, const Result<T, E> &b) {
+  if (a.has_error()) {
+    if (!b.has_error()) {
+      return false;
+    }
+    return a.error() == b.error();
+  }
+  if (a.has_value()) {
+    if (!b.has_value()) {
+      return false;
+    }
+    return a.value() == b.value();
+  }
+  return false;
+}
+
+template <typename T, typename E = esp_err_t>
+bool operator!=(const Result<T, E> &a, const Result<T, E> &b) {
+  return !(a == b);
+}
+
 } // namespace mantyl

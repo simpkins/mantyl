@@ -1,6 +1,8 @@
 // Copyright (c) 2022, Adam Simpkins
 #include "SX1509.h"
 
+#include "mantyl_literals.h"
+
 #include <esp_check.h>
 #include <endian.h>
 
@@ -45,7 +47,7 @@ esp_err_t SX1509::init() {
 }
 
 Result<uint16_t> SX1509::read_keypad() {
-  if (!initialized_) {
+  if (!keypad_configured_) {
     return make_error<uint16_t>(ESP_ERR_INVALID_STATE);
   }
 
@@ -90,6 +92,62 @@ esp_err_t SX1509::write_data(uint8_t addr, const void *data, size_t size) {
 esp_err_t SX1509::read_data(uint8_t addr, void *data, size_t size) {
   return dev_.bus().write_read(
       dev_.address(), &addr, 1, data, size, std::chrono ::milliseconds(1000));
+}
+
+esp_err_t SX1509::configure_keypad(uint8_t rows, uint8_t columns) {
+  if (!initialized_) {
+    return ESP_ERR_INVALID_STATE;
+  }
+
+  // Set bank B to output and A to input
+  const uint16_t dir_bits = 0xff00;
+  auto rc = write_u16(Reg::DirB, dir_bits);
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure keypad I/O directions");
+
+  // Configure bank A as open drain
+  rc = write_u8(Reg::OpenDrainA, 0xff_u8);
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure keypad open drain");
+
+  // Enable pull-up on bank B
+  rc = write_u8(Reg::PullUpB, 0xff_u8);
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure keypad pull-ups");
+
+  // Configure debounce.  With the default 2MHz internal oscillator:
+  // 0: .5ms    4: 8ms
+  // 1: 1ms     5: 16ms
+  // 2: 2ms     6: 32ms
+  // 3: 4ms     7: 64ms
+  rc = write_u8(Reg::DebounceConfig, 0);
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure keypad debounce time");
+  // Enable debounce on all of the pins
+  rc = write_u16(Reg::DebounceEnableB, 0xffff);
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to enable keypad debounce");
+
+  // Auto sleep time:
+  // 0: 0ff     4: 1s
+  // 1: 128ms   5: 2s
+  // 2: 256ms   6: 4s
+  // 3: 512ms   7: 8s
+  const auto auto_sleep_config = 0_u8;
+  // Scan time per row:
+  // (must be higher than debounce time)
+  // 0: 1ms    4: 16ms
+  // 1: 2ms    5: 32ms
+  // 2: 4ms    6: 64ms
+  // 3: 8ms    7: 128ms
+  const auto scan_time_config = 0_u8;
+  const auto key_config1 = (auto_sleep_config << 4) | scan_time_config;
+  rc = write_u8(Reg::KeyConfig1, key_config1);
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to write keypad config1");
+
+  const auto num_row_bits = rows == 1 ? 1 : (rows - 1);
+  const auto num_col_bits = (columns - 1);
+  const auto key_config2 = (num_row_bits << 3) | num_col_bits;
+  rc = write_u8(Reg::KeyConfig2, key_config2);
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to write keypad config2");
+
+  keypad_configured_ = true;
+  return ESP_OK;
 }
 
 } // namespace mantyl

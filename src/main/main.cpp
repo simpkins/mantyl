@@ -56,6 +56,8 @@ public:
   esp_err_t test();
   esp_err_t init_usb();
 
+  void keyboard_task();
+
 private:
   I2cMaster i2c_{PinConfig::I2cSDA, PinConfig::I2cSCL};
   SSD1306 display_{i2c_, 0x3c, GPIO_NUM_38};
@@ -64,14 +66,18 @@ private:
 };
 
 esp_err_t App::init() {
-  return i2c_.init(I2cClockSpeed);
-}
+  auto rc = i2c_.init(I2cClockSpeed);
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to initialized I2C bus");
 
-esp_err_t App::test() {
   ESP_LOGV(LogTag, "attempting left SX1509 init:");
-  auto rc = left_.init();
+  rc = left_.init();
   if (rc == ESP_OK) {
-    ESP_LOGI(LogTag, "successfully initialized left key matrix");
+    rc = left_.configure_keypad(7, 8);
+    if (rc != ESP_OK) {
+      ESP_LOGE(LogTag, "failed to configure left key matrix");
+    } else {
+      ESP_LOGI(LogTag, "successfully initialized left key matrix");
+    }
   } else {
     ESP_LOGE(LogTag,
              "failed to initialize left key matrix: %d: %s",
@@ -82,7 +88,12 @@ esp_err_t App::test() {
   ESP_LOGV(LogTag, "attempting right SX1509 init:");
   rc = right_.init();
   if (rc == ESP_OK) {
-    ESP_LOGI(LogTag, "successfully initialized right key matrix");
+    rc = right_.configure_keypad(6, 8);
+    if (rc != ESP_OK) {
+      ESP_LOGE(LogTag, "failed to configure right key matrix");
+    } else {
+      ESP_LOGI(LogTag, "successfully initialized right key matrix");
+    }
   } else {
     // Maybe the right key matrix is not connected.
     ESP_LOGE(LogTag,
@@ -187,24 +198,36 @@ esp_err_t App::init_usb() {
   return ESP_OK;
 }
 
+void App::keyboard_task() {
+  Result<uint16_t> old_keypress = left_.read_keypad();
+  while (true) {
+    auto x = left_.read_keypad();
+    if (x != old_keypress) {
+      old_keypress = x;
+      if (x.has_error()) {
+        const auto err = x.error();
+        ESP_LOGE(LogTag,
+                 "error reading keypress: %d: %s",
+                 err,
+                 esp_err_to_name(err));
+      } else {
+        ESP_LOGI(LogTag, "keypress: %#0x", x.value());
+      }
+    }
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+  }
+}
+
 void main() {
-  printf("Hello world!\n");
   esp_log_level_set("mantyl.main", ESP_LOG_DEBUG);
 
   print_info();
 
   App app;
   ESP_ERROR_CHECK(app.init());
-  app.test();
   // app.init_usb();
 
-  for (int i = 10; i >= 0; i--) {
-    printf("Restarting in %d seconds...\n", i);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-  }
-  printf("Restarting now.\n");
-  fflush(stdout);
-  esp_restart();
+  app.keyboard_task();
 }
 
 } // namespace mantyl
