@@ -22,39 +22,10 @@ SSD1306::SSD1306(I2cDevice &&device, gpio_num_t reset_pin)
       buffer_{new uint8_t[buffer_size()]} {
   memset(buffer_.get(), 0x00, buffer_size());
 
-#if 0
-  size_t offset = 0;
-  const char* str = "Adam Simpkins";
-  for (const char* p = str; *p != '\0'; ++p) {
-    const char c = *p;
-    memcpy(buffer_.get() + offset, font[c].data, font[c].width);
-    offset += font[c].width + 1;
-  }
-
-  offset = 128;
-  str = "adam@adamsimpkins.net";
-  for (const char* p = str; *p != '\0'; ++p) {
-    const char c = *p;
-    memcpy(buffer_.get() + offset, font[c].data, font[c].width);
-    offset += font[c].width + 1;
-  }
-
-  offset = 256;
-  str = "abcdefghijklmnopqrstuvw";
-  for (const char* p = str; *p != '\0'; ++p) {
-    const char c = *p;
-    memcpy(buffer_.get() + offset, font[c].data, font[c].width);
-    offset += font[c].width + 1;
-  }
-
-  offset = 128 * 3;
-  str = "xyz";
-  for (const char* p = str; *p != '\0'; ++p) {
-    const char c = *p;
-    memcpy(buffer_.get() + offset, font[c].data, font[c].width);
-    offset += font[c].width + 1;
-  }
-#endif
+  write_centered("Adam Simpkins", Line0);
+  write_centered("adam@adamsimpkins.net", Line1);
+  write_text("abcdefghijklmnopqrstuvw", Line2);
+  write_text("xyz", Line3);
 }
 
 SSD1306::~SSD1306() {
@@ -161,6 +132,49 @@ esp_err_t SSD1306::flush() {
       rc, LogTag, "error writing draw buffer to SSD1306 %u", dev_.address());
 
   return ESP_OK;
+}
+
+size_t SSD1306::write_text(std::string_view str, OffsetRange range) {
+  size_t px_offset = range.first;
+  bool first = true;
+  for (const char c : str) {
+    const auto &glyph = Font6x8::lookupGlyph(c);
+    const size_t px_end = px_offset + glyph.width + (first ? 0 : 1);
+    if (px_end >= range.second) {
+      break;
+    }
+    if (first) {
+      first = false;
+    } else {
+      // Add space between characters
+      buffer_[px_offset] = 0;
+      ++px_offset;
+    }
+    memcpy(buffer_.get() + px_offset, glyph.data, glyph.width);
+    px_offset += glyph.width;
+  }
+
+  return px_offset;
+}
+
+bool SSD1306::write_centered(std::string_view str, OffsetRange range) {
+  const size_t width = Font6x8::computeWidth(str);
+  const size_t range_width = range.second - range.first;
+  if (width == range_width) {
+    write_text(str, range);
+    return true;
+  } else if (width > range_width) {
+    const auto end = write_text(str, range);
+    memset(buffer_.get() + end, 0, range.second - end);
+    return false;
+  } else {
+    const size_t extra_start_offset = (range_width - width) / 2;
+    memset(buffer_.get() + range.first, 0, extra_start_offset);
+    const auto end =
+        write_text(str, {range.first + extra_start_offset, range.second});
+    memset(buffer_.get() + end, 0, range.second - end);
+    return true;
+  }
 }
 
 esp_err_t SSD1306::send_commands(const uint8_t *data, size_t n) {

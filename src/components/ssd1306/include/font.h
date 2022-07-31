@@ -35,7 +35,23 @@ struct Glyph {
 class Font6x8 {
 public:
   static const Glyph& lookupGlyph(char c);
+
+  /**
+   * Compute the width of a glyph.
+   *
+   * Note: this returns the width of just the character itself.
+   * When rendering a string, an extra pixel of spacing is required between
+   * each character.
+   */
   static size_t computeWidth(char c);
+
+  /**
+   * Compute the width of a string.
+   *
+   * This returns the exact width required just for the text.
+   * If additional text will be rendered after this string, an extra pixel of
+   * spacing should be placed afterwards.
+   */
   static size_t computeWidth(std::string_view str);
 };
 

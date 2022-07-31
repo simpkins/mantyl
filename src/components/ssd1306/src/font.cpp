@@ -285,10 +285,14 @@ size_t Font6x8::computeWidth(char c) {
 
 size_t Font6x8::computeWidth(std::string_view str) {
   size_t width = 0;
-  for (const char c : str) {
-    width += lookupGlyph(c).width;
+  if (str.empty()) {
+    return 0;
   }
-  return width;
+  for (const char c : str) {
+    width += lookupGlyph(c).width + 1;
+  }
+  // We don't actually need the extra space after the last character.
+  return width - 1;
 }
 
 } // namespace mantyl
