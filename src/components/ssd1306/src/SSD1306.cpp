@@ -71,6 +71,37 @@ const uint8_t font_data_x[] = {0x44, 0x28, 0x10, 0x28, 0x44};
 const uint8_t font_data_y[] = {0x1c, 0xa0, 0xa0, 0xa0, 0x7c};
 const uint8_t font_data_z[] = {0x44, 0x64, 0x54, 0x4c, 0x44};
 
+
+const uint8_t font_data_space[] = {0x00, 0x00};
+const uint8_t font_data_bang[] = {0x06, 0x6f, 0x06};
+const uint8_t font_data_double_quote[] = {0x03, 0x00, 0x03};
+const uint8_t font_data_hash[] = {0x24, 0x7e, 0x24, 0x7e, 0x24};
+const uint8_t font_data_dollar[] = {0x24, 0x2a, 0x6b, 0x2a, 0x12};
+const uint8_t font_data_percent[] = {0x63, 0x13, 0x08, 0x64, 0x63};
+const uint8_t font_data_ampersand[] = {0x36, 0x49, 0x56, 0x20, 0x50};
+const uint8_t font_data_single_quote[] = {0x03};
+const uint8_t font_data_open_paren[] = {0x3e, 0x41};
+const uint8_t font_data_close_paren[] = {0x41, 0x3e};
+const uint8_t font_data_star[] = {0x2a, 0x1c, 0x7f, 0x1c, 0x2a};
+const uint8_t font_data_plus[] = {0x08, 0x08, 0x3e, 0x08, 0x08};
+const uint8_t font_data_comma[] = {0xe0, 0x60};
+const uint8_t font_data_minus[] = {0x08, 0x08, 0x08, 0x08, 0x08};
+const uint8_t font_data_period[] = {0x60, 0x60};
+const uint8_t font_data_slash[] = {0x60, 0x18, 0x0c, 0x03};
+
+const uint8_t font_data_0[] = {0x3e, 0x51, 0x49, 0x45, 0x3e};
+const uint8_t font_data_1[] = {0x42, 0x7f, 0x40};
+const uint8_t font_data_2[] = {0x42, 0x61, 0x51, 0x49, 0x46};
+const uint8_t font_data_3[] = {0x22, 0x41, 0x49, 0x49, 0x36};
+const uint8_t font_data_4[] = {0x18, 0x14, 0x12, 0x7f, 0x10};
+// Alternate square 4
+// const uint8_t font_data_4[] = {0x1f, 0x10, 0x10, 0x7f, 0x10};
+const uint8_t font_data_5[] = {0x2f, 0x49, 0x49, 0x49, 0x31};
+const uint8_t font_data_6[] = {0x3c, 0x4a, 0x49, 0x49, 0x30};
+const uint8_t font_data_7[] = {0x01, 0x71, 0x09, 0x05, 0x03};
+const uint8_t font_data_8[] = {0x36, 0x49, 0x49, 0x49, 0x36};
+const uint8_t font_data_9[] = {0x06, 0x49, 0x49, 0x29, 0x1e};
+
 constexpr Font make_font() {
     Font font = {};
     font['A'] = font_char_info{sizeof(font_data_A), font_data_A};
@@ -126,6 +157,34 @@ constexpr Font make_font() {
     font['x'] = font_char_info{sizeof(font_data_x), font_data_x};
     font['y'] = font_char_info{sizeof(font_data_y), font_data_y};
     font['z'] = font_char_info{sizeof(font_data_z), font_data_z};
+
+    font[' '] = font_char_info{sizeof(font_data_space), font_data_space};
+    font['!'] = font_char_info{sizeof(font_data_bang), font_data_bang};
+    font['"'] = font_char_info{sizeof(font_data_double_quote), font_data_double_quote};
+    font['#'] = font_char_info{sizeof(font_data_hash), font_data_hash};
+    font['$'] = font_char_info{sizeof(font_data_dollar), font_data_dollar};
+    font['%'] = font_char_info{sizeof(font_data_percent), font_data_percent};
+    font['&'] = font_char_info{sizeof(font_data_ampersand), font_data_ampersand};
+    font['\''] = font_char_info{sizeof(font_data_single_quote), font_data_single_quote};
+    font['('] = font_char_info{sizeof(font_data_open_paren), font_data_open_paren};
+    font[')'] = font_char_info{sizeof(font_data_close_paren), font_data_close_paren};
+    font['*'] = font_char_info{sizeof(font_data_star), font_data_star};
+    font['+'] = font_char_info{sizeof(font_data_plus), font_data_plus};
+    font[','] = font_char_info{sizeof(font_data_comma), font_data_comma};
+    font['-'] = font_char_info{sizeof(font_data_minus), font_data_minus};
+    font['.'] = font_char_info{sizeof(font_data_period), font_data_period};
+    font['/'] = font_char_info{sizeof(font_data_slash), font_data_slash};
+
+    font['0'] = font_char_info{sizeof(font_data_0), font_data_0};
+    font['1'] = font_char_info{sizeof(font_data_1), font_data_1};
+    font['2'] = font_char_info{sizeof(font_data_2), font_data_2};
+    font['3'] = font_char_info{sizeof(font_data_3), font_data_3};
+    font['4'] = font_char_info{sizeof(font_data_4), font_data_4};
+    font['5'] = font_char_info{sizeof(font_data_5), font_data_5};
+    font['6'] = font_char_info{sizeof(font_data_6), font_data_6};
+    font['7'] = font_char_info{sizeof(font_data_7), font_data_7};
+    font['8'] = font_char_info{sizeof(font_data_8), font_data_8};
+    font['9'] = font_char_info{sizeof(font_data_9), font_data_9};
     return font;
 }
 
@@ -143,7 +202,7 @@ SSD1306::SSD1306(I2cDevice &&device, gpio_num_t reset_pin)
   memset(buffer_.get(), 0x00, buffer_size());
 
   size_t offset = 0;
-  const char* str = "ABCDEFGHIJKLMNOPQRSTU";
+  const char* str = "0123456789+-/*()";
   for (const char* p = str; *p != '\0'; ++p) {
     const char c = *p;
     memcpy(buffer_.get() + offset, font[c].data, font[c].width);
