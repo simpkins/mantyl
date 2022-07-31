@@ -74,12 +74,12 @@ const uint8_t font_data_z[] = {0x44, 0x64, 0x54, 0x4c, 0x44};
 
 const uint8_t font_data_space[] = {0x00, 0x00};
 const uint8_t font_data_bang[] = {0x06, 0x6f, 0x06};
-const uint8_t font_data_double_quote[] = {0x03, 0x00, 0x03};
+const uint8_t font_data_double_quote[] = {0x07, 0x00, 0x07};
 const uint8_t font_data_hash[] = {0x24, 0x7e, 0x24, 0x7e, 0x24};
 const uint8_t font_data_dollar[] = {0x24, 0x2a, 0x6b, 0x2a, 0x12};
 const uint8_t font_data_percent[] = {0x63, 0x13, 0x08, 0x64, 0x63};
 const uint8_t font_data_ampersand[] = {0x36, 0x49, 0x56, 0x20, 0x50};
-const uint8_t font_data_single_quote[] = {0x03};
+const uint8_t font_data_single_quote[] = {0x07};
 const uint8_t font_data_open_paren[] = {0x3e, 0x41};
 const uint8_t font_data_close_paren[] = {0x41, 0x3e};
 const uint8_t font_data_star[] = {0x2a, 0x1c, 0x7f, 0x1c, 0x2a};
@@ -102,89 +102,138 @@ const uint8_t font_data_7[] = {0x01, 0x71, 0x09, 0x05, 0x03};
 const uint8_t font_data_8[] = {0x36, 0x49, 0x49, 0x49, 0x36};
 const uint8_t font_data_9[] = {0x06, 0x49, 0x49, 0x29, 0x1e};
 
+const uint8_t font_data_colon[] = {0x36, 0x36};
+const uint8_t font_data_semicolon[] = {0x76, 0x36};
+// const uint8_t font_data_semicolon[] = {0x40, 0x36, 0x36};
+const uint8_t font_data_left_angle[] = {0x08, 0x14, 0x22, 0x41};
+// const uint8_t font_data_equal[] = {0x36, 0x36, 0x36, 0x36};
+const uint8_t font_data_equal[] = {0x24, 0x24, 0x24, 0x24, 0x24};
+const uint8_t font_data_right_angle[] = {0x41, 0x22, 0x14, 0x08};
+const uint8_t font_data_question[] = {0x02, 0x01, 0x51, 0x09, 0x06};
+const uint8_t font_data_at[] = {0x3e, 0x41, 0x5d, 0x55, 0x1e};
+
+const uint8_t font_data_left_bracket[] = {0x7f, 0x41};
+const uint8_t font_data_backslash[] = {0x03, 0x0c, 0x18, 0x60};
+const uint8_t font_data_right_bracket[] = {0x41, 0x7f};
+const uint8_t font_data_carat[] = {0x04, 0x02, 0x01, 0x02, 0x04};
+const uint8_t font_data_underscore[] = {0x04, 0x04, 0x04, 0x04, 0x04};
+const uint8_t font_data_backtick[] = {0x01, 0x03, 0x06};
+
+const uint8_t font_data_left_brace[] = {0x08, 0x3e, 0x41, 0x41};
+const uint8_t font_data_pipe[] = {0x7f};
+const uint8_t font_data_right_brace[] = {0x41, 0x41, 0x3e, 0x08};
+const uint8_t font_data_tilde[] = {0x08, 0x04, 0x08, 0x10, 0x08};
+
+template<size_t N>
+constexpr font_char_info make_glyph(const uint8_t (&data)[N]) {
+  return font_char_info{N, data};
+}
+
 constexpr Font make_font() {
     Font font = {};
-    font['A'] = font_char_info{sizeof(font_data_A), font_data_A};
-    font['B'] = font_char_info{sizeof(font_data_B), font_data_B};
-    font['C'] = font_char_info{sizeof(font_data_C), font_data_C};
-    font['D'] = font_char_info{sizeof(font_data_D), font_data_D};
-    font['E'] = font_char_info{sizeof(font_data_E), font_data_E};
-    font['F'] = font_char_info{sizeof(font_data_F), font_data_F};
-    font['G'] = font_char_info{sizeof(font_data_G), font_data_G};
-    font['H'] = font_char_info{sizeof(font_data_H), font_data_H};
-    font['I'] = font_char_info{sizeof(font_data_I), font_data_I};
-    font['J'] = font_char_info{sizeof(font_data_J), font_data_J};
-    font['K'] = font_char_info{sizeof(font_data_K), font_data_K};
-    font['L'] = font_char_info{sizeof(font_data_L), font_data_L};
-    font['M'] = font_char_info{sizeof(font_data_M), font_data_M};
-    font['N'] = font_char_info{sizeof(font_data_N), font_data_N};
-    font['O'] = font_char_info{sizeof(font_data_O), font_data_O};
-    font['P'] = font_char_info{sizeof(font_data_P), font_data_P};
-    font['Q'] = font_char_info{sizeof(font_data_Q), font_data_Q};
-    font['R'] = font_char_info{sizeof(font_data_R), font_data_R};
-    font['S'] = font_char_info{sizeof(font_data_S), font_data_S};
-    font['T'] = font_char_info{sizeof(font_data_T), font_data_T};
-    font['U'] = font_char_info{sizeof(font_data_U), font_data_U};
-    font['V'] = font_char_info{sizeof(font_data_V), font_data_V};
-    font['W'] = font_char_info{sizeof(font_data_W), font_data_W};
-    font['X'] = font_char_info{sizeof(font_data_X), font_data_X};
-    font['Y'] = font_char_info{sizeof(font_data_Y), font_data_Y};
-    font['Z'] = font_char_info{sizeof(font_data_Z), font_data_Z};
 
-    font['a'] = font_char_info{sizeof(font_data_a), font_data_a};
-    font['b'] = font_char_info{sizeof(font_data_b), font_data_b};
-    font['c'] = font_char_info{sizeof(font_data_c), font_data_c};
-    font['d'] = font_char_info{sizeof(font_data_d), font_data_d};
-    font['e'] = font_char_info{sizeof(font_data_e), font_data_e};
-    font['f'] = font_char_info{sizeof(font_data_f), font_data_f};
-    font['g'] = font_char_info{sizeof(font_data_g), font_data_g};
-    font['h'] = font_char_info{sizeof(font_data_h), font_data_h};
-    font['i'] = font_char_info{sizeof(font_data_i), font_data_i};
-    font['j'] = font_char_info{sizeof(font_data_j), font_data_j};
-    font['k'] = font_char_info{sizeof(font_data_k), font_data_k};
-    font['l'] = font_char_info{sizeof(font_data_l), font_data_l};
-    font['m'] = font_char_info{sizeof(font_data_m), font_data_m};
-    font['n'] = font_char_info{sizeof(font_data_n), font_data_n};
-    font['o'] = font_char_info{sizeof(font_data_o), font_data_o};
-    font['p'] = font_char_info{sizeof(font_data_p), font_data_p};
-    font['q'] = font_char_info{sizeof(font_data_q), font_data_q};
-    font['r'] = font_char_info{sizeof(font_data_r), font_data_r};
-    font['s'] = font_char_info{sizeof(font_data_s), font_data_s};
-    font['t'] = font_char_info{sizeof(font_data_t), font_data_t};
-    font['u'] = font_char_info{sizeof(font_data_u), font_data_u};
-    font['v'] = font_char_info{sizeof(font_data_v), font_data_v};
-    font['w'] = font_char_info{sizeof(font_data_w), font_data_w};
-    font['x'] = font_char_info{sizeof(font_data_x), font_data_x};
-    font['y'] = font_char_info{sizeof(font_data_y), font_data_y};
-    font['z'] = font_char_info{sizeof(font_data_z), font_data_z};
+    font[' '] = make_glyph(font_data_space);
+    font['!'] = make_glyph(font_data_bang);
+    font['"'] = make_glyph(font_data_double_quote);
+    font['#'] = make_glyph(font_data_hash);
+    font['$'] = make_glyph(font_data_dollar);
+    font['%'] = make_glyph(font_data_percent);
+    font['&'] = make_glyph(font_data_ampersand);
+    font['\''] = make_glyph(font_data_single_quote);
+    font['('] = make_glyph(font_data_open_paren);
+    font[')'] = make_glyph(font_data_close_paren);
+    font['*'] = make_glyph(font_data_star);
+    font['+'] = make_glyph(font_data_plus);
+    font[','] = make_glyph(font_data_comma);
+    font['-'] = make_glyph(font_data_minus);
+    font['.'] = make_glyph(font_data_period);
+    font['/'] = make_glyph(font_data_slash);
 
-    font[' '] = font_char_info{sizeof(font_data_space), font_data_space};
-    font['!'] = font_char_info{sizeof(font_data_bang), font_data_bang};
-    font['"'] = font_char_info{sizeof(font_data_double_quote), font_data_double_quote};
-    font['#'] = font_char_info{sizeof(font_data_hash), font_data_hash};
-    font['$'] = font_char_info{sizeof(font_data_dollar), font_data_dollar};
-    font['%'] = font_char_info{sizeof(font_data_percent), font_data_percent};
-    font['&'] = font_char_info{sizeof(font_data_ampersand), font_data_ampersand};
-    font['\''] = font_char_info{sizeof(font_data_single_quote), font_data_single_quote};
-    font['('] = font_char_info{sizeof(font_data_open_paren), font_data_open_paren};
-    font[')'] = font_char_info{sizeof(font_data_close_paren), font_data_close_paren};
-    font['*'] = font_char_info{sizeof(font_data_star), font_data_star};
-    font['+'] = font_char_info{sizeof(font_data_plus), font_data_plus};
-    font[','] = font_char_info{sizeof(font_data_comma), font_data_comma};
-    font['-'] = font_char_info{sizeof(font_data_minus), font_data_minus};
-    font['.'] = font_char_info{sizeof(font_data_period), font_data_period};
-    font['/'] = font_char_info{sizeof(font_data_slash), font_data_slash};
+    font['0'] = make_glyph(font_data_0);
+    font['1'] = make_glyph(font_data_1);
+    font['2'] = make_glyph(font_data_2);
+    font['3'] = make_glyph(font_data_3);
+    font['4'] = make_glyph(font_data_4);
+    font['5'] = make_glyph(font_data_5);
+    font['6'] = make_glyph(font_data_6);
+    font['7'] = make_glyph(font_data_7);
+    font['8'] = make_glyph(font_data_8);
+    font['9'] = make_glyph(font_data_9);
 
-    font['0'] = font_char_info{sizeof(font_data_0), font_data_0};
-    font['1'] = font_char_info{sizeof(font_data_1), font_data_1};
-    font['2'] = font_char_info{sizeof(font_data_2), font_data_2};
-    font['3'] = font_char_info{sizeof(font_data_3), font_data_3};
-    font['4'] = font_char_info{sizeof(font_data_4), font_data_4};
-    font['5'] = font_char_info{sizeof(font_data_5), font_data_5};
-    font['6'] = font_char_info{sizeof(font_data_6), font_data_6};
-    font['7'] = font_char_info{sizeof(font_data_7), font_data_7};
-    font['8'] = font_char_info{sizeof(font_data_8), font_data_8};
-    font['9'] = font_char_info{sizeof(font_data_9), font_data_9};
+    font[':'] = make_glyph(font_data_colon);
+    font[';'] = make_glyph(font_data_semicolon);
+    font['<'] = make_glyph(font_data_left_angle);
+    font['='] = make_glyph(font_data_equal);
+    font['>'] = make_glyph(font_data_right_angle);
+    font['?'] = make_glyph(font_data_question);
+    font['@'] = make_glyph(font_data_at);
+
+    font['A'] = make_glyph(font_data_A);
+    font['B'] = make_glyph(font_data_B);
+    font['C'] = make_glyph(font_data_C);
+    font['D'] = make_glyph(font_data_D);
+    font['E'] = make_glyph(font_data_E);
+    font['F'] = make_glyph(font_data_F);
+    font['G'] = make_glyph(font_data_G);
+    font['H'] = make_glyph(font_data_H);
+    font['I'] = make_glyph(font_data_I);
+    font['J'] = make_glyph(font_data_J);
+    font['K'] = make_glyph(font_data_K);
+    font['L'] = make_glyph(font_data_L);
+    font['M'] = make_glyph(font_data_M);
+    font['N'] = make_glyph(font_data_N);
+    font['O'] = make_glyph(font_data_O);
+    font['P'] = make_glyph(font_data_P);
+    font['Q'] = make_glyph(font_data_Q);
+    font['R'] = make_glyph(font_data_R);
+    font['S'] = make_glyph(font_data_S);
+    font['T'] = make_glyph(font_data_T);
+    font['U'] = make_glyph(font_data_U);
+    font['V'] = make_glyph(font_data_V);
+    font['W'] = make_glyph(font_data_W);
+    font['X'] = make_glyph(font_data_X);
+    font['Y'] = make_glyph(font_data_Y);
+    font['Z'] = make_glyph(font_data_Z);
+
+    font['['] = make_glyph(font_data_left_bracket);
+    font['\\'] = make_glyph(font_data_backslash);
+    font[']'] = make_glyph(font_data_right_bracket);
+    font['^'] = make_glyph(font_data_carat);
+    font['_'] = make_glyph(font_data_underscore);
+    font['`'] = make_glyph(font_data_backtick);
+
+    font['a'] = make_glyph(font_data_a);
+    font['b'] = make_glyph(font_data_b);
+    font['c'] = make_glyph(font_data_c);
+    font['d'] = make_glyph(font_data_d);
+    font['e'] = make_glyph(font_data_e);
+    font['f'] = make_glyph(font_data_f);
+    font['g'] = make_glyph(font_data_g);
+    font['h'] = make_glyph(font_data_h);
+    font['i'] = make_glyph(font_data_i);
+    font['j'] = make_glyph(font_data_j);
+    font['k'] = make_glyph(font_data_k);
+    font['l'] = make_glyph(font_data_l);
+    font['m'] = make_glyph(font_data_m);
+    font['n'] = make_glyph(font_data_n);
+    font['o'] = make_glyph(font_data_o);
+    font['p'] = make_glyph(font_data_p);
+    font['q'] = make_glyph(font_data_q);
+    font['r'] = make_glyph(font_data_r);
+    font['s'] = make_glyph(font_data_s);
+    font['t'] = make_glyph(font_data_t);
+    font['u'] = make_glyph(font_data_u);
+    font['v'] = make_glyph(font_data_v);
+    font['w'] = make_glyph(font_data_w);
+    font['x'] = make_glyph(font_data_x);
+    font['y'] = make_glyph(font_data_y);
+    font['z'] = make_glyph(font_data_z);
+
+    font['{'] = make_glyph(font_data_left_brace);
+    font['|'] = make_glyph(font_data_pipe);
+    font['}'] = make_glyph(font_data_right_brace);
+    font['~'] = make_glyph(font_data_tilde);
+
     return font;
 }
 
@@ -202,7 +251,7 @@ SSD1306::SSD1306(I2cDevice &&device, gpio_num_t reset_pin)
   memset(buffer_.get(), 0x00, buffer_size());
 
   size_t offset = 0;
-  const char* str = "0123456789+-/*()";
+  const char* str = "[]<>()\\/_-^` ' \"foo\" $";
   for (const char* p = str; *p != '\0'; ++p) {
     const char c = *p;
     memcpy(buffer_.get() + offset, font[c].data, font[c].width);
@@ -210,7 +259,7 @@ SSD1306::SSD1306(I2cDevice &&device, gpio_num_t reset_pin)
   }
 
   offset = 128;
-  str = "VWXYZ";
+  str = "{abc}~def|ghi | foo";
   for (const char* p = str; *p != '\0'; ++p) {
     const char c = *p;
     memcpy(buffer_.get() + offset, font[c].data, font[c].width);
