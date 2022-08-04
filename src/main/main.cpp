@@ -5,7 +5,7 @@
 
 #include "I2cMaster.h"
 #include "SSD1306.h"
-#include "SX1509.h"
+#include "Keypad.h"
 
 #include <chrono>
 
@@ -22,9 +22,11 @@
 
 using namespace std::chrono_literals;
 
-namespace mantyl {
+namespace {
+const char *LogTag = "mantyl.main";
+}
 
-static const char *LogTag = "mantyl.main";
+namespace mantyl {
 
 void print_info() {
   /* Print chip information */
@@ -61,8 +63,8 @@ public:
 private:
   I2cMaster i2c_{PinConfig::I2cSDA, PinConfig::I2cSCL};
   SSD1306 display_{i2c_, 0x3c, GPIO_NUM_38};
-  SX1509 left_{i2c_, 0x3e};
-  SX1509 right_{i2c_, 0x3f};
+  Keypad left_{i2c_, 0x3e, 7, 8};
+  Keypad right_{i2c_, 0x3f, 6, 8};
 };
 
 esp_err_t App::init() {
@@ -72,12 +74,7 @@ esp_err_t App::init() {
   ESP_LOGV(LogTag, "attempting left SX1509 init:");
   rc = left_.init();
   if (rc == ESP_OK) {
-    rc = left_.configure_keypad(7, 8);
-    if (rc != ESP_OK) {
-      ESP_LOGE(LogTag, "failed to configure left key matrix");
-    } else {
-      ESP_LOGI(LogTag, "successfully initialized left key matrix");
-    }
+    ESP_LOGI(LogTag, "successfully initialized left key matrix");
   } else {
     ESP_LOGE(LogTag,
              "failed to initialize left key matrix: %d: %s",
@@ -88,12 +85,7 @@ esp_err_t App::init() {
   ESP_LOGV(LogTag, "attempting right SX1509 init:");
   rc = right_.init();
   if (rc == ESP_OK) {
-    rc = right_.configure_keypad(6, 8);
-    if (rc != ESP_OK) {
-      ESP_LOGE(LogTag, "failed to configure right key matrix");
-    } else {
-      ESP_LOGI(LogTag, "successfully initialized right key matrix");
-    }
+    ESP_LOGI(LogTag, "successfully initialized right key matrix");
   } else {
     // Maybe the right key matrix is not connected.
     ESP_LOGE(LogTag,
@@ -199,6 +191,7 @@ esp_err_t App::init_usb() {
 }
 
 void App::keyboard_task() {
+#if 0
   Result<uint16_t> old_keypress = left_.read_keypad();
   while (true) {
     auto x = left_.read_keypad();
@@ -216,6 +209,14 @@ void App::keyboard_task() {
     }
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
+#else
+  int n = 0;
+  while (true) {
+    // printf("loop %d\n", ++n);
+    // vTaskDelay(250 / portTICK_PERIOD_MS);
+    right_.scan();
+  }
+#endif
 }
 
 void main() {

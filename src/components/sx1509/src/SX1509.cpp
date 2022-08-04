@@ -55,6 +55,10 @@ Result<uint16_t> SX1509::read_keypad() {
   if (!value.has_value()) {
     return value;
   }
+  // The data returned by the SX1509 is a bitmask, with one bit per row
+  // and one bit per column.  The row and column that was detected as a key
+  // press are set to 0 and all other bits are set to 1.  Invert this so that
+  // the pressed row & column are 1 and all other bits are 0.
   return make_result<uint16_t>(0xffff ^ value.value());
 }
 
@@ -128,7 +132,7 @@ esp_err_t SX1509::configure_keypad(uint8_t rows, uint8_t columns) {
   // 1: 128ms   5: 2s
   // 2: 256ms   6: 4s
   // 3: 512ms   7: 8s
-  const auto auto_sleep_config = 0_u8;
+  const auto auto_sleep_config = 1_u8;
   // Scan time per row:
   // (must be higher than debounce time)
   // 0: 1ms    4: 16ms
