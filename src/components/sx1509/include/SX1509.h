@@ -4,19 +4,39 @@
 #include "I2cDevice.h"
 #include "Result.h"
 
+#include <endian.h>
 #include <utility>
 
 namespace mantyl {
 
 class SX1509 {
 public:
-  SX1509(I2cMaster &bus, uint8_t addr) : dev_{bus, addr} {}
+  SX1509(I2cMaster &bus, uint8_t addr, gpio_num_t int_pin)
+      : dev_{bus, addr}, int_pin_{int_pin} {}
   explicit SX1509(I2cDevice &&device) : dev_{std::move(device)} {}
+  ~SX1509();
 
   [[nodiscard]] esp_err_t init();
 
   [[nodiscard]] esp_err_t configure_keypad(uint8_t rows, uint8_t columns);
+
+  /**
+   * Read the keypad data.
+   *
+   * Beware, if read_keypad() is called when the SX1509 is not asserting the
+   * interrupt pin, invalid data can be read, where either KeyData1 or
+   * KeyData2 is 0 while the other is non-zero.
+   *
+   * The SX1509 appears to set KeyData1 and KeyData2 sequentially, and then
+   * asserts interrupt afterwards.  It clears all 3 when KeyData2 is read.
+   * Reading at arbitrary points in time can result in reading only valid data
+   * from only 1 register, and a 0 value from the other.  Reading KeyData2 can
+   * also reset the state back to 0 in the middle of while it is being updated,
+   * resulting in an invalid read on the next attempt as well.
+   */
   Result<uint16_t> read_keypad();
+
+  int read_int();
 
 private:
   // Register addresses
@@ -105,8 +125,9 @@ private:
   [[nodiscard]] esp_err_t write_u8(uint8_t addr, uint8_t value) {
     return write_data(addr, &value, sizeof(value));
   }
-  [[nodiscard]] esp_err_t write_u16(uint8_t addr, uint16_t value) {
-    return write_data(addr, &value, sizeof(value));
+  [[nodiscard]] esp_err_t write_u16be(uint8_t addr, uint16_t value) {
+    const uint16_t be = htobe16(value);
+    return write_data(addr, &be, sizeof(be));
   }
 
   esp_err_t read_data(uint8_t addr, void *data, size_t size);
@@ -122,11 +143,14 @@ private:
   Result<uint8_t, esp_err_t> read_u8(uint8_t addr) {
     return read_int<uint8_t>(addr);
   }
-  Result<uint16_t, esp_err_t> read_u16(uint8_t addr) {
-    return read_int<uint16_t>(addr);
+  Result<uint16_t, esp_err_t> read_u16be(uint8_t addr) {
+    return read_int<uint16_t>(addr).and_then(
+        [](uint16_t x) { return be16toh(x); });
   }
 
   I2cDevice dev_;
+  gpio_num_t int_pin_{GPIO_NUM_NC};
+  gpio_num_t reset_pin_{GPIO_NUM_NC};
   bool initialized_{false};
   bool keypad_configured_{false};
 };

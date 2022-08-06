@@ -38,6 +38,9 @@ void Keypad::scan() {
     // TODO: Periodically try to re-initialize the keypad.
     // The right keypad can be unplugged, and we want to recognize it again if
     // it is plugged back in.
+
+    // make sure we yield to the idle thread to avoid watchdog failures
+    vTaskDelay(1);
     return; // DISCONNECTED;
   }
 
@@ -70,6 +73,16 @@ void Keypad::scan() {
     }
   }
 #else
+  const auto int_value = sx1509_.read_int();
+  if (int_value == 1) {
+    ++noint_count_;
+    if (noint_count_ % 30 == 0) {
+      ESP_LOGI(LogTag, "no int");
+    }
+    vTaskDelay(1);
+    return;
+  }
+  ESP_LOGI(LogTag, "int!!");
   const auto read_result = sx1509_.read_keypad();
   if (read_result.has_error()) {
     if (read_result.error() != last_err_) {
@@ -83,20 +96,24 @@ void Keypad::scan() {
   last_err_ = ESP_OK;
 
   const auto key = read_result.value();
-  if (key == last_key_) {
-    ++same_count_;
-    return;
-  }
   bool bad = false;
   if ((key != 0) && ((key & 0xff) == 0 || ((key & 0xff00) == 0))) {
     // wtf?  the sx1509 sometimes returns results with a column but not a row
     // set, and vice versa.
     bad = true;
   }
+#if 0
+  if (key == last_key_) {
+    ++same_count_;
+    noint_count_ = 0;
+    return;
+  }
 
   ++counter_;
-  printf("%" PRIu64 " %c key after %" PRIu64 ": (%#x %#x) %02x %02x\n",
+  printf("%" PRIu64 " %d (%" PRIu64 ") %c key after %" PRIu64 ": (%#x %#x) %02x %02x\n",
          counter_,
+         int_value,
+         noint_count_,
          bad ? 'X' : ' ',
          same_count_,
          key,
@@ -105,6 +122,16 @@ void Keypad::scan() {
          (key & 0xff));
   last_key_ = key;
   same_count_ = 0;
+  noint_count_ = 0;
+#else
+  ++counter_;
+  printf("%" PRIu64 " (%" PRIu64 ") %c key %02x\n",
+         counter_,
+         noint_count_,
+         bad ? 'X' : ' ',
+         key);
+  noint_count_ = 0;
+#endif
 #endif
 }
 

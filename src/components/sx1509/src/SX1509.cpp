@@ -13,23 +13,53 @@ const char *LogTag = "mantyl.sx1509";
 namespace mantyl {
 
 esp_err_t SX1509::init() {
-  // Send software reset sequence
-  auto rc = write_u8(Reg::Reset, 0x12);
-  ESP_RETURN_ON_ERROR(
-      rc, LogTag, "failed to reset SX1509 at %u", dev_.address());
-  rc = write_u8(Reg::Reset, 0x34);
-  ESP_RETURN_ON_ERROR(
-      rc, LogTag, "failed to reset SX1509 (2) at %u", dev_.address());
+  if (reset_pin_ >= 0) {
+    gpio_config_t io_conf = {
+        .pin_bit_mask = 1ULL << reset_pin_,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    auto rc = gpio_config(&io_conf);
+    ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure SX1509 reset pin");
+
+    gpio_set_level(reset_pin_, 0);
+    // Minimum reset low pulse width is 3us, according to the datasheet
+    vTaskDelay(pdMS_TO_TICKS(1));
+    gpio_set_level(reset_pin_, 1);
+    vTaskDelay(pdMS_TO_TICKS(10));
+  } else {
+    // Send software reset sequence
+    auto rc = write_u8(Reg::Reset, 0x12);
+    ESP_RETURN_ON_ERROR(
+        rc, LogTag, "failed to reset SX1509 at %u", dev_.address());
+    rc = write_u8(Reg::Reset, 0x34);
+    ESP_RETURN_ON_ERROR(
+        rc, LogTag, "failed to reset SX1509 (2) at %u", dev_.address());
+  }
+
+  if (int_pin_ >= 0) {
+    gpio_config_t io_conf = {
+        .pin_bit_mask = 1ULL << int_pin_,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    auto rc = gpio_config(&io_conf);
+    ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure SX1509 interrupt pin");
+  }
 
   // Read from some config registers with known default values
   // to verify that we can successfully communicate with the device.
   // This should return 0xff00
-  const auto test_regs = read_u16(Reg::IntrMaskA);
+  const auto test_regs = read_u16be(Reg::IntrMaskA);
   if (test_regs.has_error()) {
     ESP_LOGD(LogTag, "error reading from SX1509: %d", test_regs.error());
     return test_regs.error();
   }
-  if (be16toh(test_regs.value()) != 0xff00) {
+  if (test_regs.value() != 0xff00) {
     ESP_LOGE(LogTag,
              "unexpected data read initializing SX1509: %#0x",
              test_regs.value());
@@ -38,7 +68,7 @@ esp_err_t SX1509::init() {
 
   // Configure the clock; use 2Mhz internal clock,
   // and keep I/O frequency at 2Mhz
-  rc = configure_clock(ClockSource::Internal2MHZ);
+  auto rc = configure_clock(ClockSource::Internal2MHZ);
   ESP_RETURN_ON_ERROR(
       rc, LogTag, "failed to configure SX1509 (%u) clock", dev_.address());
 
@@ -46,12 +76,21 @@ esp_err_t SX1509::init() {
   return ESP_OK;
 }
 
+SX1509::~SX1509() {
+  if (reset_pin_ >= 0) {
+    gpio_reset_pin(reset_pin_);
+  }
+  if (int_pin_ >= 0) {
+    gpio_reset_pin(int_pin_);
+  }
+}
+
 Result<uint16_t> SX1509::read_keypad() {
   if (!keypad_configured_) {
     return make_error<uint16_t>(ESP_ERR_INVALID_STATE);
   }
 
-  const auto value = read_u16(Reg::KeyData1);
+  const auto value = read_u16be(Reg::KeyData1);
   if (!value.has_value()) {
     return value;
   }
@@ -60,6 +99,13 @@ Result<uint16_t> SX1509::read_keypad() {
   // press are set to 0 and all other bits are set to 1.  Invert this so that
   // the pressed row & column are 1 and all other bits are 0.
   return make_result<uint16_t>(0xffff ^ value.value());
+}
+
+int SX1509::read_int() {
+  if (int_pin_ >= 0) {
+    return gpio_get_level(int_pin_);
+  }
+  return -1;
 }
 
 esp_err_t SX1509::configure_clock(ClockSource source,
@@ -72,13 +118,8 @@ esp_err_t SX1509::configure_clock(ClockSource source,
   auto rc = write_u8(Reg::Clock, reg_clock);
   ESP_RETURN_ON_ERROR(rc, LogTag, "error updating SX1509 Reg::Clock");
 
-  const auto reg_misc = read_u8(Reg::Misc);
-  if (!reg_misc.has_value()) {
-    return reg_misc.error();
-  }
-  const uint8_t new_reg_misc =
-      ((reg_misc.value() & ~(0b111 << 4)) | ((led_divider & 0b111) << 4));
-  rc = write_u8(Reg::Misc, new_reg_misc);
+  const uint8_t reg_misc = (led_divider & 0b111) << 4;
+  rc = write_u8(Reg::Misc, reg_misc);
   ESP_RETURN_ON_ERROR(rc, LogTag, "error updating SX1509 Reg::Misc");
 
   return ESP_OK;
@@ -103,9 +144,9 @@ esp_err_t SX1509::configure_keypad(uint8_t rows, uint8_t columns) {
     return ESP_ERR_INVALID_STATE;
   }
 
-  // Set bank B to output and A to input
+  // Set bank A to output and B to input
   const uint16_t dir_bits = 0xff00;
-  auto rc = write_u16(Reg::DirB, dir_bits);
+  auto rc = write_u16be(Reg::DirB, dir_bits);
   ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure keypad I/O directions");
 
   // Configure bank A as open drain
@@ -124,7 +165,7 @@ esp_err_t SX1509::configure_keypad(uint8_t rows, uint8_t columns) {
   rc = write_u8(Reg::DebounceConfig, 0);
   ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure keypad debounce time");
   // Enable debounce on all of the pins
-  rc = write_u16(Reg::DebounceEnableB, 0xffff);
+  rc = write_u16be(Reg::DebounceEnableB, 0xffff);
   ESP_RETURN_ON_ERROR(rc, LogTag, "failed to enable keypad debounce");
 
   // Auto sleep time:

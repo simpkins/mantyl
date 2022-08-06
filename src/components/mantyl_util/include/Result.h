@@ -38,6 +38,15 @@ public:
     return std::get<0>(data_);
   }
 
+  template <typename Fn>
+  Result<std::invoke_result_t<Fn, T>, E> and_then(Fn &&fn) {
+    using RetType = std::invoke_result_t<Fn, T>;
+    if (has_value()) {
+      return Result<RetType, E>(ConstructValue, fn(std::get<1>(data_)));
+    }
+    return *this;
+  }
+
 private:
   std::variant<error_type, value_type> data_;
 };

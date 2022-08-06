@@ -7,8 +7,8 @@ namespace mantyl {
 
 class Keypad {
 public:
-  Keypad(I2cMaster &bus, uint8_t addr, uint8_t rows, uint8_t columns)
-      : sx1509_{bus, addr}, rows_{rows}, columns_{columns} {}
+  Keypad(I2cMaster &bus, uint8_t addr, gpio_num_t int_pin, uint8_t rows, uint8_t columns)
+      : sx1509_{bus, addr, int_pin}, rows_{rows}, columns_{columns} {}
 
   [[nodiscard]] esp_err_t init();
 
@@ -31,6 +31,7 @@ private:
   esp_err_t last_err_{ESP_OK};
   uint64_t counter_{0};
   uint64_t same_count_{0};
+  uint64_t noint_count_{0};
 };
 
 } // namespace mantyl
