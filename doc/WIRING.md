@@ -24,14 +24,72 @@ Left thumb (viewed from the bottom):
  C7R5  C6R5
 
 
-For the hat switch use columns 0-4 on row 6.
+For the directional switch below the display, use columns 0-4 on row 6.
 
 # I2C Connection
 
 From the outside of the keyboard to inside, the pins are:
 
-  GND SCL VCC SDA INT
+  GND SCL INT SDA VCC
 
 Having GND on the outside hopefully makes it a little more likely that it has
 contact first before other pins when connecting/disconnecting, if it ever
 happens to be pulled off while powered on.
+
+# SX1509 Connections
+
+Notes to record which wires get connected to each of the SX1509 pins:
+
+## Left
+
+- 0
+  - Row 0 from Main keypad
+  - Row 0 from Thumb
+- 1
+  - Row 1 from Main keypad
+  - Row 1 from Thumb
+- 2
+  - Row 2 from Main keypad
+  - Row 2 from Thumb
+- 3
+  - Row 3 from Main keypad
+- VC1
+  - None (connected by on-board jumpers to VCC)
+- 4
+  - Row 4 from Main keypad
+- 5
+  - Row 5 from Main keypad
+  - Row 5 from Thumb
+- 6
+  - Directional switch common pin
+- 7
+
+- 8
+  - Column 0 from Main keypad
+  - Directional switch 0
+- 9
+  - Column 1 from Main keypad
+  - Directional switch 1
+- 10
+  - Column 2 from Main keypad
+  - Directional switch 2
+- 11
+  - Column 3 from Main keypad
+  - Directional switch 3
+- VC2
+  - None (connected by on-board jumpers to VCC)
+- 12
+  - Column 4 from Main keypad
+  - Directional switch 4
+- 13
+  - Column 5 from Main keypad
+  - Column 5 from Thumb
+- 14
+  - Column 6 from Main keypad
+  - Column 6 from Thumb
+- 15
+  - Column 7 from Thumb
+
+## Right
+
+The right side is the same as the left, but without the directional switch.
