@@ -12,6 +12,11 @@ const char *LogTag = "mantyl.keypad";
 namespace mantyl {
 
 esp_err_t Keypad::init() {
+  if (rows_ > kMaxRows || columns_ > kMaxCols) {
+    ESP_LOGE(LogTag, "too many keypad rows/columns for SX1509");
+    return ESP_ERR_INVALID_ARG;
+  }
+
   auto rc = sx1509_.init();
   ESP_RETURN_ON_ERROR(rc, LogTag, "failed to initialize SX1509");
 
@@ -22,15 +27,17 @@ esp_err_t Keypad::init() {
   return ESP_OK;
 }
 
-uint8_t Keypad::gen_key_index(uint16_t value) {
-  // The value read from the SX1509 consists of two uint8_t values,
-  // representing which column and row generated the key press event.
-  // These unfortunately are not indices, but bitmasks with one bit per
-  // column/row.  The column/row generating the event will be 0 and all other
-  // columns/rows will be 1.  e.g., 11011111 -> row/column 5
+int8_t Keypad::get_row(uint16_t value) {
+  const auto row_bits = (value & 0xff);
+  // TODO: We can probably use clz to make this faster.
 
-  // TODO: can probably use clz
-  return 0;
+  for (uint8_t row_idx = 0; row_idx < 8; ++row_idx) {
+    if (row_bits == (1 << row_idx)) {
+      return row_idx;
+    }
+  }
+
+  return -1;
 }
 
 void Keypad::scan() {
@@ -44,18 +51,26 @@ void Keypad::scan() {
     return; // DISCONNECTED;
   }
 
-  const auto int_value = sx1509_.read_int();
+  const auto int_value = sx1509_.read_interrupt();
   if (int_value == 1) {
     ++noint_count_;
-    if (noint_count_ % 30 == 0) {
-      ESP_LOGD(LogTag, "no int");
+    if (noint_count_ == 4) {
+      ESP_LOGI(LogTag, "no int timeout");
+      on_timeout();
     }
     vTaskDelay(1);
     return;
   }
-  ESP_LOGI(LogTag, "int!!");
+  on_interrupt();
+}
+
+void Keypad::on_interrupt() {
   const auto read_result = sx1509_.read_keypad();
   if (read_result.has_error()) {
+    // TODO:
+    // - mark all keys unpressed
+    // - indicate that the device is uninitialized and needs to be reset
+    // - install timer to periodically attempt to re-initialize
     if (read_result.error() != last_err_) {
       ESP_LOGE(LogTag,
                "keypad read error: %s",
@@ -66,21 +81,78 @@ void Keypad::scan() {
   }
   last_err_ = ESP_OK;
 
-  const auto key = read_result.value();
-  const auto new_int_value = sx1509_.read_int();
-  bool bad = false;
-  if ((key != 0) && ((key & 0xff) == 0 || ((key & 0xff00) == 0))) {
-    // wtf?  the sx1509 sometimes returns results with a column but not a row
-    // set, and vice versa.
-    bad = true;
+  const auto key_data = read_result.value();
+  const auto row = get_row(key_data);
+  if (row < 0 || row >= rows_) {
+    // The row should only be 0 if we performed a read when the interrupt pin
+    // was not actually active.
+    //
+    // We don't expect to read a row value greater than rows_ unless we
+    // configured the chip incorrectly.  (Although technically the chip doesn't
+    // support fewer than 2 rows, so if rows_ is 1 it would still attempt to
+    // scan 2 rows.)
+    ESP_LOGE(LogTag,
+             "read bad row data from keypad %#04x: %#x",
+             sx1509_.address(),
+             key_data);
+    return;
   }
+
+  const auto cols = (key_data >> 8);
+
+  // Clear all pressed keys between this row and the last row we have seen.
+  while (true) {
+    ++last_row_seen_;
+    if (last_row_seen_ >= rows_) {
+      last_row_seen_ = 0;
+    }
+    if (last_row_seen_ == row) {
+      break;
+    }
+    update_row(last_row_seen_, 0);
+  }
+
+  // Now update this row
+  update_row(row, cols);
+
   ++counter_;
-  printf("%" PRIu64 " (%" PRIu64 ") %c key %02x -> %d\n",
-         counter_,
-         noint_count_,
-         bad ? 'X' : ' ',
-         key, new_int_value);
+  ESP_LOGD(LogTag,
+           "%" PRIu64 " (%" PRIu64 ") row %d cols %02x\n",
+           counter_,
+           noint_count_,
+           row,
+           cols);
   noint_count_ = 0;
+}
+
+void Keypad::on_timeout() {
+  // The SX1509 unfortunately does not notify us when no keys are pressed,
+  // so we have to rely on a timeout when it has been more than 1 key scan
+  // period without an interrupt active.
+  for (uint8_t row = 0; row < rows_; ++row) {
+    update_row(row, 0);
+  }
+}
+
+void Keypad::update_row(uint8_t row, uint8_t cols) {
+  const auto old_value = pressed_keys_[row];
+  pressed_keys_[row] = cols;
+  if (old_value == cols) {
+    return;
+  }
+
+  // TODO: record presses and releases based on the changes to cols
+  for (uint8_t col = 0; col < kMaxCols; ++col) {
+    const auto old_pressed = (old_value >> col) & 0x1;
+    const auto new_pressed = (cols >> col) & 0x1;
+    if (old_pressed != new_pressed) {
+      if (new_pressed) {
+        printf("press: %d, %d\n", row, col);
+      } else {
+        printf("release: %d, %d\n", row, col);
+      }
+    }
+  }
 }
 
 } // namespace mantyl

@@ -101,7 +101,7 @@ Result<uint16_t> SX1509::read_keypad() {
   return make_result<uint16_t>(0xffff ^ value.value());
 }
 
-int SX1509::read_int() {
+int SX1509::read_interrupt() {
   if (int_pin_ >= 0) {
     return gpio_get_level(int_pin_);
   }

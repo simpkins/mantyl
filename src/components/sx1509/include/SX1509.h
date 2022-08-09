@@ -16,12 +16,20 @@ public:
   explicit SX1509(I2cDevice &&device) : dev_{std::move(device)} {}
   ~SX1509();
 
+  uint8_t address() const {
+    return dev_.address();
+  }
+
   [[nodiscard]] esp_err_t init();
 
   [[nodiscard]] esp_err_t configure_keypad(uint8_t rows, uint8_t columns);
 
   /**
    * Read the keypad data.
+   *
+   * Returns a 16 bit integer, where the least significant byte indicates the
+   * row that was being scanned, and the most significant byte indicate which
+   * columns were active triggering the interrupt.
    *
    * Beware, if read_keypad() is called when the SX1509 is not asserting the
    * interrupt pin, invalid data can be read, where either KeyData1 or
@@ -36,7 +44,7 @@ public:
    */
   Result<uint16_t> read_keypad();
 
-  int read_int();
+  int read_interrupt();
 
 private:
   // Register addresses
