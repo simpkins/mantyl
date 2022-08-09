@@ -63,8 +63,8 @@ public:
 private:
   I2cMaster i2c_{PinConfig::I2cSDA, PinConfig::I2cSCL};
   SSD1306 display_{i2c_, 0x3c, GPIO_NUM_38};
-  Keypad left_{i2c_, 0x3e, GPIO_NUM_NC, 7, 8};
-  Keypad right_{i2c_, 0x3f, GPIO_NUM_6, 6, 8};
+  Keypad left_{i2c_, 0x3e, GPIO_NUM_6, 7, 8};
+  Keypad right_{i2c_, 0x3f, GPIO_NUM_NC, 6, 8};
 };
 
 esp_err_t App::init() {
@@ -213,7 +213,7 @@ void App::keyboard_task() {
   while (true) {
     // printf("loop %d\n", ++n);
     // vTaskDelay(250 / portTICK_PERIOD_MS);
-    right_.scan();
+    left_.scan();
   }
 #endif
 }
