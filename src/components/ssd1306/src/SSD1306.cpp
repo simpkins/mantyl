@@ -22,10 +22,10 @@ SSD1306::SSD1306(I2cDevice &&device, gpio_num_t reset_pin)
       buffer_{new uint8_t[buffer_size()]} {
   memset(buffer_.get(), 0x00, buffer_size());
 
-  write_centered("Adam Simpkins", Line0);
-  write_centered("adam@adamsimpkins.net", Line1);
-  write_text("abcdefghijklmnopqrstuvw", Line2);
-  write_text("xyz", Line3);
+#if 0
+  write_centered("Adam Simpkins", Line1);
+  write_centered("adam@adamsimpkins.net", Line2);
+#endif
 }
 
 SSD1306::~SSD1306() {

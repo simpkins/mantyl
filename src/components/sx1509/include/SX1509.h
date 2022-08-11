@@ -46,6 +46,10 @@ public:
 
   int read_interrupt();
 
+  gpio_num_t interrupt_pin() const {
+    return int_pin_;
+  }
+
 private:
   // Register addresses
   enum Reg : uint8_t {

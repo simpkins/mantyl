@@ -18,6 +18,10 @@ public:
   void on_interrupt();
   void on_timeout();
 
+  gpio_num_t interrupt_pin() const {
+    return sx1509_.interrupt_pin();
+  }
+
 private:
   Keypad(Keypad const &) = delete;
   Keypad &operator=(Keypad const &) = delete;

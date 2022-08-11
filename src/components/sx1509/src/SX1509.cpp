@@ -45,7 +45,7 @@ esp_err_t SX1509::init() {
         .mode = GPIO_MODE_INPUT,
         .pull_up_en = GPIO_PULLUP_ENABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_DISABLE,
+        .intr_type = GPIO_INTR_NEGEDGE,
     };
     auto rc = gpio_config(&io_conf);
     ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure SX1509 interrupt pin");

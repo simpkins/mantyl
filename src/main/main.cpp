@@ -58,18 +58,45 @@ public:
   esp_err_t test();
   esp_err_t init_usb();
 
-  void keyboard_task();
+  void main();
 
 private:
+  static void left_gpio_intr_handler(void *arg);
+  static void keyboard_task_fn(void *arg);
+
+  void on_left_gpio_intr();
+  void keyboard_task();
+
   I2cMaster i2c_{PinConfig::I2cSDA, PinConfig::I2cSCL};
   SSD1306 display_{i2c_, 0x3c, GPIO_NUM_38};
   Keypad left_{i2c_, 0x3e, GPIO_NUM_6, 7, 8};
   Keypad right_{i2c_, 0x3f, GPIO_NUM_NC, 6, 8};
+  SemaphoreHandle_t done_sem_{};
+  TaskHandle_t task_handle_{};
 };
 
+void App::left_gpio_intr_handler(void* arg) {
+  auto *app = static_cast<App *>(arg);
+  app->on_left_gpio_intr();
+}
+
+void App::on_left_gpio_intr() {
+  BaseType_t high_task_wakeup = pdFALSE;
+  xTaskNotifyFromISR(task_handle_, 0x01, eSetBits, &high_task_wakeup);
+
+  if (high_task_wakeup == pdTRUE) {
+    portYIELD_FROM_ISR();
+  }
+}
+
 esp_err_t App::init() {
+  done_sem_ = xSemaphoreCreateBinary();
+
   auto rc = i2c_.init(I2cClockSpeed);
   ESP_RETURN_ON_ERROR(rc, LogTag, "failed to initialized I2C bus");
+
+  rc = gpio_install_isr_service(0);
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to install gpio ISR");
 
   ESP_LOGV(LogTag, "attempting left SX1509 init:");
   rc = left_.init();
@@ -81,6 +108,9 @@ esp_err_t App::init() {
              rc,
              esp_err_to_name(rc));
   }
+
+  rc = gpio_isr_handler_add(left_.interrupt_pin(), left_gpio_intr_handler, this);
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to add left keypad ISR");
 
   ESP_LOGV(LogTag, "attempting right SX1509 init:");
   rc = right_.init();
@@ -191,47 +221,69 @@ esp_err_t App::init_usb() {
 }
 
 void App::keyboard_task() {
-#if 0
-  Result<uint16_t> old_keypress = left_.read_keypad();
   while (true) {
-    auto x = left_.read_keypad();
-    if (x != old_keypress) {
-      old_keypress = x;
-      if (x.has_error()) {
-        const auto err = x.error();
-        ESP_LOGE(LogTag,
-                 "error reading keypress: %d: %s",
-                 err,
-                 esp_err_to_name(err));
-      } else {
-        ESP_LOGI(LogTag, "keypress: %#0x", x.value());
-      }
+    unsigned long notified_value = 0;
+    // TODO: allow registering timeout events, and wait until the desired next
+    // timeout.  This way we can have a short timeout when a key is pressed to
+    // detect the release, and a long timeout when no keys are pressed.
+    // We also want to support timeouts for display fade/animation/etc.
+    const auto rc = xTaskNotifyWait(
+        pdFALSE, ULONG_MAX, &notified_value, pdMS_TO_TICKS(50));
+    if (rc == pdTRUE) {
+      ESP_LOGD(LogTag, "got notification: %#04x", notified_value);
+      left_.on_interrupt();
+    } else {
+      ESP_LOGD(LogTag, "no notification!");
+      left_.on_timeout();
     }
-    vTaskDelay(100 / portTICK_PERIOD_MS);
   }
-#else
-  while (true) {
-    // printf("loop %d\n", ++n);
-    // vTaskDelay(250 / portTICK_PERIOD_MS);
-    left_.scan();
-  }
-#endif
+  xSemaphoreGive(done_sem_);
 }
 
-void main() {
-  esp_log_level_set("mantyl.main", ESP_LOG_DEBUG);
+void App::keyboard_task_fn(void* arg) {
+  auto *app = static_cast<App *>(arg);
+  printf("keyboard_task start; app=%p\n", app);
+  app->keyboard_task();
+  printf("keyboard_task suspending\n");
+  vTaskSuspend(nullptr);
+}
 
-  print_info();
+void App::main() {
+  printf("main task prepare; app=%p\n", this);
+  ESP_ERROR_CHECK(init());
+  // init_usb();
 
-  App app;
-  ESP_ERROR_CHECK(app.init());
-  // app.init_usb();
+  static constexpr configSTACK_DEPTH_TYPE keyboard_task_stack_size = 4096;
+  const auto rc = xTaskCreatePinnedToCore(keyboard_task_fn,
+                                          "keyboard",
+                                          keyboard_task_stack_size,
+                                          this,
+                                          2,
+                                          &task_handle_,
+                                          0);
+  if (rc != pdPASS) {
+    ESP_LOGE(LogTag, "failed to create keyboard task");
+    return;
+  }
 
-  app.keyboard_task();
+  // Wait for the keyboard task to finish.
+  // (This should normally never happen.)
+  printf("main task run\n");
+  while (true) {
+    if (xSemaphoreTake(done_sem_, portMAX_DELAY) == pdTRUE) {
+      break;
+    }
+  }
 }
 
 } // namespace mantyl
 
 extern "C" void app_main() {
-  mantyl::main();
+  esp_log_level_set("mantyl.main", ESP_LOG_DEBUG);
+
+  mantyl::print_info();
+
+  mantyl::App app;
+  app.main();
+  ESP_LOGW(LogTag, "main task exiting");
 }
