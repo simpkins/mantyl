@@ -4,6 +4,7 @@
 #include "SX1509.h"
 
 #include <array>
+#include <chrono>
 
 namespace mantyl {
 
@@ -14,12 +15,14 @@ public:
 
   [[nodiscard]] esp_err_t init();
 
-  void scan();
-  void on_interrupt();
-  void on_timeout();
+  std::chrono::milliseconds tick(std::chrono::steady_clock::time_point now);
 
   gpio_num_t interrupt_pin() const {
     return sx1509_.interrupt_pin();
+  }
+
+  uint16_t num_pressed() const {
+    return num_pressed_;
   }
 
 private:
@@ -30,6 +33,11 @@ private:
    * Get the row index from the result of SX1509::read_keypad()
    */
   static int8_t get_row(uint16_t value);
+  static constexpr std::chrono::milliseconds kReinitTimeout{60 * 1000};
+  static constexpr std::chrono::milliseconds kReleaseTimeout{50};
+
+  std::chrono::milliseconds on_interrupt();
+  void on_release();
 
   void update_row(uint8_t row, uint8_t cols);
 
@@ -43,11 +51,8 @@ private:
   uint8_t last_row_seen_{0};
   std::array<uint8_t, kMaxRows> pressed_keys_{};
 
-  uint16_t last_key_{0};
-  esp_err_t last_err_{ESP_OK};
-  uint64_t counter_{0};
-  uint64_t same_count_{0};
-  uint64_t noint_count_{0};
+  uint16_t num_pressed_{0};
+  std::chrono::steady_clock::time_point last_scan_detected_{};
 };
 
 } // namespace mantyl

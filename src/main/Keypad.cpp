@@ -40,46 +40,63 @@ int8_t Keypad::get_row(uint16_t value) {
   return -1;
 }
 
-void Keypad::scan() {
+std::chrono::milliseconds Keypad::tick(std::chrono::steady_clock::time_point now) {
   if (!initialized_) {
-    // TODO: Periodically try to re-initialize the keypad.
-    // The right keypad can be unplugged, and we want to recognize it again if
-    // it is plugged back in.
-
-    // make sure we yield to the idle thread to avoid watchdog failures
-    vTaskDelay(1);
-    return; // DISCONNECTED;
+    // Periodically try to re-initialize the keypad.  The right keypad can be
+    // unplugged, and we want to recognize it again if it is plugged back in.
+    const auto time_since_last_init = now - last_scan_detected_;
+    if (time_since_last_init < kReinitTimeout) {
+      return kReinitTimeout -
+             std::chrono::duration_cast<std::chrono::milliseconds>(
+                 time_since_last_init);
+    } else {
+      ESP_LOGI(LogTag, "attempting to reinit keypad %#x", sx1509_.address());
+      const auto init_rc = init();
+      if (init_rc != ESP_OK) {
+        // Reinit failed
+        last_scan_detected_ = now;
+        return kReinitTimeout;
+      }
+    }
   }
 
   const auto int_value = sx1509_.read_interrupt();
   if (int_value == 1) {
-    ++noint_count_;
-    if (noint_count_ == 4) {
-      ESP_LOGI(LogTag, "no int timeout");
-      on_timeout();
+    // No scan key currently detected
+    //
+    // The SX1509 unfortunately does not notify us when no keys are pressed,
+    // so we have to rely on a timeout when it has been more than 1 key scan
+    // period without an interrupt active.
+    if (num_pressed_ == 0) {
+      // When nothing is pressed we can wait forever;
+      // we will be woken up by the interrupt instead.
+      return std::chrono::minutes(60);
     }
-    vTaskDelay(1);
-    return;
+    const auto time_since_last_press = now - last_scan_detected_;
+    if (time_since_last_press > kReleaseTimeout) {
+      on_release();
+      return std::chrono::minutes(60);
+    }
+    return kReleaseTimeout -
+           std::chrono::duration_cast<std::chrono::milliseconds>(
+               time_since_last_press);
+  } else {
+    last_scan_detected_ = now;
+    return on_interrupt();
   }
-  on_interrupt();
 }
 
-void Keypad::on_interrupt() {
+std::chrono::milliseconds Keypad::on_interrupt() {
   const auto read_result = sx1509_.read_keypad();
   if (read_result.has_error()) {
-    // TODO:
-    // - mark all keys unpressed
-    // - indicate that the device is uninitialized and needs to be reset
-    // - install timer to periodically attempt to re-initialize
-    if (read_result.error() != last_err_) {
-      ESP_LOGE(LogTag,
-               "keypad read error: %s",
-               esp_err_to_name(read_result.error()));
-    }
-    last_err_ = read_result.error();
-    return;
+    ESP_LOGE(
+        LogTag, "keypad read error: %s", esp_err_to_name(read_result.error()));
+    // Mark all keys unpressed
+    on_release();
+    // Indicate that we need to be reinitialized
+    initialized_ = false;
+    return kReinitTimeout;
   }
-  last_err_ = ESP_OK;
 
   const auto key_data = read_result.value();
   const auto row = get_row(key_data);
@@ -95,7 +112,7 @@ void Keypad::on_interrupt() {
              "read bad row data from keypad %#04x: %#x",
              sx1509_.address(),
              key_data);
-    return;
+    return kReleaseTimeout;
   }
 
   const auto cols = (key_data >> 8);
@@ -115,20 +132,11 @@ void Keypad::on_interrupt() {
   // Now update this row
   update_row(row, cols);
 
-  ++counter_;
-  ESP_LOGD(LogTag,
-           "%" PRIu64 " (%" PRIu64 ") row %d cols %02x\n",
-           counter_,
-           noint_count_,
-           row,
-           cols);
-  noint_count_ = 0;
+  ESP_LOGD(LogTag, "row %d cols %02x\n", row, cols);
+  return kReleaseTimeout;
 }
 
-void Keypad::on_timeout() {
-  // The SX1509 unfortunately does not notify us when no keys are pressed,
-  // so we have to rely on a timeout when it has been more than 1 key scan
-  // period without an interrupt active.
+void Keypad::on_release() {
   for (uint8_t row = 0; row < rows_; ++row) {
     update_row(row, 0);
   }
@@ -141,14 +149,16 @@ void Keypad::update_row(uint8_t row, uint8_t cols) {
     return;
   }
 
-  // TODO: record presses and releases based on the changes to cols
+  // Record presses and releases based on the changes to cols
   for (uint8_t col = 0; col < kMaxCols; ++col) {
     const auto old_pressed = (old_value >> col) & 0x1;
     const auto new_pressed = (cols >> col) & 0x1;
     if (old_pressed != new_pressed) {
       if (new_pressed) {
+        ++num_pressed_;
         printf("press: %d, %d\n", row, col);
       } else {
+        --num_pressed_;
         printf("release: %d, %d\n", row, col);
       }
     }

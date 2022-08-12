@@ -61,28 +61,39 @@ public:
   void main();
 
 private:
+  enum NotifyBits : unsigned long {
+    Left = 0x01,
+    Right = 0x02,
+  };
+
   static void left_gpio_intr_handler(void *arg);
+  static void right_gpio_intr_handler(void *arg);
   static void keyboard_task_fn(void *arg);
 
-  void on_left_gpio_intr();
   void keyboard_task();
+  void on_gpio_interrupt(NotifyBits bits);
 
   I2cMaster i2c_{PinConfig::I2cSDA, PinConfig::I2cSCL};
   SSD1306 display_{i2c_, 0x3c, GPIO_NUM_38};
   Keypad left_{i2c_, 0x3e, GPIO_NUM_6, 7, 8};
-  Keypad right_{i2c_, 0x3f, GPIO_NUM_NC, 6, 8};
+  Keypad right_{i2c_, 0x3f, GPIO_NUM_33, 6, 8};
   SemaphoreHandle_t done_sem_{};
   TaskHandle_t task_handle_{};
 };
 
 void App::left_gpio_intr_handler(void* arg) {
   auto *app = static_cast<App *>(arg);
-  app->on_left_gpio_intr();
+  app->on_gpio_interrupt(NotifyBits::Left);
 }
 
-void App::on_left_gpio_intr() {
+void App::right_gpio_intr_handler(void* arg) {
+  auto *app = static_cast<App *>(arg);
+  app->on_gpio_interrupt(NotifyBits::Right);
+}
+
+void App::on_gpio_interrupt(NotifyBits bits) {
   BaseType_t high_task_wakeup = pdFALSE;
-  xTaskNotifyFromISR(task_handle_, 0x01, eSetBits, &high_task_wakeup);
+  xTaskNotifyFromISR(task_handle_, bits, eSetBits, &high_task_wakeup);
 
   if (high_task_wakeup == pdTRUE) {
     portYIELD_FROM_ISR();
@@ -108,9 +119,6 @@ esp_err_t App::init() {
              rc,
              esp_err_to_name(rc));
   }
-
-  rc = gpio_isr_handler_add(left_.interrupt_pin(), left_gpio_intr_handler, this);
-  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to add left keypad ISR");
 
   ESP_LOGV(LogTag, "attempting right SX1509 init:");
   rc = right_.init();
@@ -221,21 +229,45 @@ esp_err_t App::init_usb() {
 }
 
 void App::keyboard_task() {
+  ESP_ERROR_CHECK(gpio_isr_handler_add(
+      left_.interrupt_pin(), left_gpio_intr_handler, this));
+  ESP_ERROR_CHECK(gpio_isr_handler_add(
+      right_.interrupt_pin(), left_gpio_intr_handler, this));
+
+  auto now = std::chrono::steady_clock::now();
+  auto next_timeout = now;
+  {
+    const auto left_timeout = left_.tick(now);
+    const auto right_timeout = right_.tick(now);
+    next_timeout = now + std::min(left_timeout, right_timeout);
+  }
+
   while (true) {
+    now = std::chrono::steady_clock::now();
+    // TODO: we tend to wake up slightly before the timeout, which causes us to
+    // go back to sleep then wake up quickly again a couple times before we
+    // really hit the desired timeout.
+    const auto max_delay = next_timeout - now;
+    const auto max_delay_ticks = (max_delay.count() * configTICK_RATE_HZ *
+                                  decltype(max_delay)::period::num) /
+                                 decltype(max_delay)::period::den;
     unsigned long notified_value = 0;
-    // TODO: allow registering timeout events, and wait until the desired next
-    // timeout.  This way we can have a short timeout when a key is pressed to
-    // detect the release, and a long timeout when no keys are pressed.
-    // We also want to support timeouts for display fade/animation/etc.
-    const auto rc = xTaskNotifyWait(
-        pdFALSE, ULONG_MAX, &notified_value, pdMS_TO_TICKS(50));
+    const auto rc =
+        xTaskNotifyWait(pdFALSE, ULONG_MAX, &notified_value, max_delay_ticks);
     if (rc == pdTRUE) {
-      ESP_LOGD(LogTag, "got notification: %#04x", notified_value);
-      left_.on_interrupt();
-    } else {
-      ESP_LOGD(LogTag, "no notification!");
-      left_.on_timeout();
+      ESP_LOGD(LogTag, "received notification: %#04x", notified_value);
     }
+
+    const auto left_timeout = left_.tick(now);
+    const auto right_timeout = right_.tick(now);
+    next_timeout = now + std::min(left_timeout, right_timeout);
+    ESP_LOGI(LogTag,
+             "wait: woke=%d left=%ld (%d) right=%ld (%d)",
+             rc,
+             static_cast<long int>(left_timeout.count()),
+             (int)left_.num_pressed(),
+             static_cast<long int>(right_timeout.count()),
+             (int)right_.num_pressed());
   }
   xSemaphoreGive(done_sem_);
 }
