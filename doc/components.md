@@ -44,6 +44,33 @@
   a cable to it.  This would just require a little CAD rework to come up with a
   solution for securely fastening it to the keyboard shell.
 
+* Pull-up resistors (x2)
+
+  I am currently using 4.7kOhm resistors.
+
+  The maximum allowed resistance is determined by the bus capacitance.  Since
+  we do have a relatively long connection for an I2C bus, going too high could
+  be problematic.  I haven't had problems with 4.7kOhm so far.
+
+  The minimum resistance is determined by the amount of current needed to pull
+  the bus line low.  Our signal level is 3.3V; the bus must be pulled lower
+  than (3.3V * 0.3) to be recognized as low, or lower than 0.99V.  Pulling the
+  bus to .99V across a 4.7kOhm resistor requires 0.5mA.  Pulling it all the way
+  to 0V requires 0.7mA.
+
+  The ESP32S3 GPIO pins have a maximum low-level sink current of 28mA, which
+  gives us plenty of room.  The SX1509 has a maximum low-level sink current of
+  8mA at 3.3V.  The SSD1306 datasheet unfortunately does not clearly list the
+  maximum allowed voltage.  (It documents the maximum logic current as 150uA,
+  but this seems like it might be for the SPI logic mode.)
+
+* Diodes
+
+  I am using 1N4148 diodes.  1N5817 should also work.
+
+* Key switches
+
+  Any cherry-compatible key switches should work.
 
 
 # Volume control
