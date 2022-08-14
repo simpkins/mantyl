@@ -135,8 +135,8 @@ def apply_screw_holder(
 
     screw_hole_d = 3.3
 
-    # Set the hole up for a 1/4" #3 machine screw
-    hole_d = 2.5
+    # Set the hole up for a 1/4" #2 machine screw
+    hole_d = 2.0
     outer_d = 4.5
     h = 5.5
     hole_h = h
