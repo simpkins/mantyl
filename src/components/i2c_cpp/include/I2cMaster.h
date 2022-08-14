@@ -51,9 +51,9 @@ private:
   I2cMaster(I2cMaster const &) = delete;
   I2cMaster &operator=(I2cMaster const &) = delete;
 
-  int port_{0};
-  int sda_{0};
-  int scl_{0};
+  const int port_{0};
+  const int sda_{0};
+  const int scl_{0};
 };
 
 } // namespace mantyl

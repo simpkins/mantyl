@@ -73,10 +73,11 @@ private:
   void keyboard_task();
   void on_gpio_interrupt(NotifyBits bits);
 
-  I2cMaster i2c_{PinConfig::I2cSDA, PinConfig::I2cSCL};
-  SSD1306 display_{i2c_, 0x3c, GPIO_NUM_38};
-  Keypad left_{i2c_, 0x3e, GPIO_NUM_6, 7, 8};
-  Keypad right_{i2c_, 0x3f, GPIO_NUM_33, 6, 8};
+  I2cMaster i2c_left_{PinConfig::I2cSDA, PinConfig::I2cSCL};
+  I2cMaster i2c_right_{10, 11, 1};
+  SSD1306 display_{i2c_left_, 0x3c, GPIO_NUM_38};
+  Keypad left_{i2c_left_, 0x3e, GPIO_NUM_6, 7, 8};
+  Keypad right_{i2c_right_, 0x3f, GPIO_NUM_33, 6, 8};
   SemaphoreHandle_t done_sem_{};
   TaskHandle_t task_handle_{};
 };
@@ -103,8 +104,11 @@ void App::on_gpio_interrupt(NotifyBits bits) {
 esp_err_t App::init() {
   done_sem_ = xSemaphoreCreateBinary();
 
-  auto rc = i2c_.init(I2cClockSpeed);
-  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to initialized I2C bus");
+  auto rc = i2c_left_.init(I2cClockSpeed);
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to initialize left I2C bus");
+
+  rc = i2c_right_.init(I2cClockSpeed);
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to initialize right I2C bus");
 
   rc = gpio_install_isr_service(0);
   ESP_RETURN_ON_ERROR(rc, LogTag, "failed to install gpio ISR");
