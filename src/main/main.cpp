@@ -76,8 +76,8 @@ private:
   I2cMaster i2c_left_{PinConfig::I2cSDA, PinConfig::I2cSCL};
   I2cMaster i2c_right_{10, 11, 1};
   SSD1306 display_{i2c_left_, 0x3c, GPIO_NUM_38};
-  Keypad left_{i2c_left_, 0x3e, GPIO_NUM_6, 7, 8};
-  Keypad right_{i2c_right_, 0x3f, GPIO_NUM_33, 6, 8};
+  Keypad left_{"left", i2c_left_, 0x3e, GPIO_NUM_6, 7, 8};
+  Keypad right_{"right", i2c_right_, 0x3f, GPIO_NUM_1, 6, 8};
   SemaphoreHandle_t done_sem_{};
   TaskHandle_t task_handle_{};
 };
@@ -236,7 +236,7 @@ void App::keyboard_task() {
   ESP_ERROR_CHECK(gpio_isr_handler_add(
       left_.interrupt_pin(), left_gpio_intr_handler, this));
   ESP_ERROR_CHECK(gpio_isr_handler_add(
-      right_.interrupt_pin(), left_gpio_intr_handler, this));
+      right_.interrupt_pin(), right_gpio_intr_handler, this));
 
   auto now = std::chrono::steady_clock::now();
   auto next_timeout = now;

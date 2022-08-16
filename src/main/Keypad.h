@@ -5,13 +5,15 @@
 
 #include <array>
 #include <chrono>
+#include <string>
+#include <string_view>
 
 namespace mantyl {
 
 class Keypad {
 public:
-  Keypad(I2cMaster &bus, uint8_t addr, gpio_num_t int_pin, uint8_t rows, uint8_t columns)
-      : sx1509_{bus, addr, int_pin}, rows_{rows}, columns_{columns} {}
+  Keypad(std::string_view name, I2cMaster &bus, uint8_t addr, gpio_num_t int_pin, uint8_t rows, uint8_t columns)
+      : name_{name}, sx1509_{bus, addr, int_pin}, rows_{rows}, columns_{columns} {}
 
   [[nodiscard]] esp_err_t init();
 
@@ -44,6 +46,7 @@ private:
   static constexpr uint8_t kMaxRows = 8;
   static constexpr uint8_t kMaxCols = 8;
 
+  std::string name_;
   SX1509 sx1509_;
   const uint8_t rows_{0};
   const uint8_t columns_{0};

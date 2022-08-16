@@ -13,15 +13,18 @@ namespace mantyl {
 
 esp_err_t Keypad::init() {
   if (rows_ > kMaxRows || columns_ > kMaxCols) {
-    ESP_LOGE(LogTag, "too many keypad rows/columns for SX1509");
+    ESP_LOGE(
+        LogTag, "too many keypad rows/columns for %s SX1509", name_.c_str());
     return ESP_ERR_INVALID_ARG;
   }
 
   auto rc = sx1509_.init();
-  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to initialize SX1509");
+  ESP_RETURN_ON_ERROR(
+      rc, LogTag, "failed to initialize %s SX1509", name_.c_str());
 
   rc = sx1509_.configure_keypad(rows_, columns_);
-  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure SX1509 keypad");
+  ESP_RETURN_ON_ERROR(
+      rc, LogTag, "failed to configure %s SX1509 keypad", name_.c_str());
 
   initialized_ = true;
   return ESP_OK;
@@ -50,7 +53,7 @@ std::chrono::milliseconds Keypad::tick(std::chrono::steady_clock::time_point now
              std::chrono::duration_cast<std::chrono::milliseconds>(
                  time_since_last_init);
     } else {
-      ESP_LOGI(LogTag, "attempting to reinit keypad %#x", sx1509_.address());
+      ESP_LOGI(LogTag, "attempting to reinit %s keypad", name_.c_str());
       const auto init_rc = init();
       if (init_rc != ESP_OK) {
         // Reinit failed
@@ -89,8 +92,10 @@ std::chrono::milliseconds Keypad::tick(std::chrono::steady_clock::time_point now
 std::chrono::milliseconds Keypad::on_interrupt() {
   const auto read_result = sx1509_.read_keypad();
   if (read_result.has_error()) {
-    ESP_LOGE(
-        LogTag, "keypad read error: %s", esp_err_to_name(read_result.error()));
+    ESP_LOGE(LogTag,
+             "%s keypad read error: %s",
+             name_.c_str(),
+             esp_err_to_name(read_result.error()));
     // Mark all keys unpressed
     on_release();
     // Indicate that we need to be reinitialized
@@ -109,8 +114,8 @@ std::chrono::milliseconds Keypad::on_interrupt() {
     // support fewer than 2 rows, so if rows_ is 1 it would still attempt to
     // scan 2 rows.)
     ESP_LOGE(LogTag,
-             "read bad row data from keypad %#04x: %#x",
-             sx1509_.address(),
+             "read bad row data from %s keypad: %#x",
+             name_.c_str(),
              key_data);
     return kReleaseTimeout;
   }
@@ -132,7 +137,7 @@ std::chrono::milliseconds Keypad::on_interrupt() {
   // Now update this row
   update_row(row, cols);
 
-  ESP_LOGD(LogTag, "row %d cols %02x\n", row, cols);
+  ESP_LOGD(LogTag, "%s: row %d cols %02x\n", name_.c_str(), row, cols);
   return kReleaseTimeout;
 }
 
@@ -156,10 +161,10 @@ void Keypad::update_row(uint8_t row, uint8_t cols) {
     if (old_pressed != new_pressed) {
       if (new_pressed) {
         ++num_pressed_;
-        printf("press: %d, %d\n", row, col);
+        printf("%s press: %d, %d\n", name_.c_str(), row, col);
       } else {
         --num_pressed_;
-        printf("release: %d, %d\n", row, col);
+        printf("%s release: %d, %d\n", name_.c_str(), row, col);
       }
     }
   }
