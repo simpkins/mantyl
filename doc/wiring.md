@@ -40,6 +40,14 @@ happens to be pulled off while powered on.
 
 Notes to record which wires get connected to each of the SX1509 pins:
 
+## Pull-Ups
+
+I installed the I2C pull-up resistors on the back side of the SX1509 boards.
+The SX1509 have VC1 and VC2 through-holes that are connected to the 3V3 input
+by default (with jumpers).  These through holes provide convenient locations to
+install the resistors, and connect them to the SDA and SCL through-holes on
+this board.
+
 ## Left
 
 - 0
@@ -54,7 +62,7 @@ Notes to record which wires get connected to each of the SX1509 pins:
 - 3
   - Row 3 from Main keypad
 - VC1
-  - None (connected by on-board jumpers to VCC)
+  - 4.7kOhm I2C SDA pull up
 - 4
   - Row 4 from Main keypad
 - 5
@@ -77,7 +85,7 @@ Notes to record which wires get connected to each of the SX1509 pins:
   - Column 3 from Main keypad
   - Directional switch 3
 - VC2
-  - None (connected by on-board jumpers to VCC)
+  - 4.7kOhm I2C SCL pull up
 - 12
   - Column 4 from Main keypad
   - Directional switch 4
@@ -93,3 +101,32 @@ Notes to record which wires get connected to each of the SX1509 pins:
 ## Right
 
 The right side is the same as the left, but without the directional switch.
+
+
+# FeatherS3
+
+- 10
+  Right SX1509 INT
+- 7
+  Right I2C SCL
+- 3
+  Right I2C SDA
+- 3
+  Not connected (avoided since this is a strapping pin)
+- 1
+  Display RST
+- 38
+  Left SX1509 RST
+- 33
+  Left SX1509 INT
+- 9 (SCL)
+  Left I2C SCL
+- 8 (SDA)
+  Left I2C SDA
+
+- 3V3.1
+  Left VCC
+- GND
+  Ground
+- 3V3.2
+  Right VCC

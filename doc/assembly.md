@@ -47,3 +47,5 @@ For my boards, I assembled the diodes with the anode connected to the switch,
 and the cathode connected to the row wire.  I connected the rows to bank A of
 the SX1509 (pins 0-7) and the columns to Bank B (pins 8-15).  Bank A therefore
 needs to be configured as open drain, and bank B as pull-up.
+
+See [wiring.md](wiring.md) for more notes on the connections to be made.
