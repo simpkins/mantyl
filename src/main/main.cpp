@@ -73,11 +73,11 @@ private:
   void keyboard_task();
   void on_gpio_interrupt(NotifyBits bits);
 
-  I2cMaster i2c_left_{PinConfig::I2cSDA, PinConfig::I2cSCL};
-  I2cMaster i2c_right_{10, 11, 1};
-  SSD1306 display_{i2c_left_, 0x3c, GPIO_NUM_38};
-  Keypad left_{"left", i2c_left_, 0x3e, GPIO_NUM_6, 7, 8};
-  Keypad right_{"right", i2c_right_, 0x3f, GPIO_NUM_1, 6, 8};
+  I2cMaster i2c_left_{PinConfig::LeftI2cSDA, PinConfig::LeftI2cSCL, 0};
+  I2cMaster i2c_right_{PinConfig::RightI2cSDA, PinConfig::RightI2cSDA, 1};
+  SSD1306 display_{i2c_left_, 0x3c, GPIO_NUM_1};
+  Keypad left_{"left", i2c_left_, 0x3e, GPIO_NUM_33, 7, 8};
+  Keypad right_{"right", i2c_right_, 0x3f, GPIO_NUM_10, 6, 8};
   SemaphoreHandle_t done_sem_{};
   TaskHandle_t task_handle_{};
 };
