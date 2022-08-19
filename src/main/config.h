@@ -12,8 +12,8 @@ enum : uint32_t {
 enum PinConfig : int {
   LeftI2cSDA = 8,
   LeftI2cSCL = 9,
-  RightI2cSDA = 3,
-  RightI2cSCL = 7,
+  RightI2cSDA = 7,
+  RightI2cSCL = 10,
 };
 
 } // namespace mantyl
