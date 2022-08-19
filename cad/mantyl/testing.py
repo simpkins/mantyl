@@ -5,6 +5,7 @@
 
 import bpy
 
+from . import i2c_conn
 from . import kbd_halves
 from . import key_socket_holder
 from . import oled_holder
@@ -26,9 +27,10 @@ def test() -> None:
     # kbd_halves.left_oled_backplate()
 
     # wrist_rest.test()
-    sx1509_holder.test_screw_holder()
+    # sx1509_holder.test_screw_holder()
     # oled_holder.test()
     # usb_cutout.test()
+    i2c_conn.cable_cover_test()
 
     bpy.ops.object.mode_set(mode="EDIT")
     # blender_util.set_shading_mode("WIREFRAME")

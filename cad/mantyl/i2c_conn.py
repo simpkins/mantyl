@@ -257,3 +257,13 @@ def test() -> bpy.types.Object:
     )
     blender_util.difference(wall, i2c_cutout)
     return wall
+
+
+def cable_cover_test() -> bpy.types.Object:
+    wall = blender_util.range_cube((-11, 11), (0, 4), (0, 10))
+    i2c_cutout = I2cCutout.gen()
+    blender_util.apply_to_wall(
+        i2c_cutout, cad.Point(-10, 0, 0), cad.Point(10, 0, 0), x=0.0, z=5.0
+    )
+    blender_util.difference(wall, i2c_cutout)
+    return wall
