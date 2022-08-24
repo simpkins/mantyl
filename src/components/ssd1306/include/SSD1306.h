@@ -21,12 +21,51 @@ namespace mantyl {
  */
 class SSD1306 {
 public:
+  using OffsetRange = std::pair<uint16_t, uint16_t>;
+
+  /*
+   * The display is large enough for 4 lines of 8-pixel high text.
+   *
+   * The SSD1306 memory is laid out in horizontal strips, each 8 pixels high,
+   * which is convenient for writing 8-pixel high text.
+   *
+   * These ranges define the start and end offsets of each line.
+   */
+  static constexpr OffsetRange Line0{0, 128};
+  static constexpr OffsetRange Line1{128, 256};
+  static constexpr OffsetRange Line2{256, 384};
+  static constexpr OffsetRange Line3{384, 512};
+
   SSD1306(I2cMaster &bus, uint8_t addr, gpio_num_t reset_pin);
   SSD1306(I2cDevice &&device, gpio_num_t reset_pin);
   ~SSD1306();
 
   [[nodiscard]] esp_err_t init();
   [[nodiscard]] esp_err_t flush();
+
+  /**
+   * Write a string of text.
+   *
+   * Starts at the specified offset, and truncate the text if necessary to
+   * avoid writing at end_offset or beyond.
+   *
+   * Returns the offset where the text finished.
+   */
+  size_t write_text(std::string_view str, OffsetRange range);
+
+  /**
+   * Write a string of text, centered in the specified range.
+   *
+   * Blank space will be written to the left and right ends of the range.
+   *
+   * Returns true if the text fit in the range, and false if the text had to be
+   * truncated.
+   */
+  bool write_centered(std::string_view str, OffsetRange range);
+
+  [[nodiscard]] esp_err_t set_contrast(uint8_t value);
+  [[nodiscard]] esp_err_t display_on();
+  [[nodiscard]] esp_err_t display_off();
 
 private:
   enum Command : uint8_t {
@@ -68,43 +107,8 @@ private:
       SetVComDeselect = 0xdb,
   };
 
-  using OffsetRange = std::pair<uint16_t, uint16_t>;
-
-  /*
-   * The display is large enough for 4 lines of 8-pixel high text.
-   *
-   * The SSD1306 memory is laid out in horizontal strips, each 8 pixels high,
-   * which is convenient for writing 8-pixel high text.
-   *
-   * These ranges define the start and end offsets of each line.
-   */
-  static constexpr OffsetRange Line0{0, 128};
-  static constexpr OffsetRange Line1{128, 256};
-  static constexpr OffsetRange Line2{256, 384};
-  static constexpr OffsetRange Line3{384, 512};
-
   SSD1306(SSD1306 const &) = delete;
   SSD1306 &operator=(SSD1306 const &) = delete;
-
-  /**
-   * Write a string of text.
-   *
-   * Starts at the specified offset, and truncate the text if necessary to
-   * avoid writing at end_offset or beyond.
-   *
-   * Returns the offset where the text finished.
-   */
-  size_t write_text(std::string_view str, OffsetRange range);
-
-  /**
-   * Write a string of text, centered in the specified range.
-   *
-   * Blank space will be written to the left and right ends of the range.
-   *
-   * Returns true if the text fit in the range, and false if the text had to be
-   * truncated.
-   */
-  bool write_centered(std::string_view str, OffsetRange range);
 
   [[nodiscard]] esp_err_t send_commands(const uint8_t *data, size_t n);
 
@@ -118,12 +122,11 @@ private:
     return width_ * ((height_ + 7) / 8);
   }
 
+  static constexpr uint8_t width_{128};
+  static constexpr uint8_t height_{32};
   I2cDevice dev_;
-  bool external_vcc_{false};
-  uint8_t com_pin_flags_{0x02};
   uint8_t contrast_{0x7f};
-  uint8_t width_{128};
-  uint8_t height_{32};
+  bool initialized_{false};
   gpio_num_t reset_pin_{GPIO_NUM_NC};
   std::unique_ptr<uint8_t[]> buffer_;
 };

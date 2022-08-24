@@ -21,11 +21,6 @@ SSD1306::SSD1306(I2cDevice &&device, gpio_num_t reset_pin)
       reset_pin_{reset_pin},
       buffer_{new uint8_t[buffer_size()]} {
   memset(buffer_.get(), 0x00, buffer_size());
-
-#if 0
-  write_centered("Adam Simpkins", Line1);
-  write_centered("adam@adamsimpkins.net", Line2);
-#endif
 }
 
 SSD1306::~SSD1306() {
@@ -36,8 +31,10 @@ SSD1306::~SSD1306() {
 
 esp_err_t SSD1306::init() {
   // Settings for an Adafruit 128x32 display
-  const uint8_t charge_pump = external_vcc_ ? 0x10_u8 : 0x14_u8;
-  const uint8_t precharge = external_vcc_ ? 0x22_u8 : 0xf1_u8;
+  const bool external_vcc = false;
+  const uint8_t com_pin_flags = 0x02;
+  const uint8_t charge_pump = external_vcc ? 0x10_u8 : 0x14_u8;
+  const uint8_t precharge = external_vcc ? 0x22_u8 : 0xf1_u8;
 
   esp_err_t rc;
 
@@ -88,7 +85,7 @@ esp_err_t SSD1306::init() {
       rc, LogTag, "(5) error initializing SSD1306 %u", dev_.address());
 
   rc = send_commands(Command::SetComPins,
-                     com_pin_flags_,
+                     com_pin_flags,
                      Command::SetContrast,
                      contrast_,
                      Command::SetPrecharge,
@@ -105,19 +102,23 @@ esp_err_t SSD1306::init() {
   ESP_RETURN_ON_ERROR(
       rc, LogTag, "(7) error initializing SSD1306 %u", dev_.address());
 
+  initialized_ = true;
   return ESP_OK;
 }
 
 esp_err_t SSD1306::flush() {
+  if (!initialized_) {
+    return ESP_ERR_INVALID_STATE;
+  }
+
   uint8_t const page_end = (height_ + 7) / 8;
   uint8_t const col_end = width_ - 1;
   auto rc = send_commands(Command::SetPageAddr,
-                     0_u8,     // start
-                     page_end, // end
-                     Command::SetColumnAddr,
-                     0_u8,   // start
-                     col_end // end
-                     );
+                          0_u8,     // start
+                          page_end, // end
+                          Command::SetColumnAddr,
+                          0_u8,     // start
+                          col_end); // end
   ESP_RETURN_ON_ERROR(
       rc, LogTag, "error setting mem address on SSD1306 %u", dev_.address());
 
@@ -175,6 +176,32 @@ bool SSD1306::write_centered(std::string_view str, OffsetRange range) {
     memset(buffer_.get() + end, 0, range.second - end);
     return true;
   }
+}
+
+esp_err_t SSD1306::set_contrast(uint8_t contrast) {
+  if (!initialized_) {
+    return ESP_ERR_INVALID_STATE;
+  }
+  if (contrast == contrast_) {
+    return ESP_OK;
+  }
+  contrast_ = contrast;
+
+  return send_commands(Command::SetContrast, contrast_);
+}
+
+esp_err_t SSD1306::display_on() {
+  if (!initialized_) {
+    return ESP_ERR_INVALID_STATE;
+  }
+  return send_commands(Command::DisplayAllOn_RAM);
+}
+
+esp_err_t SSD1306::display_off() {
+  if (!initialized_) {
+    return ESP_ERR_INVALID_STATE;
+  }
+  return send_commands(Command::DisplayOff);
 }
 
 esp_err_t SSD1306::send_commands(const uint8_t *data, size_t n) {

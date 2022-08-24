@@ -1,4 +1,4 @@
 idf_component_register(
-  SRCS "main.cpp" "Keypad.cpp"
+  SRCS "Keypad.cpp" "main.cpp" "UI.cpp"
   INCLUDE_DIRS ""
 )

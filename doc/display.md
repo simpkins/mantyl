@@ -45,3 +45,18 @@ drivers.  Using NTP over WiFi is more straightforward to configure.
 
 The SSD1306 supports automatic scrolling, so we could use that in clock
 screensaver mode.
+
+
+# Idle timeout
+
+- After some amount of time, dim the display
+- After an additional time, turn the display off
+- When a display button is pressed again, start back at the top of the menu
+
+
+# Error Log
+
+- When an error message is logged:
+  - If the display is off, open it and enter log view mode
+  - If the display is already on in another mode, show the error message
+    over the bottom line temporarily

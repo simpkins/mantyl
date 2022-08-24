@@ -4,8 +4,9 @@
 #include "sdkconfig.h"
 
 #include "I2cMaster.h"
-#include "SSD1306.h"
 #include "Keypad.h"
+#include "SSD1306.h"
+#include "UI.h"
 
 #include <chrono>
 
@@ -71,11 +72,14 @@ private:
   static void keyboard_task_fn(void *arg);
 
   void keyboard_task();
+  std::chrono::steady_clock::time_point
+  keyboard_tick(std::chrono::steady_clock::time_point now);
   void on_gpio_interrupt(NotifyBits bits);
 
   I2cMaster i2c_left_{PinConfig::LeftI2cSDA, PinConfig::LeftI2cSCL, 0};
   I2cMaster i2c_right_{PinConfig::RightI2cSDA, PinConfig::RightI2cSCL, 1};
   SSD1306 display_{i2c_left_, 0x3c, GPIO_NUM_1};
+  UI ui_{&display_};
   Keypad left_{"left", i2c_left_, 0x3e, GPIO_NUM_33, 7, 8};
   Keypad right_{"right", i2c_right_, 0x3f, GPIO_NUM_11, 6, 8};
   SemaphoreHandle_t done_sem_{};
@@ -113,6 +117,17 @@ esp_err_t App::init() {
   rc = gpio_install_isr_service(0);
   ESP_RETURN_ON_ERROR(rc, LogTag, "failed to install gpio ISR");
 
+  ESP_LOGI(LogTag, "attempting display init:");
+  rc = ui_.init();
+  if (rc == ESP_OK) {
+    ESP_LOGI(LogTag, "successfully initialized display");
+  } else {
+    ESP_LOGE(LogTag,
+             "failed to initialize display matrix: %d: %s",
+             rc,
+             esp_err_to_name(rc));
+  }
+
   ESP_LOGV(LogTag, "attempting left SX1509 init:");
   rc = left_.init();
   if (rc == ESP_OK) {
@@ -132,26 +147,6 @@ esp_err_t App::init() {
     // Maybe the right key matrix is not connected.
     ESP_LOGE(LogTag,
              "failed to initialize right key matrix: %d: %s",
-             rc,
-             esp_err_to_name(rc));
-  }
-
-  ESP_LOGI(LogTag, "attempting display init:");
-  rc = display_.init();
-  if (rc == ESP_OK) {
-    ESP_LOGI(LogTag, "successfully initialized display");
-  } else {
-    ESP_LOGE(LogTag,
-             "failed to initialize display matrix: %d: %s",
-             rc,
-             esp_err_to_name(rc));
-  }
-  rc = display_.flush();
-  if (rc == ESP_OK) {
-    ESP_LOGI(LogTag, "successfully wrote to display");
-  } else {
-    ESP_LOGE(LogTag,
-             "failed to perform display write: %d: %s",
              rc,
              esp_err_to_name(rc));
   }
@@ -232,6 +227,22 @@ esp_err_t App::init_usb() {
   return ESP_OK;
 }
 
+std::chrono::steady_clock::time_point
+App::keyboard_tick(std::chrono::steady_clock::time_point now) {
+  const auto left_timeout = left_.tick(now);
+  const auto right_timeout = right_.tick(now);
+  const auto ui_timeout = ui_.tick(now);
+  const auto next_timeout =
+      now + std::min(std::min(left_timeout, right_timeout), ui_timeout);
+  ESP_LOGD(LogTag,
+           "tick: left=%ld (%d) right=%ld (%d)",
+           static_cast<long int>(left_timeout.count()),
+           (int)left_.num_pressed(),
+           static_cast<long int>(right_timeout.count()),
+           (int)right_.num_pressed());
+  return next_timeout;
+}
+
 void App::keyboard_task() {
   ESP_ERROR_CHECK(gpio_isr_handler_add(
       left_.interrupt_pin(), left_gpio_intr_handler, this));
@@ -239,15 +250,9 @@ void App::keyboard_task() {
       right_.interrupt_pin(), right_gpio_intr_handler, this));
 
   auto now = std::chrono::steady_clock::now();
-  auto next_timeout = now;
-  {
-    const auto left_timeout = left_.tick(now);
-    const auto right_timeout = right_.tick(now);
-    next_timeout = now + std::min(left_timeout, right_timeout);
-  }
+  auto next_timeout = keyboard_tick(now);
 
   while (true) {
-    now = std::chrono::steady_clock::now();
     // TODO: we tend to wake up slightly before the timeout, which causes us to
     // go back to sleep then wake up quickly again a couple times before we
     // really hit the desired timeout.
@@ -262,16 +267,8 @@ void App::keyboard_task() {
       ESP_LOGD(LogTag, "received notification: %#04x", notified_value);
     }
 
-    const auto left_timeout = left_.tick(now);
-    const auto right_timeout = right_.tick(now);
-    next_timeout = now + std::min(left_timeout, right_timeout);
-    ESP_LOGI(LogTag,
-             "wait: woke=%d left=%ld (%d) right=%ld (%d)",
-             rc,
-             static_cast<long int>(left_timeout.count()),
-             (int)left_.num_pressed(),
-             static_cast<long int>(right_timeout.count()),
-             (int)right_.num_pressed());
+    now = std::chrono::steady_clock::now();
+    next_timeout = keyboard_tick(now);
   }
   xSemaphoreGive(done_sem_);
 }
