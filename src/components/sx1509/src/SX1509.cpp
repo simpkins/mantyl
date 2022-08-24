@@ -139,7 +139,7 @@ esp_err_t SX1509::read_data(uint8_t addr, void *data, size_t size) {
       dev_.address(), &addr, 1, data, size, std::chrono ::milliseconds(1000));
 }
 
-esp_err_t SX1509::configure_keypad(uint8_t rows, uint8_t columns) {
+esp_err_t SX1509::prepare_keypad() {
   if (!initialized_) {
     return ESP_ERR_INVALID_STATE;
   }
@@ -157,12 +157,16 @@ esp_err_t SX1509::configure_keypad(uint8_t rows, uint8_t columns) {
   rc = write_u8(Reg::PullUpB, 0xff_u8);
   ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure keypad pull-ups");
 
+  return ESP_OK;
+}
+
+esp_err_t SX1509::enable_keypad_engine(uint8_t rows, uint8_t columns) {
   // Configure debounce.  With the default 2MHz internal oscillator:
   // 0: .5ms    4: 8ms
   // 1: 1ms     5: 16ms
   // 2: 2ms     6: 32ms
   // 3: 4ms     7: 64ms
-  rc = write_u8(Reg::DebounceConfig, 0);
+  auto rc = write_u8(Reg::DebounceConfig, 0);
   ESP_RETURN_ON_ERROR(rc, LogTag, "failed to configure keypad debounce time");
   // Enable debounce on all of the pins
   rc = write_u16be(Reg::DebounceEnableB, 0xffff);
@@ -193,6 +197,15 @@ esp_err_t SX1509::configure_keypad(uint8_t rows, uint8_t columns) {
 
   keypad_configured_ = true;
   return ESP_OK;
+}
+
+esp_err_t SX1509::configure_keypad(uint8_t rows, uint8_t columns) {
+  auto rc = prepare_keypad();
+  if (rc != ESP_OK) {
+    return rc;
+  }
+
+  return enable_keypad_engine(rows, columns);
 }
 
 } // namespace mantyl

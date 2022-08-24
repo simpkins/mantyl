@@ -284,7 +284,22 @@ void App::keyboard_task_fn(void* arg) {
 void App::main() {
   printf("main task prepare; app=%p\n", this);
   ESP_ERROR_CHECK(init());
-  // init_usb();
+
+  bool debug_mode = true; // TODO: read setting from flash
+  bool boot_into_debug_mode = false;
+  if (debug_mode) {
+    vTaskDelay(pdMS_TO_TICKS(10));
+    if (left_.is_interrupt_asserted()) {
+      ESP_LOGI(LogTag, "key held down during init");
+      boot_into_debug_mode = true;
+    }
+  }
+
+#if 0
+  if (!boot_into_debug_mode) {
+    init_usb();
+  }
+#endif
 
   static constexpr configSTACK_DEPTH_TYPE keyboard_task_stack_size = 4096;
   const auto rc = xTaskCreatePinnedToCore(keyboard_task_fn,

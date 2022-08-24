@@ -11,7 +11,7 @@ const char *LogTag = "mantyl.keypad";
 
 namespace mantyl {
 
-esp_err_t Keypad::init() {
+esp_err_t Keypad::init_common() {
   if (rows_ > kMaxRows || columns_ > kMaxCols) {
     ESP_LOGE(
         LogTag, "too many keypad rows/columns for %s SX1509", name_.c_str());
@@ -21,6 +21,15 @@ esp_err_t Keypad::init() {
   auto rc = sx1509_.init();
   ESP_RETURN_ON_ERROR(
       rc, LogTag, "failed to initialize %s SX1509", name_.c_str());
+
+  return ESP_OK;
+}
+
+esp_err_t Keypad::init() {
+  auto rc = init_common();
+  if (rc != ESP_OK) {
+    return rc;
+  }
 
   rc = sx1509_.configure_keypad(rows_, columns_);
   ESP_RETURN_ON_ERROR(
@@ -41,6 +50,11 @@ int8_t Keypad::get_row(uint16_t value) {
   }
 
   return -1;
+}
+
+bool Keypad::is_interrupt_asserted() {
+  const auto int_value = sx1509_.read_interrupt();
+  return (int_value == 0);
 }
 
 std::chrono::milliseconds Keypad::tick(std::chrono::steady_clock::time_point now) {

@@ -22,10 +22,31 @@ public:
 
   [[nodiscard]] esp_err_t init();
 
+  /**
+   * Configure the row and column pins and enable keypad scanning.
+   *
+   * This calls prepare_keypad() followed by enable_keypad_engine().
+   */
   [[nodiscard]] esp_err_t configure_keypad(uint8_t rows, uint8_t columns);
 
   /**
+   * Prepare the row and column pins directions and pull-ups for keypad
+   * scanning.
+   */
+  [[nodiscard]] esp_err_t prepare_keypad();
+
+  /**
+   * Enable the keypad engine.
+   *
+   * prepare_keypad() should have been called successfully before calling
+   * enable_keypad_engine()
+   */
+  [[nodiscard]] esp_err_t enable_keypad_engine(uint8_t rows, uint8_t columns);
+
+  /**
    * Read the keypad data.
+   *
+   * The keypad engine must be enabled.
    *
    * Returns a 16 bit integer, where the least significant byte indicates the
    * row that was being scanned, and the most significant byte indicate which

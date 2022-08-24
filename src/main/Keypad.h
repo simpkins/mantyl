@@ -23,6 +23,12 @@ public:
     return sx1509_.interrupt_pin();
   }
 
+  /**
+   * Perform a check to see if the SX1509 is currently asserting the
+   * interrupt pin.
+   */
+  bool is_interrupt_asserted();
+
   uint16_t num_pressed() const {
     return num_pressed_;
   }
@@ -30,6 +36,8 @@ public:
 private:
   Keypad(Keypad const &) = delete;
   Keypad &operator=(Keypad const &) = delete;
+
+  [[nodiscard]] esp_err_t init_common();
 
   /**
    * Get the row index from the result of SX1509::read_keypad()
