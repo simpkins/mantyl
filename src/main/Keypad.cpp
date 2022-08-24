@@ -176,10 +176,6 @@ void Keypad::update_row(uint8_t row, uint8_t cols) {
       if (new_pressed) {
         ++num_pressed_;
         printf("%s press: %d, %d\n", name_.c_str(), row, col);
-        if (row == 5 && col == 4) {
-          printf("restart!\n");
-          esp_restart();
-        }
       } else {
         --num_pressed_;
         printf("%s release: %d, %d\n", name_.c_str(), row, col);
