@@ -295,11 +295,9 @@ void App::main() {
     }
   }
 
-#if 0
-  if (!boot_into_debug_mode) {
+  if (boot_into_debug_mode) {
     init_usb();
   }
-#endif
 
   static constexpr configSTACK_DEPTH_TYPE keyboard_task_stack_size = 4096;
   const auto rc = xTaskCreatePinnedToCore(keyboard_task_fn,

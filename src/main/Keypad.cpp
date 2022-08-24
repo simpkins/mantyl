@@ -91,7 +91,7 @@ std::chrono::milliseconds Keypad::tick(std::chrono::steady_clock::time_point now
     }
     const auto time_since_last_press = now - last_scan_detected_;
     if (time_since_last_press > kReleaseTimeout) {
-      on_release();
+      all_released();
       return std::chrono::minutes(60);
     }
     return kReleaseTimeout -
@@ -111,7 +111,7 @@ std::chrono::milliseconds Keypad::on_interrupt() {
              name_.c_str(),
              esp_err_to_name(read_result.error()));
     // Mark all keys unpressed
-    on_release();
+    all_released();
     // Indicate that we need to be reinitialized
     initialized_ = false;
     return kReinitTimeout;
@@ -155,7 +155,7 @@ std::chrono::milliseconds Keypad::on_interrupt() {
   return kReleaseTimeout;
 }
 
-void Keypad::on_release() {
+void Keypad::all_released() {
   for (uint8_t row = 0; row < rows_; ++row) {
     update_row(row, 0);
   }
@@ -176,6 +176,10 @@ void Keypad::update_row(uint8_t row, uint8_t cols) {
       if (new_pressed) {
         ++num_pressed_;
         printf("%s press: %d, %d\n", name_.c_str(), row, col);
+        if (row == 5 && col == 4) {
+          printf("restart!\n");
+          esp_restart();
+        }
       } else {
         --num_pressed_;
         printf("%s release: %d, %d\n", name_.c_str(), row, col);

@@ -47,7 +47,7 @@ private:
   static constexpr std::chrono::milliseconds kReleaseTimeout{50};
 
   std::chrono::milliseconds on_interrupt();
-  void on_release();
+  void all_released();
 
   void update_row(uint8_t row, uint8_t cols);
 
