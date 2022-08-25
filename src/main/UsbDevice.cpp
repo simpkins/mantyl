@@ -12,6 +12,8 @@ const char *LogTag = "mantyl.usb";
 
 namespace mantyl {
 
+UsbDevice* UsbDevice::singleton_;
+
 UsbDevice::UsbDevice()
     : device_desc_{.bLength = sizeof(device_desc_),
                    .bDescriptorType = TUSB_DESC_DEVICE,
@@ -21,7 +23,7 @@ UsbDevice::UsbDevice()
                    .bDeviceProtocol = 1, // Keyboard
                    .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
                    .idVendor = 0x303A, // Espressif's Vendor ID
-                   .idProduct = 0x9999,
+                   .idProduct = 0x9998,
                    .bcdDevice = 0x0001, // Device FW version
                    // String descriptor indices
                    .iManufacturer = add_string_literal("Adam Simpkins"),
@@ -29,8 +31,22 @@ UsbDevice::UsbDevice()
                    .iSerialNumber = 0,
                    .bNumConfigurations = 1} {}
 
+UsbDevice::~UsbDevice() {
+  // There unfortunately is no way to undo tinyusb_driver_install(),
+  // so we can't really fully reset back to an uninitialized state here.
+  singleton_ = nullptr;
+}
+
 esp_err_t UsbDevice::init() {
   ESP_LOGI(LogTag, "USB initialization");
+
+  // Sanity check that UsbDevice::init() has not been called multiple times.
+  // Note: this isn't a thread-safe check, but should help catch some
+  // programming errors.
+  if (singleton_ != nullptr) {
+    ESP_LOGE(LogTag, "attempted to initialize multiple USB devices");
+    return ESP_ERR_INVALID_STATE;
+  }
 
   strings_.reserve(6);
   auto rc = init_serial();
@@ -39,7 +55,7 @@ esp_err_t UsbDevice::init() {
   }
   device_desc_.iSerialNumber = add_string_literal(serial_.data());
 
-  init_config_desc(false);
+  init_config_desc(true);
 
   tinyusb_config_t tusb_cfg = {
       .descriptor = &device_desc_,
@@ -51,6 +67,7 @@ esp_err_t UsbDevice::init() {
   ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
   ESP_LOGI(LogTag, "USB initialization DONE");
 
+  singleton_ = this;
   return ESP_OK;
 }
 
@@ -100,24 +117,33 @@ void UsbDevice::init_config_desc(bool debug) {
   size_t size = TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN;
   uint8_t num_interfaces = 1;
   if (debug) {
-    ++num_interfaces;
+    num_interfaces += 2;
     size += TUD_CDC_DESC_LEN;
+
+    // Change the product number when enabling the debug interface.
+    // USB Hosts will generally cache the descriptors for a given
+    // (vendor ID + product ID), so if we want to use a different product ID
+    // when for the alternate descriptor contents.
+    device_desc_.idProduct = 0x9994;
+    device_desc_.bDeviceClass = TUSB_CLASS_MISC;
+    device_desc_.bDeviceSubClass = MISC_SUBCLASS_COMMON;
+    device_desc_.bDeviceProtocol = MISC_PROTOCOL_IAD;
   }
 
   // In practice the keyboard briefly draws around 65mA during boot, and
   // generally tends to use less than 50mA.
   constexpr int max_power_milliamps = 100;
 
-  constexpr uint8_t endpoint_addr_hid = 1;
   // Polling interval for the HID endpoint, in USB frames
-  constexpr uint8_t hid_polling_interval = 10;
+  constexpr uint8_t kbd_polling_interval = 10;
+  constexpr uint8_t kbd_max_packet_size = 8;
 
   size_t idx = 0;
   auto add_u8 = [&](uint8_t value) {
     config_desc_[idx] = value;
     ++idx;
   };
-  auto add_u16 = [&](uint8_t value) {
+  auto add_u16 = [&](uint16_t value) {
     config_desc_[idx] = (value & 0xff);
     config_desc_[idx + 1] = ((value >> 8) & 0xff);
     idx += 2;
@@ -134,62 +160,208 @@ void UsbDevice::init_config_desc(bool debug) {
   add_u8(max_power_milliamps / 2);                        // bMaxPower
 
   // HID Interface Descriptor
-  add_u8(9); // bLength
+  add_u8(9);                   // bLength
   add_u8(TUSB_DESC_INTERFACE); // bDescriptorType
-  add_u8(0); // bInterfaceNumber
-  add_u8(0); // bAlternateSetting
-  add_u8(1); // bNumEndpoints
-  if (debug) {
-    add_u8(TUSB_CLASS_MISC);           // bInterfaceClass
-    add_u8(MISC_SUBCLASS_COMMON);      // bInterfaceSubClass
-    add_u8(MISC_PROTOCOL_IAD);         // bInterfaceProtocol
-  } else {
-    add_u8(TUSB_CLASS_HID);            // bInterfaceClass
-    add_u8(HID_SUBCLASS_BOOT);         // bInterfaceSubClass
-    add_u8(HID_ITF_PROTOCOL_KEYBOARD); // bInterfaceProtocol
-  }
+  add_u8(kbd_interface_num_);  // bInterfaceNumber
+  add_u8(0);                   // bAlternateSetting
+  add_u8(1);                   // bNumEndpoints
+  add_u8(TUSB_CLASS_HID);      // bInterfaceClass
+  add_u8(HID_SUBCLASS_BOOT);   // bInterfaceSubClass
+  add_u8(HID_ITF_PROTOCOL_KEYBOARD);             // bInterfaceProtocol
   add_u8(add_string_literal("Mantyl Keyboard")); // iInterface
 
+  init_hid_report_descriptors();
+
   // HID Descriptor
-  add_u8(9); // bLength
-  add_u8(HID_DESC_TYPE_HID); // bDescriptorType
-  add_u8(0x11); // bcdHID LSB
-  add_u8(0x01); // bcdHID MSB
-  add_u8(0x0); // bCountryCode
-  add_u8(0x01); // bNumDescriptors
-  add_u8(HID_DESC_TYPE_REPORT); // bDescriptorType
-  add_u16(hid_report_desc.size()); // wDescriptorLength
+  add_u8(9);                             // bLength
+  add_u8(HID_DESC_TYPE_HID);             // bDescriptorType
+  add_u8(0x11);                          // bcdHID LSB
+  add_u8(0x01);                          // bcdHID MSB
+  add_u8(0x0);                           // bCountryCode
+  add_u8(0x01);                          // bNumDescriptors
+  add_u8(HID_DESC_TYPE_REPORT);          // bDescriptorType
+  add_u16(keyboard_report_desc_.size()); // wDescriptorLength
 
   // HID Endpoint Descriptor
   add_u8(7); // bLength
-  add_u8(TUSB_DESC_ENDPOINT); // bDescriptorType
-  add_u8(0x80 | endpoint_addr_hid); // bEndpointAddress
-  add_u8(TUSB_XFER_INTERRUPT); // bmAttributes
-  add_u16(hid_max_packet_size); // wMaxPacketSize
-  add_u8(hid_polling_interval); // bInterval
+  add_u8(TUSB_DESC_ENDPOINT);        // bDescriptorType
+  add_u8(0x80 | kbd_endpoint_addr_); // bEndpointAddress
+  add_u8(TUSB_XFER_INTERRUPT);       // bmAttributes
+  add_u16(kbd_max_packet_size);      // wMaxPacketSize
+  add_u8(kbd_polling_interval);      // bInterval
 
   if (debug) {
     // Interface Association Descriptor
-    add_u8(8);
+    add_u8(8);                                        // bLength
+    add_u8(TUSB_DESC_INTERFACE_ASSOCIATION);          // bDescriptorType
+    add_u8(cdc_interface_num_);                       // bFirstInterface
+    add_u8(2);                                        // bInterfaceCount
+    add_u8(TUSB_CLASS_CDC);                           // bFunctionClass
+    add_u8(CDC_COMM_SUBCLASS_ABSTRACT_CONTROL_MODEL); // bFunctionSubClass
+    add_u8(CDC_COMM_PROTOCOL_NONE);                   // bFunctionProtocol
+    add_u8(0);                                        // iFunction
+
+    // CDC Control Interface
+    add_u8(9);                   // bLength
+    add_u8(TUSB_DESC_INTERFACE); // bDescriptorType
+    add_u8(cdc_interface_num_);  // bInterfaceNumber
+    add_u8(0);                   // bAlternateSetting
+    add_u8(1);                   // bNumEndpoints
+    add_u8(TUSB_CLASS_CDC);      // bInterfaceClass
+    add_u8(CDC_COMM_SUBCLASS_ABSTRACT_CONTROL_MODEL); // bInterfaceSubClass
+    add_u8(CDC_COMM_PROTOCOL_NONE);                   // bInterfaceProtocol
+    add_u8(add_string_literal("Mantyl Debug Console")); // iInterface
+
+    // CDC Header Functional Descriptor
+    add_u8(5);                      // bLength
+    add_u8(TUSB_DESC_CS_INTERFACE); // bDescriptorType
+    add_u8(CDC_FUNC_DESC_HEADER);   // bDescriptorSubType
+    add_u16(0x0120);                // bcdCDC
+
+    // CDC Call Management Functional Descriptor
+    add_u8(5);                      // bLength
+    add_u8(TUSB_DESC_CS_INTERFACE); // bDescriptorType
+    add_u8(CDC_FUNC_DESC_CALL_MANAGEMENT);   // bDescriptorSubType
+    add_u8(0);                               // bmCapabilities
+    add_u8(cdc_data_interface_num_);         // bDataInterface
+
+    // CDC Abstract Control Management
+    add_u8(4);                      // bLength
+    add_u8(TUSB_DESC_CS_INTERFACE); // bDescriptorType
+    add_u8(CDC_FUNC_DESC_ABSTRACT_CONTROL_MANAGEMENT); // bDescriptorSubType
+    add_u8(2);                                         // bmCapabilities
+
+    // CDC Union
+    add_u8(5);                       // bLength
+    add_u8(TUSB_DESC_CS_INTERFACE);  // bDescriptorType
+    add_u8(CDC_FUNC_DESC_UNION);     // bDescriptorSubType
+    add_u8(cdc_interface_num_);      // bControlInterface
+    add_u8(cdc_data_interface_num_); // bSubordinateInterface0
+
+    // Notification endpoint
+    add_u8(7);                        // bLength
+    add_u8(TUSB_DESC_ENDPOINT);       // bDescriptorType
+    add_u8(cdc_notif_endpoint_addr_); // bEndpointAddress
+    add_u8(TUSB_XFER_INTERRUPT);      // bmAttributes
+    add_u16(8);                       // wMaxPacketSize
+    add_u8(16);                       // bInterval
+
+    // CDC Data Interface
+    add_u8(9);                             // bLength
+    add_u8(TUSB_DESC_INTERFACE);           // bDescriptorType
+    add_u8(cdc_data_interface_num_);       // bInterfaceNumber
+    add_u8(0);                             // bAlternateSetting
+    add_u8(2);                             // bNumEndpoints
+    add_u8(TUSB_CLASS_CDC_DATA);           // bInterfaceClass
+    add_u8(0);      // bInterfaceSubClass
+    add_u8(0);         // bInterfaceProtocol
+    add_u8(add_string_literal("Mantyl Debug Console Data")); // iInterface
+
+    // Data Out Endpoint
+    add_u8(7);                       // bLength
+    add_u8(TUSB_DESC_ENDPOINT);      // bDescriptorType
+    add_u8(cdc_data_endpoint_addr_); // bEndpointAddress
+    add_u8(TUSB_XFER_BULK);          // bmAttributes
+    add_u16(CFG_TUD_CDC_EP_BUFSIZE); // wMaxPacketSize
+    add_u8(0);                       // bInterval
+
+    // Data In Endpoint
+    add_u8(7);                              // bLength
+    add_u8(TUSB_DESC_ENDPOINT);             // bDescriptorType
+    add_u8(0x80 | cdc_data_endpoint_addr_); // bEndpointAddress
+    add_u8(TUSB_XFER_BULK);                 // bmAttributes
+    add_u16(CFG_TUD_CDC_EP_BUFSIZE);        // wMaxPacketSize
+    add_u8(0);                              // bInterval
+  }
+}
+
+void UsbDevice::init_hid_report_descriptors() {
+  keyboard_report_desc_ = std::vector<uint8_t>{
+      TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(kbd_report_id_))};
+}
+
+uint16_t UsbDevice::on_hid_get_report(uint8_t instance,
+                                      uint8_t report_id,
+                                      hid_report_type_t report_type,
+                                      uint8_t *buffer,
+                                      uint16_t reqlen) {
+  static_cast<void>(report_id);
+
+  if (instance == kbd_interface_num_) {
+    if (reqlen < 8) {
+      // Report size is 8; can't return a report if reqlen is less than that.
+      return 0;
+    }
+
+    // TODO: return the keyboard report
+    static_cast<void>(report_type);
+    memset(buffer, 0, 8);
+    return 8;
   }
 
-#if 0
-  config_desc_[34] = 8; // bLength
-  config_desc_[10] = TUSB_DESC_INTERFACE; // bDescriptorType
-  config_desc_[11] = 0; // bInterfaceNumber
-  config_desc_[12] = 0; // bAlternateSetting
-  config_desc_[13] = 1; // bNumEndpoints
-  config_desc_[14] = TUSB_CLASS_HID; // bInterfaceClass
-  config_desc_[15] = HID_SUBCLASS_BOOT; // bInterfaceSubClass
-  config_desc_[16] = HID_ITF_PROTOCOL_KEYBOARD; // bInterfaceProtocol
-  config_desc_[17] = add_string_literal("Mantyl Keyboard"); // iInterface
+  return 0;
+}
+void UsbDevice::on_hid_set_report(uint8_t instance,
+                                  uint8_t report_id,
+                                  hid_report_type_t report_type,
+                                  uint8_t const *buffer,
+                                  uint16_t bufsize) {
+  static_cast<void>(report_id);
 
-  /* Interface Associate */\
-  8, TUSB_DESC_INTERFACE_ASSOCIATION, _itfnum, 2, TUSB_CLASS_CDC, CDC_COMM_SUBCLASS_ABSTRACT_CONTROL_MODEL, CDC_COMM_PROTOCOL_NONE, 0,\
+  // Keyboard interface
+  if (instance == kbd_interface_num_) {
+    // Set keyboard LED e.g Capslock, Numlock etc...
+    if (report_type == HID_REPORT_TYPE_OUTPUT) {
+      // bufsize should be (at least) 1
+      if (bufsize < 1) {
+        return;
+      }
 
-    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 4, 0x80 | EPNUM_0_CDC_NOTIF, 8, EPNUM_0_CDC, 0x80 | EPNUM_0_CDC, CFG_TUD_CDC_EP_BUFSIZE),
+      const uint8_t kbd_leds = buffer[0];
+      printf("new LED value: %#04x\n", kbd_leds);
+    }
   }
-#endif
+}
+
+uint8_t const *UsbDevice::get_hid_report_descriptor(uint8_t instance) {
+  static_cast<void>(instance);
+  return keyboard_report_desc_.data();
 }
 
 } // namespace mantyl
+
+extern "C" uint16_t tud_hid_get_report_cb(uint8_t instance,
+                                          uint8_t report_id,
+                                          hid_report_type_t report_type,
+                                          uint8_t *buffer,
+                                          uint16_t reqlen) {
+  auto usb_dev = mantyl::UsbDevice::get();
+  if (!usb_dev) {
+    return 0;
+  }
+
+  return usb_dev->on_hid_get_report(
+      instance, report_id, report_type, buffer, reqlen);
+}
+
+extern "C" void tud_hid_set_report_cb(uint8_t instance,
+                                      uint8_t report_id,
+                                      hid_report_type_t report_type,
+                                      uint8_t const *buffer,
+                                      uint16_t bufsize) {
+  auto usb_dev = mantyl::UsbDevice::get();
+  if (!usb_dev) {
+    return;
+  }
+
+  usb_dev->on_hid_set_report(instance, report_id, report_type, buffer, bufsize);
+}
+
+uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
+  auto usb_dev = mantyl::UsbDevice::get();
+  if (!usb_dev) {
+    return nullptr;
+  }
+
+  return usb_dev->get_hid_report_descriptor(instance);
+}
