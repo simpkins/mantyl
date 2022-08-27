@@ -93,18 +93,7 @@ esp_err_t UI::init() {
     return rc;
   }
 
-  start_ = std::chrono::steady_clock::now();
-  const uint8_t init_contrast = 0xff;
-  auto constant_portion = std::make_unique<ConstantAnim<uint8_t>>(
-      init_contrast, std::chrono::seconds(2));
-  auto fade_portion = std::make_unique<LinearAnim<uint8_t>>(
-      init_contrast, 0x00, std::chrono::seconds(3));
-  fade_ = std::make_unique<CompositeAnim<uint8_t>>(std::move(constant_portion),
-                                                   std::move(fade_portion));
-  rc = display_->set_contrast(init_contrast);
-  if (rc != ESP_OK) {
-    ESP_LOGW(LogTag, "error setting display contrast: %s", esp_err_to_name(rc));
-  }
+  start_fade_timer();
 
   display_->write_centered("Adam Simpkins", SSD1306::Line1);
   display_->write_centered("adam@adamsimpkins.net", SSD1306::Line2);
@@ -118,10 +107,26 @@ esp_err_t UI::init() {
   return ESP_OK;
 }
 
+void UI::start_fade_timer() {
+  fade_start_ = std::chrono::steady_clock::now();
+  const uint8_t init_contrast = 0xff;
+  auto constant_portion = std::make_unique<ConstantAnim<uint8_t>>(
+      init_contrast, std::chrono::seconds(2));
+  auto fade_portion = std::make_unique<LinearAnim<uint8_t>>(
+      init_contrast, 0x00, std::chrono::seconds(3));
+  fade_ = std::make_unique<CompositeAnim<uint8_t>>(std::move(constant_portion),
+                                                   std::move(fade_portion));
+  auto rc = display_->set_contrast(init_contrast);
+  // Don't log any warnings if set_contrast() fails, since we don't want to
+  // emit more log messages when an error occurs processing a log message.
+  static_cast<void>(rc);
+}
+
 std::chrono::milliseconds UI::tick(std::chrono::steady_clock::time_point now) {
   if (fade_) {
     const auto anim_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(now - start_);
+        std::chrono::duration_cast<std::chrono::milliseconds>(now -
+                                                              fade_start_);
     const auto contrast = fade_->get_value(anim_time);
     if (contrast == 0) {
       fade_.reset();
@@ -160,12 +165,8 @@ void UI::display_log_messages() {
     messages.swap(log_messages_);
   }
 
-  fade_.reset();
-  auto rc = display_->set_contrast(0x7f);
-  rc = display_->display_on();
-  (void)rc; // Don't bother trying to log about a logging failure
-
   display_->clear();
+  start_fade_timer();
 
   for (const auto& msg : messages) {
     std::string_view str(msg.data(), msg.size());
@@ -178,8 +179,9 @@ void UI::display_log_messages() {
       }
     }
   }
-  rc = display_->flush();
-  (void)rc;
+  auto rc = display_->flush();
+  rc = display_->display_on();
+  static_cast<void>(rc);
 }
 
 } // namespace mantyl

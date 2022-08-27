@@ -38,9 +38,11 @@ private:
   UI(UI const &) = delete;
   UI &operator=(UI const &) = delete;
 
+  void start_fade_timer();
+
   SSD1306* const display_{nullptr};
 
-  std::chrono::steady_clock::time_point start_;
+  std::chrono::steady_clock::time_point fade_start_;
   std::unique_ptr<Anim<uint8_t>> fade_;
 
   std::mutex log_mutex_;

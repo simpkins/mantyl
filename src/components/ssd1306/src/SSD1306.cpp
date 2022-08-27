@@ -201,7 +201,7 @@ esp_err_t SSD1306::display_on() {
   if (!initialized_) {
     return ESP_ERR_INVALID_STATE;
   }
-  return send_commands(Command::DisplayAllOn_RAM);
+  return send_commands(Command::DisplayOn);
 }
 
 esp_err_t SSD1306::display_off() {
