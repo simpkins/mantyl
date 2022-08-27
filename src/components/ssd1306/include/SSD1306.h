@@ -63,6 +63,11 @@ public:
    */
   bool write_centered(std::string_view str, OffsetRange range);
 
+  /**
+   * Clear the display buffer.
+   */
+  void clear();
+
   [[nodiscard]] esp_err_t set_contrast(uint8_t value);
   [[nodiscard]] esp_err_t display_on();
   [[nodiscard]] esp_err_t display_off();

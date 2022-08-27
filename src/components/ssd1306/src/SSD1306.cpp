@@ -178,6 +178,10 @@ bool SSD1306::write_centered(std::string_view str, OffsetRange range) {
   }
 }
 
+void SSD1306::clear() {
+  memset(buffer_.get(), 0x00, buffer_size());
+}
+
 esp_err_t SSD1306::set_contrast(uint8_t contrast) {
   if (!initialized_) {
     return ESP_ERR_INVALID_STATE;

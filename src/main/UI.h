@@ -5,6 +5,8 @@
 
 #include <chrono>
 #include <memory>
+#include <mutex>
+#include <vector>
 
 namespace mantyl {
 
@@ -22,6 +24,16 @@ public:
 
   std::chrono::milliseconds tick(std::chrono::steady_clock::time_point now);
 
+  /**
+   * Append a new log message.
+   *
+   * Unlike most other UI methods, this method is thread-safe, and can be
+   * called from any threa.
+   */
+  void append_log_message(std::vector<char>&& msg);
+
+  void display_log_messages();
+
 private:
   UI(UI const &) = delete;
   UI &operator=(UI const &) = delete;
@@ -30,6 +42,9 @@ private:
 
   std::chrono::steady_clock::time_point start_;
   std::unique_ptr<Anim<uint8_t>> fade_;
+
+  std::mutex log_mutex_;
+  std::vector<std::vector<char>> log_messages_;
 };
 
 } // namespace mantyl

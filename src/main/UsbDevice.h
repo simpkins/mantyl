@@ -16,7 +16,7 @@ public:
   ~UsbDevice();
 
   static UsbDevice* get() {
-      return singleton_;
+    return singleton_;
   }
 
   [[nodiscard]] esp_err_t init();
