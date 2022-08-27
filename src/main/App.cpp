@@ -162,7 +162,6 @@ void App::keyboard_task_fn(void* arg) {
 }
 
 void App::main() {
-  printf("main task prepare; app=%p\n", this);
   ESP_ERROR_CHECK(init());
 
   bool debug_mode = true; // TODO: read setting from flash

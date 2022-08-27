@@ -20,7 +20,7 @@ void print_info() {
   esp_chip_info_t chip_info;
   uint32_t flash_size;
   esp_chip_info(&chip_info);
-  ESP_LOGD(LogTag, "This is %s chip with %d CPU core(s), WiFi%s%s, ",
+  ESP_LOGD(LogTag, "Running on %s chip with %d CPU core(s), WiFi%s%s, ",
            CONFIG_IDF_TARGET, chip_info.cores,
            (chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
            (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
@@ -31,11 +31,11 @@ void print_info() {
     return;
   }
 
-  ESP_LOGD(LogTag, "%luMB %s flash\n", flash_size / (1024 * 1024),
+  ESP_LOGD(LogTag, "%luMB %s flash", flash_size / (1024 * 1024),
            (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded"
                                                          : "external");
 
-  ESP_LOGD(LogTag, "Minimum free heap size: %" PRIu32 " bytes\n",
+  ESP_LOGD(LogTag, "Minimum free heap size: %" PRIu32 " bytes",
            esp_get_minimum_free_heap_size());
 }
 
