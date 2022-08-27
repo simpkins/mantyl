@@ -2,7 +2,7 @@
 #pragma once
 
 #include <esp_err.h>
-#include <tusb.h>
+#include <tinyusb.h>
 
 #include <array>
 #include <cstdarg>
@@ -21,7 +21,6 @@ public:
 
   uint8_t const *get_device_descriptor() const;
   uint8_t const *get_config_descriptor(uint8_t index) const;
-  uint16_t const *get_string_descriptor(uint8_t index, uint16_t langid) const;
   uint8_t const *get_hid_report_descriptor(uint8_t instance);
 
   uint16_t on_hid_get_report(uint8_t instance,
@@ -34,10 +33,6 @@ public:
                          hid_report_type_t report_type,
                          uint8_t const *buffer,
                          uint16_t bufsize);
-
-  void cdc_task();
-
-  void debug_log(const char* format, va_list ap);
 
 private:
   UsbDevice(UsbDevice const &) = delete;
@@ -52,7 +47,7 @@ private:
    * (hence this is normally only suitable for string literals).
    * Returns the descriptor index.
    */
-  uint8_t add_string_literal(std::u16string_view str);
+  uint8_t add_string_literal(const char* str);
 
   void init_config_desc(bool debug);
   void init_hid_report_descriptors();
@@ -67,15 +62,11 @@ private:
   static constexpr uint8_t cdc_data_endpoint_addr_{3};
 
   // Descriptors
-  std::vector<uint16_t> string_data_;
-  std::vector<size_t> string_offsets_;
+  std::array<char, 14> serial_;
+  std::vector<const char*> strings_;
   std::vector<uint8_t> config_desc_;
   tusb_desc_device_t device_desc_;
   std::vector<uint8_t> keyboard_report_desc_;
-
-  std::mutex log_mutex_;
-  std::vector<char> log_buffer_;
-  size_t log_length_{0};
 };
 
 } // namespace mantyl

@@ -6,15 +6,11 @@
 #include <esp_check.h>
 #include <esp_log.h>
 #include <esp_mac.h>
-#include <esp_private/usb_phy.h>
+#include <tusb_cdc_acm.h>
+#include <tusb_console.h>
 
 namespace {
 const char *LogTag = "mantyl.usb";
-usb_phy_handle_t usb_phy_handle;
-TaskHandle_t tusb_task_handle;
-
-constexpr configSTACK_DEPTH_TYPE usb_task_stack_size = 4096;
-constexpr UBaseType_t usb_task_priority = 5;
 
 mantyl::UsbDevice* get_usb_dev() {
   auto* app = mantyl::App::get();
@@ -24,81 +20,11 @@ mantyl::UsbDevice* get_usb_dev() {
   return &app->usb();
 }
 
-/**
- * @brief This top level thread processes all usb events and invokes callbacks
- */
-void tusb_device_task(void *arg)
-{
-  auto *usb = static_cast<mantyl::UsbDevice *>(arg);
-  ESP_LOGD(LogTag, "tinyusb task started");
-  while (true) {
-    tud_task();
-    if (tud_cdc_connected() && tud_cdc_available()) {
-      usb->cdc_task();
-    }
-  }
-}
-
-esp_err_t tusb_run_task(mantyl::UsbDevice* usb) {
-  // Sanity check.  Not actually thread-safe
-  ESP_RETURN_ON_FALSE(!tusb_task_handle,
-                      ESP_ERR_INVALID_STATE,
-                      LogTag,
-                      "TinyUSB main task already started");
-  xTaskCreate(tusb_device_task,
-              "TinyUSB",
-              usb_task_stack_size,
-              usb,
-              usb_task_priority,
-              &tusb_task_handle);
-  ESP_RETURN_ON_FALSE(
-      tusb_task_handle, ESP_FAIL, LogTag, "create TinyUSB main task failed");
-  return ESP_OK;
-}
-
-esp_err_t tusb_stop_task() {
-  ESP_RETURN_ON_FALSE(tusb_task_handle,
-                      ESP_ERR_INVALID_STATE,
-                      LogTag,
-                      "TinyUSB main task not started yet");
-  vTaskDelete(tusb_task_handle);
-  tusb_task_handle = nullptr;
-  return ESP_OK;
-}
-
-esp_err_t tinyusb_driver_install(mantyl::UsbDevice* usb) {
-  // Configure USB PHY
-  usb_phy_config_t phy_conf = {
-      .controller = USB_PHY_CTRL_OTG,
-      .target = USB_PHY_TARGET_INT,
-      .otg_mode = USB_OTG_MODE_DEVICE,
-      .otg_speed = USB_PHY_SPEED_UNDEFINED,
-      .gpio_conf = {},
-  };
-  ESP_RETURN_ON_ERROR(usb_new_phy(&phy_conf, &usb_phy_handle),
-                      LogTag,
-                      "Install USB PHY failed");
-  // Yielding after usb_new_phy() and before tusb_init() appears to be
-  // required for some reason.
-  vTaskDelay(10);
-
-  ESP_RETURN_ON_FALSE(
-      tusb_init(), ESP_FAIL, LogTag, "Init TinyUSB stack failed");
-  ESP_RETURN_ON_ERROR(tusb_run_task(usb), LogTag, "Run TinyUSB task failed");
-  ESP_LOGI(LogTag, "TinyUSB Driver installed");
-  return ESP_OK;
-}
-
-esp_err_t tinyusb_driver_uninstall() {
-  usb_del_phy(usb_phy_handle);
-  return ESP_OK;
-}
-
-char16_t hexlify_utf16(uint8_t n) {
+char hexlify(uint8_t n) {
   if (n < 10) {
-    return u'0' + n;
+    return '0' + n;
   }
-  return u'a' + (n - 10);
+  return 'a' + (n - 10);
 }
 
 } // namespace
@@ -114,33 +40,50 @@ UsbDevice::UsbDevice()
                    .bDeviceProtocol = 1, // Keyboard
                    .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
                    .idVendor = 0x303A, // Espressif's Vendor ID
-                   .idProduct = 0x9998,
+                   .idProduct = 0x9990,
                    .bcdDevice = 0x0001, // Device FW version
                    // String descriptor indices
-                   .iManufacturer = add_string_literal(u"Adam Simpkins"),
-                   .iProduct = add_string_literal(u"Mantyl Keyboard"),
+                   .iManufacturer = add_string_literal("Adam Simpkins"),
+                   .iProduct = add_string_literal("Mantyl Keyboard"),
                    .iSerialNumber = 0,
-                   .bNumConfigurations = 1} {
-  log_buffer_.resize(256);
-}
+                   .bNumConfigurations = 1} {}
 
-UsbDevice::~UsbDevice() {
-  if (tusb_task_handle) {
-    tusb_stop_task();
-  }
-  if (usb_phy_handle) {
-    tinyusb_driver_uninstall();
-  }
-}
+UsbDevice::~UsbDevice() = default;
 
 esp_err_t UsbDevice::init() {
   ESP_LOGI(LogTag, "USB initialization");
 
-  device_desc_.iSerialNumber = add_serial_descriptor();
-  init_config_desc(true);
+  bool enable_cdc = true;
 
-  ESP_ERROR_CHECK(tinyusb_driver_install(this));
+  device_desc_.iSerialNumber = add_serial_descriptor();
+  init_config_desc(enable_cdc);
+
+  tinyusb_config_t config{
+      .device_descriptor = &device_desc_,
+      .string_descriptor = strings_.data(),
+      .external_phy = false,
+      .configuration_descriptor = config_desc_.data(),
+  };
+  ESP_ERROR_CHECK(tinyusb_driver_install(&config));
   ESP_LOGI(LogTag, "USB initialization DONE");
+
+#if 0
+  tinyusb_config_cdcacm_t acm_cfg = {
+      .usb_dev = TINYUSB_USBDEV_0,
+      .cdc_port = TINYUSB_CDC_ACM_0,
+      .rx_unread_buf_sz = 64,
+      .callback_rx =
+          &tinyusb_cdc_rx_callback,
+      .callback_rx_wanted_char = NULL,
+      .callback_line_state_changed = NULL,
+      .callback_line_coding_changed = NULL};
+#else
+  if (enable_cdc) {
+    tinyusb_config_cdcacm_t acm_cfg{};
+    ESP_ERROR_CHECK(tusb_cdc_acm_init(&acm_cfg));
+    esp_tusb_init_console(TINYUSB_CDC_ACM_0);
+  }
+#endif
 
   return ESP_OK;
 }
@@ -160,17 +103,6 @@ uint8_t const *UsbDevice::get_config_descriptor(uint8_t index) const {
   static_cast<void>(index);
 
   return config_desc_.data();
-}
-
-uint16_t const *UsbDevice::get_string_descriptor(uint8_t index,
-                                                 uint16_t langid) const {
-  static_cast<void>(langid);
-
-  if (index >= string_offsets_.size()) {
-    return nullptr;
-  }
-  auto offset = string_offsets_[index];
-  return string_data_.data() + offset;
 }
 
 uint8_t const *UsbDevice::get_hid_report_descriptor(uint8_t instance) {
@@ -222,20 +154,12 @@ void UsbDevice::on_hid_set_report(uint8_t instance,
   }
 }
 
-uint8_t UsbDevice::add_string_literal(std::u16string_view str) {
-  const auto index = string_offsets_.size();
-  const auto offset = string_data_.size();
-  string_offsets_.push_back(offset);
-
-  string_data_.reserve(string_data_.size() + 1 + str.size());
-  // The first byte is the descriptor length (bLength)
-  // The second byte is the descriptor type (bDescriptorType): TUSB_DESC_STRING
-  string_data_.push_back(
-      tu_htole16((TUSB_DESC_STRING << 8) | (2 * str.size() + 2)));
-  for (char16_t c : str) {
-    string_data_.push_back(tu_htole16(c));
+uint8_t UsbDevice::add_string_literal(const char* str) {
+  const auto index = strings_.size();
+  if (index >= 0xff) {
+    return 0;
   }
-
+  strings_.push_back(str);
   return index;
 }
 
@@ -247,21 +171,20 @@ uint8_t UsbDevice::add_serial_descriptor() {
     return 0;
   }
 
-  std::array<char16_t, 14> serial;
   size_t out_idx = 0;
   for (size_t n = 0; n < mac_bytes.size(); ++n) {
-    serial[out_idx] = hexlify_utf16((mac_bytes[n] >> 4) & 0xf);
-    serial[out_idx + 1] = hexlify_utf16(mac_bytes[n] & 0xf);
+    serial_[out_idx] = hexlify((mac_bytes[n] >> 4) & 0xf);
+    serial_[out_idx + 1] = hexlify(mac_bytes[n] & 0xf);
     out_idx += 2;
     if (n == 2) {
-      serial[out_idx] = u'-';
+      serial_[out_idx] = u'-';
       ++out_idx;
     }
   }
-  serial[out_idx] = '\0';
-  assert(out_idx + 1 == serial.size());
+  serial_[out_idx] = '\0';
+  assert(out_idx + 1 == serial_.size());
 
-  return ESP_OK;
+  return add_string_literal(serial_.data());
 }
 
 void UsbDevice::init_config_desc(bool debug) {
@@ -275,7 +198,7 @@ void UsbDevice::init_config_desc(bool debug) {
     // USB Hosts will generally cache the descriptors for a given
     // (vendor ID + product ID), so if we want to use a different product ID
     // when for the alternate descriptor contents.
-    device_desc_.idProduct = 0x9992;
+    device_desc_.idProduct = 0x9991;
     device_desc_.bDeviceClass = TUSB_CLASS_MISC;
     device_desc_.bDeviceSubClass = MISC_SUBCLASS_COMMON;
     device_desc_.bDeviceProtocol = MISC_PROTOCOL_IAD;
@@ -306,7 +229,7 @@ void UsbDevice::init_config_desc(bool debug) {
   add_u16(size);                   // wTotalLength
   add_u8(num_interfaces); // bNumInterfaces
   add_u8(1);              // bConfigurationValue
-  add_u8(add_string_literal(u"main"));                     // iConfiguration
+  add_u8(add_string_literal("main"));                     // iConfiguration
   add_u8(TU_BIT(7) | TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP); // bmAttributes
   add_u8(max_power_milliamps / 2);                        // bMaxPower
 
@@ -319,7 +242,7 @@ void UsbDevice::init_config_desc(bool debug) {
   add_u8(TUSB_CLASS_HID);      // bInterfaceClass
   add_u8(HID_SUBCLASS_BOOT);   // bInterfaceSubClass
   add_u8(HID_ITF_PROTOCOL_KEYBOARD);             // bInterfaceProtocol
-  add_u8(add_string_literal(u"Mantyl Keyboard")); // iInterface
+  add_u8(add_string_literal("Mantyl Keyboard")); // iInterface
 
   init_hid_report_descriptors();
 
@@ -361,7 +284,7 @@ void UsbDevice::init_config_desc(bool debug) {
     add_u8(TUSB_CLASS_CDC);      // bInterfaceClass
     add_u8(CDC_COMM_SUBCLASS_ABSTRACT_CONTROL_MODEL); // bInterfaceSubClass
     add_u8(CDC_COMM_PROTOCOL_NONE);                   // bInterfaceProtocol
-    add_u8(add_string_literal(u"Mantyl Debug Console")); // iInterface
+    add_u8(add_string_literal("Mantyl Debug Console")); // iInterface
 
     // CDC Header Functional Descriptor
     add_u8(5);                      // bLength
@@ -406,7 +329,7 @@ void UsbDevice::init_config_desc(bool debug) {
     add_u8(TUSB_CLASS_CDC_DATA);           // bInterfaceClass
     add_u8(0);      // bInterfaceSubClass
     add_u8(0);         // bInterfaceProtocol
-    add_u8(add_string_literal(u"Mantyl Debug Console Data")); // iInterface
+    add_u8(add_string_literal("Mantyl Debug Console Data")); // iInterface
 
     // Data Out Endpoint
     add_u8(7);                       // bLength
@@ -431,93 +354,9 @@ void UsbDevice::init_hid_report_descriptors() {
       TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(kbd_report_id_))};
 }
 
-void UsbDevice::cdc_task() {
-    std::array<uint8_t, 64> buf;
-
-  // read and echo back
-  uint32_t count = tud_cdc_read(buf.data(), buf.size());
-  if (count > 0) {
-    ESP_LOGI(LogTag, "read %" PRIu32 " bytes from CDC", count);
-  }
-#if 0
-  for (uint32_t i = 0; i < count; i++) {
-    tud_cdc_write_char(buf[i]);
-    if (buf[i] == '\r')
-      tud_cdc_write_char('\n');
-  }
-
-  tud_cdc_write_flush();
-#endif
-}
-
-void UsbDevice::debug_log(const char *format, va_list ap) {
-  std::lock_guard<std::mutex> lock(log_mutex_);
-  size_t len_remaining = log_buffer_.size() - log_length_;
-  auto bytes_formatted =
-      vsnprintf(log_buffer_.data() + log_length_, len_remaining, format, ap);
-  if (bytes_formatted >= len_remaining) {
-    log_length_ = log_buffer_.size();
-  } else {
-    log_length_ += bytes_formatted;
-  }
-
-  for (size_t n = 0; n < log_length_; ++n) {
-    bool eom = false;
-    if (log_buffer_[n] == '\r') {
-      log_buffer_[n] = '\0';
-      if (n + 1 < log_length_ && log_buffer_[n + 1] == '\n') {
-        ++n;
-      }
-      eom = true;
-    } else if (log_buffer_[n] == '\n') {
-      log_buffer_[n] = '\0';
-      eom = true;
-    }
-
-    if (eom) {
-      if (log_buffer_[0] != '\0') {
-        ESP_LOGI("tinyusb", "%s", log_buffer_.data());
-      }
-      if (n < log_length_) {
-        log_length_ -= n;
-        memmove(log_buffer_.data(), log_buffer_.data() + n, log_length_);
-      } else {
-        log_length_ = 0;
-      }
-    }
-  }
-}
-
 } // namespace mantyl
 
 extern "C" {
-
-uint8_t const *tud_descriptor_device_cb() {
-  auto usb_dev = get_usb_dev();
-  if (!usb_dev) {
-    return nullptr;
-  }
-
-  return usb_dev->get_device_descriptor();
-}
-
-uint8_t const *tud_descriptor_configuration_cb(uint8_t index) {
-  auto usb_dev = get_usb_dev();
-  if (!usb_dev) {
-    return nullptr;
-  }
-
-  return usb_dev->get_config_descriptor(index);
-}
-
-uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
-  auto usb_dev = get_usb_dev();
-  if (!usb_dev) {
-    return nullptr;
-  }
-
-  return usb_dev->get_string_descriptor(index, langid);
-}
 
 uint16_t tud_hid_get_report_cb(uint8_t instance,
                                uint8_t report_id,
@@ -553,36 +392,6 @@ uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
   }
 
   return usb_dev->get_hid_report_descriptor(instance);
-}
-
-// Invoked when cdc when line state changed e.g connected/disconnected
-void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts) {
-  ESP_LOGD(LogTag, "CDC line state cb");
-  static_cast<void>(itf);
-
-  // connected
-  if (dtr && rts) {
-    // print initial message when connected
-    tud_cdc_write_str("\r\nUSB CDC MSC device example\r\n");
-  }
-}
-
-// Invoked when CDC interface received data from host
-void tud_cdc_rx_cb(uint8_t itf) {
-  ESP_LOGI(LogTag, "CDC rx cb");
-  static_cast<void>(itf);
-}
-
-extern int mantyl_tusb_logf(const char *format, ...) {
-  auto usb_dev = get_usb_dev();
-  if (!usb_dev) {
-    return 0;
-  }
-
-  va_list ap;
-  va_start(ap, format);
-  usb_dev->debug_log(format, ap);
-  va_end(ap);
 }
 
 } // extern "C"
