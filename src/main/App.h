@@ -5,6 +5,7 @@
 #include "config.h"
 
 #include "I2cMaster.h"
+#include "Keyboard.h"
 #include "Keypad.h"
 #include "SSD1306.h"
 #include "UI.h"
@@ -69,6 +70,7 @@ private:
   UI ui_{&display_};
   Keypad left_{"left", i2c_left_, 0x3e, GPIO_NUM_33, 7, 8};
   Keypad right_{"right", i2c_right_, 0x3f, GPIO_NUM_11, 6, 8};
+  Keyboard kbd_{&left_, &right_};
   SemaphoreHandle_t done_sem_{};
   TaskHandle_t task_handle_{};
 };

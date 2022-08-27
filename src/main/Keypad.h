@@ -5,6 +5,7 @@
 
 #include <array>
 #include <chrono>
+#include <functional>
 #include <string>
 #include <string_view>
 
@@ -12,6 +13,11 @@ namespace mantyl {
 
 class Keypad {
 public:
+  static constexpr uint8_t kMaxRows = 8;
+  static constexpr uint8_t kMaxCols = 8;
+  using PressedBitmap = std::array<uint8_t, kMaxRows>;
+  using Callback = std::function<void()>;
+
   Keypad(std::string_view name, I2cMaster &bus, uint8_t addr, gpio_num_t int_pin, uint8_t rows, uint8_t columns)
       : name_{name}, sx1509_{bus, addr, int_pin}, rows_{rows}, columns_{columns} {}
 
@@ -33,6 +39,14 @@ public:
     return num_pressed_;
   }
 
+  PressedBitmap get_pressed() const {
+    return pressed_keys_;
+  }
+
+  void set_callback(Callback &&fn) {
+    callback_ = std::move(fn);
+  }
+
 private:
   Keypad(Keypad const &) = delete;
   Keypad &operator=(Keypad const &) = delete;
@@ -51,16 +65,14 @@ private:
 
   void update_row(uint8_t row, uint8_t cols);
 
-  static constexpr uint8_t kMaxRows = 8;
-  static constexpr uint8_t kMaxCols = 8;
-
   std::string name_;
   SX1509 sx1509_;
   const uint8_t rows_{0};
   const uint8_t columns_{0};
   bool initialized_{false};
   uint8_t last_row_seen_{0};
-  std::array<uint8_t, kMaxRows> pressed_keys_{};
+  PressedBitmap pressed_keys_{};
+  Callback callback_;
 
   uint16_t num_pressed_{0};
   std::chrono::steady_clock::time_point last_scan_detected_{};

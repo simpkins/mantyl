@@ -182,6 +182,10 @@ void Keypad::update_row(uint8_t row, uint8_t cols) {
       }
     }
   }
+
+  if (callback_) {
+    callback_();
+  }
 }
 
 } // namespace mantyl

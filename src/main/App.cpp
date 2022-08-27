@@ -155,9 +155,9 @@ void App::keyboard_task() {
 
 void App::keyboard_task_fn(void* arg) {
   auto *app = static_cast<App *>(arg);
-  printf("keyboard_task start; app=%p\n", app);
+  ESP_LOGD(LogTag, "keyboard_task start; app=%p\n", app);
   app->keyboard_task();
-  printf("keyboard_task suspending\n");
+  ESP_LOGW(LogTag, "keyboard_task suspending\n");
   vTaskSuspend(nullptr);
 }
 
@@ -197,7 +197,6 @@ void App::main() {
 
   // Wait for the keyboard task to finish.
   // (This should normally never happen.)
-  printf("main task run\n");
   while (true) {
     if (xSemaphoreTake(done_sem_, portMAX_DELAY) == pdTRUE) {
       break;
