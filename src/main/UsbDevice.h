@@ -5,6 +5,8 @@
 #include <tusb.h>
 
 #include <array>
+#include <cstdarg>
+#include <mutex>
 #include <string_view>
 #include <vector>
 
@@ -32,6 +34,10 @@ public:
                          hid_report_type_t report_type,
                          uint8_t const *buffer,
                          uint16_t bufsize);
+
+  void cdc_task();
+
+  void debug_log(const char* format, va_list ap);
 
 private:
   UsbDevice(UsbDevice const &) = delete;
@@ -66,6 +72,10 @@ private:
   std::vector<uint8_t> config_desc_;
   tusb_desc_device_t device_desc_;
   std::vector<uint8_t> keyboard_report_desc_;
+
+  std::mutex log_mutex_;
+  std::vector<char> log_buffer_;
+  size_t log_length_{0};
 };
 
 } // namespace mantyl

@@ -29,13 +29,17 @@ mantyl::UsbDevice* get_usb_dev() {
  */
 void tusb_device_task(void *arg)
 {
+  auto *usb = static_cast<mantyl::UsbDevice *>(arg);
   ESP_LOGD(LogTag, "tinyusb task started");
   while (true) {
     tud_task();
+    if (tud_cdc_connected() && tud_cdc_available()) {
+      usb->cdc_task();
+    }
   }
 }
 
-esp_err_t tusb_run_task() {
+esp_err_t tusb_run_task(mantyl::UsbDevice* usb) {
   // Sanity check.  Not actually thread-safe
   ESP_RETURN_ON_FALSE(!tusb_task_handle,
                       ESP_ERR_INVALID_STATE,
@@ -44,7 +48,7 @@ esp_err_t tusb_run_task() {
   xTaskCreate(tusb_device_task,
               "TinyUSB",
               usb_task_stack_size,
-              nullptr,
+              usb,
               usb_task_priority,
               &tusb_task_handle);
   ESP_RETURN_ON_FALSE(
@@ -62,7 +66,7 @@ esp_err_t tusb_stop_task() {
   return ESP_OK;
 }
 
-esp_err_t tinyusb_driver_install() {
+esp_err_t tinyusb_driver_install(mantyl::UsbDevice* usb) {
   // Configure USB PHY
   usb_phy_config_t phy_conf = {
       .controller = USB_PHY_CTRL_OTG,
@@ -80,7 +84,7 @@ esp_err_t tinyusb_driver_install() {
 
   ESP_RETURN_ON_FALSE(
       tusb_init(), ESP_FAIL, LogTag, "Init TinyUSB stack failed");
-  ESP_RETURN_ON_ERROR(tusb_run_task(), LogTag, "Run TinyUSB task failed");
+  ESP_RETURN_ON_ERROR(tusb_run_task(usb), LogTag, "Run TinyUSB task failed");
   ESP_LOGI(LogTag, "TinyUSB Driver installed");
   return ESP_OK;
 }
@@ -116,7 +120,9 @@ UsbDevice::UsbDevice()
                    .iManufacturer = add_string_literal(u"Adam Simpkins"),
                    .iProduct = add_string_literal(u"Mantyl Keyboard"),
                    .iSerialNumber = 0,
-                   .bNumConfigurations = 1} {}
+                   .bNumConfigurations = 1} {
+  log_buffer_.resize(256);
+}
 
 UsbDevice::~UsbDevice() {
   if (tusb_task_handle) {
@@ -131,9 +137,9 @@ esp_err_t UsbDevice::init() {
   ESP_LOGI(LogTag, "USB initialization");
 
   device_desc_.iSerialNumber = add_serial_descriptor();
-  init_config_desc(false);
+  init_config_desc(true);
 
-  ESP_ERROR_CHECK(tinyusb_driver_install());
+  ESP_ERROR_CHECK(tinyusb_driver_install(this));
   ESP_LOGI(LogTag, "USB initialization DONE");
 
   return ESP_OK;
@@ -269,7 +275,7 @@ void UsbDevice::init_config_desc(bool debug) {
     // USB Hosts will generally cache the descriptors for a given
     // (vendor ID + product ID), so if we want to use a different product ID
     // when for the alternate descriptor contents.
-    device_desc_.idProduct = 0x9994;
+    device_desc_.idProduct = 0x9992;
     device_desc_.bDeviceClass = TUSB_CLASS_MISC;
     device_desc_.bDeviceSubClass = MISC_SUBCLASS_COMMON;
     device_desc_.bDeviceProtocol = MISC_PROTOCOL_IAD;
@@ -386,10 +392,10 @@ void UsbDevice::init_config_desc(bool debug) {
     // Notification endpoint
     add_u8(7);                        // bLength
     add_u8(TUSB_DESC_ENDPOINT);       // bDescriptorType
-    add_u8(cdc_notif_endpoint_addr_); // bEndpointAddress
-    add_u8(TUSB_XFER_INTERRUPT);      // bmAttributes
-    add_u16(8);                       // wMaxPacketSize
-    add_u8(16);                       // bInterval
+    add_u8(0x80 | cdc_notif_endpoint_addr_); // bEndpointAddress
+    add_u8(TUSB_XFER_INTERRUPT);             // bmAttributes
+    add_u16(8);                              // wMaxPacketSize
+    add_u8(16);                              // bInterval
 
     // CDC Data Interface
     add_u8(9);                             // bLength
@@ -423,6 +429,63 @@ void UsbDevice::init_config_desc(bool debug) {
 void UsbDevice::init_hid_report_descriptors() {
   keyboard_report_desc_ = std::vector<uint8_t>{
       TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(kbd_report_id_))};
+}
+
+void UsbDevice::cdc_task() {
+    std::array<uint8_t, 64> buf;
+
+  // read and echo back
+  uint32_t count = tud_cdc_read(buf.data(), buf.size());
+  if (count > 0) {
+    ESP_LOGI(LogTag, "read %" PRIu32 " bytes from CDC", count);
+  }
+#if 0
+  for (uint32_t i = 0; i < count; i++) {
+    tud_cdc_write_char(buf[i]);
+    if (buf[i] == '\r')
+      tud_cdc_write_char('\n');
+  }
+
+  tud_cdc_write_flush();
+#endif
+}
+
+void UsbDevice::debug_log(const char *format, va_list ap) {
+  std::lock_guard<std::mutex> lock(log_mutex_);
+  size_t len_remaining = log_buffer_.size() - log_length_;
+  auto bytes_formatted =
+      vsnprintf(log_buffer_.data() + log_length_, len_remaining, format, ap);
+  if (bytes_formatted >= len_remaining) {
+    log_length_ = log_buffer_.size();
+  } else {
+    log_length_ += bytes_formatted;
+  }
+
+  for (size_t n = 0; n < log_length_; ++n) {
+    bool eom = false;
+    if (log_buffer_[n] == '\r') {
+      log_buffer_[n] = '\0';
+      if (n + 1 < log_length_ && log_buffer_[n + 1] == '\n') {
+        ++n;
+      }
+      eom = true;
+    } else if (log_buffer_[n] == '\n') {
+      log_buffer_[n] = '\0';
+      eom = true;
+    }
+
+    if (eom) {
+      if (log_buffer_[0] != '\0') {
+        ESP_LOGI("tinyusb", "%s", log_buffer_.data());
+      }
+      if (n < log_length_) {
+        log_length_ -= n;
+        memmove(log_buffer_.data(), log_buffer_.data() + n, log_length_);
+      } else {
+        log_length_ = 0;
+      }
+    }
+  }
 }
 
 } // namespace mantyl
@@ -490,6 +553,36 @@ uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
   }
 
   return usb_dev->get_hid_report_descriptor(instance);
+}
+
+// Invoked when cdc when line state changed e.g connected/disconnected
+void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts) {
+  ESP_LOGD(LogTag, "CDC line state cb");
+  static_cast<void>(itf);
+
+  // connected
+  if (dtr && rts) {
+    // print initial message when connected
+    tud_cdc_write_str("\r\nUSB CDC MSC device example\r\n");
+  }
+}
+
+// Invoked when CDC interface received data from host
+void tud_cdc_rx_cb(uint8_t itf) {
+  ESP_LOGI(LogTag, "CDC rx cb");
+  static_cast<void>(itf);
+}
+
+extern int mantyl_tusb_logf(const char *format, ...) {
+  auto usb_dev = get_usb_dev();
+  if (!usb_dev) {
+    return 0;
+  }
+
+  va_list ap;
+  va_start(ap, format);
+  usb_dev->debug_log(format, ap);
+  va_end(ap);
 }
 
 } // extern "C"
