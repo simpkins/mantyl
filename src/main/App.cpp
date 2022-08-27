@@ -176,6 +176,7 @@ void App::main() {
   }
 
   if (boot_into_debug_mode) {
+    ESP_LOGI(LogTag, "initializing USB...");
     const auto usb_rc = usb_.init();
     if (usb_rc != ESP_OK) {
       ESP_LOGE(LogTag, "failed to initialize USB: %d", usb_rc);

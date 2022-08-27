@@ -53,23 +53,26 @@ esp_err_t tusb_stop_task() {
 }
 
 esp_err_t tinyusb_driver_install() {
-    // Configure USB PHY
-    usb_phy_config_t phy_conf = {
-        .controller = USB_PHY_CTRL_OTG,
-        .target = USB_PHY_TARGET_INT,
-        .otg_mode = USB_OTG_MODE_DEVICE,
-        .otg_speed = USB_PHY_SPEED_UNDEFINED,
-        .gpio_conf = {},
-    };
-    ESP_RETURN_ON_ERROR(usb_new_phy(&phy_conf, &usb_phy_handle),
-                        LogTag,
-                        "Install USB PHY failed");
+  // Configure USB PHY
+  usb_phy_config_t phy_conf = {
+      .controller = USB_PHY_CTRL_OTG,
+      .target = USB_PHY_TARGET_INT,
+      .otg_mode = USB_OTG_MODE_DEVICE,
+      .otg_speed = USB_PHY_SPEED_UNDEFINED,
+      .gpio_conf = {},
+  };
+  ESP_RETURN_ON_ERROR(usb_new_phy(&phy_conf, &usb_phy_handle),
+                      LogTag,
+                      "Install USB PHY failed");
+  // Yielding after usb_new_phy() and before tusb_init() appears to be
+  // required for some reason.
+  vTaskDelay(10);
 
-    ESP_RETURN_ON_FALSE(
-        tusb_init(), ESP_FAIL, LogTag, "Init TinyUSB stack failed");
-    ESP_RETURN_ON_ERROR(tusb_run_task(), LogTag, "Run TinyUSB task failed");
-    ESP_LOGI(LogTag, "TinyUSB Driver installed");
-    return ESP_OK;
+  ESP_RETURN_ON_FALSE(
+      tusb_init(), ESP_FAIL, LogTag, "Init TinyUSB stack failed");
+  ESP_RETURN_ON_ERROR(tusb_run_task(), LogTag, "Run TinyUSB task failed");
+  ESP_LOGI(LogTag, "TinyUSB Driver installed");
+  return ESP_OK;
 }
 
 esp_err_t tinyusb_driver_uninstall() {
