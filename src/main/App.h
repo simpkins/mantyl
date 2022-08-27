@@ -34,6 +34,9 @@ public:
   UI &ui() {
     return ui_;
   }
+  UsbDevice &usb() {
+    return usb_;
+  }
 
   void notify_new_log_message();
 

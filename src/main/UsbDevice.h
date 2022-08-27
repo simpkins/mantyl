@@ -15,10 +15,6 @@ public:
   UsbDevice();
   ~UsbDevice();
 
-  static UsbDevice* get() {
-    return singleton_;
-  }
-
   [[nodiscard]] esp_err_t init();
 
   uint8_t const *get_device_descriptor() const;
@@ -54,8 +50,6 @@ private:
 
   void init_config_desc(bool debug);
   void init_hid_report_descriptors();
-
-  static UsbDevice* singleton_;
 
   static constexpr uint8_t kbd_interface_num_{0};
   static constexpr uint8_t cdc_interface_num_{1};

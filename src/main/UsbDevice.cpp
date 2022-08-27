@@ -1,6 +1,8 @@
 // Copyright (c) 2022, Adam Simpkins
 #include "UsbDevice.h"
 
+#include "App.h"
+
 #include <esp_check.h>
 #include <esp_log.h>
 #include <esp_mac.h>
@@ -13,6 +15,14 @@ TaskHandle_t tusb_task_handle;
 
 constexpr configSTACK_DEPTH_TYPE usb_task_stack_size = 4096;
 constexpr UBaseType_t usb_task_priority = 5;
+
+mantyl::UsbDevice* get_usb_dev() {
+  auto* app = mantyl::App::get();
+  if (!app) {
+    return nullptr;
+  }
+  return &app->usb();
+}
 
 /**
  * @brief This top level thread processes all usb events and invokes callbacks
@@ -91,8 +101,6 @@ char16_t hexlify_utf16(uint8_t n) {
 
 namespace mantyl {
 
-UsbDevice* UsbDevice::singleton_;
-
 UsbDevice::UsbDevice()
     : device_desc_{.bLength = sizeof(device_desc_),
                    .bDescriptorType = TUSB_DESC_DEVICE,
@@ -117,19 +125,10 @@ UsbDevice::~UsbDevice() {
   if (usb_phy_handle) {
     tinyusb_driver_uninstall();
   }
-  singleton_ = nullptr;
 }
 
 esp_err_t UsbDevice::init() {
   ESP_LOGI(LogTag, "USB initialization");
-
-  // Sanity check that UsbDevice::init() has not been called multiple times.
-  // Note: this isn't a thread-safe check, but should help catch some
-  // programming errors.
-  if (singleton_ != nullptr) {
-    ESP_LOGE(LogTag, "attempted to initialize multiple USB devices");
-    return ESP_ERR_INVALID_STATE;
-  }
 
   device_desc_.iSerialNumber = add_serial_descriptor();
   init_config_desc(false);
@@ -137,7 +136,6 @@ esp_err_t UsbDevice::init() {
   ESP_ERROR_CHECK(tinyusb_driver_install());
   ESP_LOGI(LogTag, "USB initialization DONE");
 
-  singleton_ = this;
   return ESP_OK;
 }
 
@@ -432,7 +430,7 @@ void UsbDevice::init_hid_report_descriptors() {
 extern "C" {
 
 uint8_t const *tud_descriptor_device_cb() {
-  auto usb_dev = mantyl::UsbDevice::get();
+  auto usb_dev = get_usb_dev();
   if (!usb_dev) {
     return nullptr;
   }
@@ -441,7 +439,7 @@ uint8_t const *tud_descriptor_device_cb() {
 }
 
 uint8_t const *tud_descriptor_configuration_cb(uint8_t index) {
-  auto usb_dev = mantyl::UsbDevice::get();
+  auto usb_dev = get_usb_dev();
   if (!usb_dev) {
     return nullptr;
   }
@@ -450,7 +448,7 @@ uint8_t const *tud_descriptor_configuration_cb(uint8_t index) {
 }
 
 uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
-  auto usb_dev = mantyl::UsbDevice::get();
+  auto usb_dev = get_usb_dev();
   if (!usb_dev) {
     return nullptr;
   }
@@ -463,7 +461,7 @@ uint16_t tud_hid_get_report_cb(uint8_t instance,
                                hid_report_type_t report_type,
                                uint8_t *buffer,
                                uint16_t reqlen) {
-  auto usb_dev = mantyl::UsbDevice::get();
+  auto usb_dev = get_usb_dev();
   if (!usb_dev) {
     return 0;
   }
@@ -477,7 +475,7 @@ void tud_hid_set_report_cb(uint8_t instance,
                                       hid_report_type_t report_type,
                                       uint8_t const *buffer,
                                       uint16_t bufsize) {
-  auto usb_dev = mantyl::UsbDevice::get();
+  auto usb_dev = get_usb_dev();
   if (!usb_dev) {
     return;
   }
@@ -486,7 +484,7 @@ void tud_hid_set_report_cb(uint8_t instance,
 }
 
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance) {
-  auto usb_dev = mantyl::UsbDevice::get();
+  auto usb_dev = get_usb_dev();
   if (!usb_dev) {
     return nullptr;
   }
