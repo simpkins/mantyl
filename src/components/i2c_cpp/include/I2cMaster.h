@@ -11,10 +11,10 @@ namespace mantyl {
 
 class I2cMaster {
 public:
-  I2cMaster(int sda, int scl, int port = 0)
+  I2cMaster(int sda, int scl, i2c_port_t port = I2C_NUM_0)
       : port_{port}, sda_{sda}, scl_{scl} {}
 
-  int port() const {
+  i2c_port_t port() const {
     return port_;
   }
 
@@ -51,7 +51,7 @@ private:
   I2cMaster(I2cMaster const &) = delete;
   I2cMaster &operator=(I2cMaster const &) = delete;
 
-  const int port_{0};
+  const i2c_port_t port_{I2C_NUM_0};
   const int sda_{0};
   const int scl_{0};
 };

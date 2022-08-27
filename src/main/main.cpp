@@ -75,8 +75,9 @@ private:
   void on_gpio_interrupt(NotifyBits bits);
 
   UsbDevice usb_;
-  I2cMaster i2c_left_{PinConfig::LeftI2cSDA, PinConfig::LeftI2cSCL, 0};
-  I2cMaster i2c_right_{PinConfig::RightI2cSDA, PinConfig::RightI2cSCL, 1};
+  I2cMaster i2c_left_{PinConfig::LeftI2cSDA, PinConfig::LeftI2cSCL, I2C_NUM_0};
+  I2cMaster i2c_right_{
+      PinConfig::RightI2cSDA, PinConfig::RightI2cSCL, I2C_NUM_1};
   SSD1306 display_{i2c_left_, 0x3c, GPIO_NUM_1};
   UI ui_{&display_};
   Keypad left_{"left", i2c_left_, 0x3e, GPIO_NUM_33, 7, 8};
