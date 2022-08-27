@@ -135,15 +135,18 @@ esp_err_t SSD1306::flush() {
   return ESP_OK;
 }
 
-size_t SSD1306::write_text(std::string_view str, OffsetRange range) {
-  size_t px_offset = range.first;
+SSD1306::WriteResult SSD1306::write_text(std::string_view str, OffsetRange range) {
+  auto px_offset = range.first;
   bool first = true;
-  for (const char c : str) {
+  size_t char_idx = 0;
+  while (char_idx < str.size()) {
+    const char c = str[char_idx];
     const auto &glyph = Font6x8::lookupGlyph(c);
     const size_t px_end = px_offset + glyph.width + (first ? 0 : 1);
     if (px_end >= range.second) {
       break;
     }
+    ++char_idx;
     if (first) {
       first = false;
     } else {
@@ -155,7 +158,7 @@ size_t SSD1306::write_text(std::string_view str, OffsetRange range) {
     px_offset += glyph.width;
   }
 
-  return px_offset;
+  return WriteResult{px_offset, char_idx};
 }
 
 bool SSD1306::write_centered(std::string_view str, OffsetRange range) {
@@ -165,15 +168,15 @@ bool SSD1306::write_centered(std::string_view str, OffsetRange range) {
     write_text(str, range);
     return true;
   } else if (width > range_width) {
-    const auto end = write_text(str, range);
-    memset(buffer_.get() + end, 0, range.second - end);
+    const auto result = write_text(str, range);
+    memset(buffer_.get() + result.px_end, 0, range.second - result.px_end);
     return false;
   } else {
     const size_t extra_start_offset = (range_width - width) / 2;
     memset(buffer_.get() + range.first, 0, extra_start_offset);
-    const auto end =
+    const auto result =
         write_text(str, {range.first + extra_start_offset, range.second});
-    memset(buffer_.get() + end, 0, range.second - end);
+    memset(buffer_.get() + result.px_end, 0, range.second - result.px_end);
     return true;
   }
 }

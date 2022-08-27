@@ -23,6 +23,15 @@ class SSD1306 {
 public:
   using OffsetRange = std::pair<uint16_t, uint16_t>;
 
+  struct WriteResult {
+    // The pixel offset where the write finished.
+    uint16_t px_end{};
+    // The character index just after the last character that was written.
+    // If this is less than the size of the input text, the input text was
+    // truncated to fit within the specified display offset range.
+    size_t char_end{};
+  };
+
   /*
    * The display is large enough for 4 lines of 8-pixel high text.
    *
@@ -51,7 +60,7 @@ public:
    *
    * Returns the offset where the text finished.
    */
-  size_t write_text(std::string_view str, OffsetRange range);
+  WriteResult write_text(std::string_view str, OffsetRange range);
 
   /**
    * Write a string of text, centered in the specified range.

@@ -35,6 +35,39 @@ int ui_vprintf(const char *format, va_list ap) {
   if (size_written >= 0 && size_written < buf.size()) {
     buf.resize(size_written);
   }
+
+#if CONFIG_LOG_COLORS
+  // Strip off color escape sequences.
+  static constexpr std::string_view kResetSequence(LOG_RESET_COLOR "\n");
+  if (buf.size() >= kResetSequence.size()) {
+    if (memcmp(buf.data() + buf.size() - kResetSequence.size(),
+               kResetSequence.data(),
+               kResetSequence.size()) == 0) {
+      buf.resize(buf.size() - kResetSequence.size());
+    }
+  }
+
+  if (buf.size() >= 3 && buf[0] == '\033' && buf[1] == '[') {
+    size_t strip_idx = 2;
+    while (strip_idx < buf.size()) {
+      if (buf[strip_idx] == 'm') {
+        ++strip_idx;
+        break;
+      }
+      ++strip_idx;
+    }
+    // It might be nicer to store both a vector and a string_view,
+    // so that we could strip without actually doing a memmove().
+    memmove(buf.data(), buf.data() + strip_idx, buf.size() - strip_idx);
+    buf.resize(buf.size() - strip_idx);
+  }
+#else
+  // Strip off a trailing newline
+  if (buf.size() >= 1 && buf[buf.size() - 1] == '\n') {
+    buf.resize(buf.size() - 1);
+  }
+#endif // CONFIG_LOG_COLORS
+
   auto* app = mantyl::App::get();
   app->ui().append_log_message(std::move(buf));
   app->notify_new_log_message();
@@ -127,7 +160,6 @@ void UI::display_log_messages() {
     messages.swap(log_messages_);
   }
 
-  printf("display_log_messages: %zu\n", messages.size());
   fade_.reset();
   auto rc = display_->set_contrast(0x7f);
   rc = display_->display_on();
@@ -137,9 +169,17 @@ void UI::display_log_messages() {
 
   for (const auto& msg : messages) {
     std::string_view str(msg.data(), msg.size());
-    display_->write_text(str, SSD1306::Line0);
+    for (const auto& line_range :
+         {SSD1306::Line0, SSD1306::Line1, SSD1306::Line2, SSD1306::Line3}) {
+      auto result = display_->write_text(str, line_range);
+      str = str.substr(result.char_end);
+      if (str.empty()) {
+        break;
+      }
+    }
   }
-  display_->flush();
+  rc = display_->flush();
+  (void)rc;
 }
 
 } // namespace mantyl
