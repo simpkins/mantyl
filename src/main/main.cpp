@@ -44,11 +44,11 @@ void print_info() {
     return;
   }
 
-  ESP_LOGD(LogTag, "%uMB %s flash\n", flash_size / (1024 * 1024),
+  ESP_LOGD(LogTag, "%luMB %s flash\n", flash_size / (1024 * 1024),
            (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded"
                                                          : "external");
 
-  ESP_LOGD(LogTag, "Minimum free heap size: %d bytes\n",
+  ESP_LOGD(LogTag, "Minimum free heap size: %" PRIu32 " bytes\n",
            esp_get_minimum_free_heap_size());
 }
 
@@ -191,7 +191,7 @@ void App::keyboard_task() {
     const auto rc =
         xTaskNotifyWait(pdFALSE, ULONG_MAX, &notified_value, max_delay_ticks);
     if (rc == pdTRUE) {
-      ESP_LOGD(LogTag, "received notification: %#04x", notified_value);
+      ESP_LOGD(LogTag, "received notification: %#04lx", notified_value);
     }
 
     now = std::chrono::steady_clock::now();
