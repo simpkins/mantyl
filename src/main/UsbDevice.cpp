@@ -27,6 +27,50 @@ char hexlify(uint8_t n) {
   return 'a' + (n - 10);
 }
 
+void on_cdc_rx(int itf, cdcacm_event_t *event) {
+  static_cast<void>(event);
+  auto usb_dev = get_usb_dev();
+  if (!usb_dev) {
+    return;
+  }
+
+  // Call tinyusb_cdcacm_read() whenever there is data to read, to stop the
+  // esp-idf code from logging warnings about its rx buffer filling up.
+  std::vector<uint8_t> buf;
+  buf.resize(64);
+  while (true) {
+    size_t rx_size = 0;
+    auto rc = tinyusb_cdcacm_read(static_cast<tinyusb_cdcacm_itf_t>(itf),
+                                  buf.data(),
+                                  buf.size(),
+                                  &rx_size);
+    if (rc == ESP_OK) {
+      if (rx_size == 0) {
+        break;
+      }
+      // Simply ignore the data for now.
+    } else if (rc == ESP_ERR_NO_MEM) {
+      // This simply indicates that there isn't actually any data to read right
+      // now.
+    } else {
+      ESP_LOGE(LogTag, "CDC read error: %d", rc);
+      break;
+    }
+  }
+}
+
+void on_cdc_line_state_change(int itf, cdcacm_event_t *event) {
+  static_cast<void>(itf);
+  auto usb_dev = get_usb_dev();
+  if (!usb_dev) {
+    return;
+  }
+
+  const auto& data = event->line_state_changed_data;
+  ESP_LOGI(
+      LogTag, "CDC line state changed: dtr=%d, rts=%d", data.dtr, data.rts);
+}
+
 } // namespace
 
 namespace mantyl {
@@ -67,23 +111,18 @@ esp_err_t UsbDevice::init() {
   ESP_ERROR_CHECK(tinyusb_driver_install(&config));
   ESP_LOGI(LogTag, "USB initialization DONE");
 
-#if 0
-  tinyusb_config_cdcacm_t acm_cfg = {
-      .usb_dev = TINYUSB_USBDEV_0,
-      .cdc_port = TINYUSB_CDC_ACM_0,
-      .rx_unread_buf_sz = 64,
-      .callback_rx =
-          &tinyusb_cdc_rx_callback,
-      .callback_rx_wanted_char = NULL,
-      .callback_line_state_changed = NULL,
-      .callback_line_coding_changed = NULL};
-#else
   if (enable_cdc) {
-    tinyusb_config_cdcacm_t acm_cfg{};
+    tinyusb_config_cdcacm_t acm_cfg = {.usb_dev = TINYUSB_USBDEV_0,
+                                       .cdc_port = TINYUSB_CDC_ACM_0,
+                                       .rx_unread_buf_sz = 64,
+                                       .callback_rx = on_cdc_rx,
+                                       .callback_rx_wanted_char = nullptr,
+                                       .callback_line_state_changed =
+                                           on_cdc_line_state_change,
+                                       .callback_line_coding_changed = nullptr};
     ESP_ERROR_CHECK(tusb_cdc_acm_init(&acm_cfg));
     esp_tusb_init_console(TINYUSB_CDC_ACM_0);
   }
-#endif
 
   return ESP_OK;
 }
