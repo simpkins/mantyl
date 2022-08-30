@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Adam Simpkins
 #include "Keyboard.h"
 
+#include "App.h"
 #include "Keypad.h"
 
 #include <class/hid/hid.h>
@@ -10,24 +11,80 @@
 
 namespace {
 const char *LogTag = "mantyl.keyboard";
+
+void left_gpio_intr_handler(void*) {
+  mantyl::App::get()->left_keypad_interrupt();
 }
+
+void right_gpio_intr_handler(void*) {
+  mantyl::App::get()->right_keypad_interrupt();
+}
+} // namespace
 
 namespace mantyl {
 
-Keyboard::Keyboard(Keypad *left, Keypad *right) : left_{left}, right_{right} {
-  left_->set_callback([this]() {
+Keyboard::Keyboard(I2cMaster &i2c_left, I2cMaster &i2c_right)
+    : left_{"left", i2c_left, 0x3e, GPIO_NUM_33, 7, 8},
+      right_{"right", i2c_right, 0x3f, GPIO_NUM_11, 6, 8} {
+  left_.set_callback([this]() {
     send_report();
   });
-  right_->set_callback([this]() {
+  right_.set_callback([this]() {
     send_report();
   });
+}
+
+esp_err_t Keyboard::early_init() {
+  ESP_LOGV(LogTag, "attempting left SX1509 init:");
+  auto rc = left_.init();
+  if (rc == ESP_OK) {
+    ESP_LOGI(LogTag, "successfully initialized left key matrix");
+  } else {
+    ESP_LOGE(LogTag,
+             "failed to initialize left key matrix: %d: %s",
+             rc,
+             esp_err_to_name(rc));
+  }
+
+  ESP_LOGV(LogTag, "attempting right SX1509 init:");
+  rc = right_.init();
+  if (rc == ESP_OK) {
+    ESP_LOGI(LogTag, "successfully initialized right key matrix");
+  } else {
+    // Maybe the right key matrix is not connected.
+    ESP_LOGE(LogTag,
+             "failed to initialize right key matrix: %d: %s",
+             rc,
+             esp_err_to_name(rc));
+  }
+
+  return ESP_OK;
+}
+
+bool Keyboard::should_boot_in_debug_mode() {
+  return left_.is_interrupt_asserted();
+}
+
+esp_err_t Keyboard::kbd_task_init() {
+  ESP_ERROR_CHECK(gpio_isr_handler_add(
+      left_.interrupt_pin(), left_gpio_intr_handler, nullptr));
+  ESP_ERROR_CHECK(gpio_isr_handler_add(
+      right_.interrupt_pin(), right_gpio_intr_handler, nullptr));
+  return ESP_OK;
+}
+
+std::chrono::milliseconds
+Keyboard::tick(std::chrono::steady_clock::time_point now) {
+  const auto left_timeout = left_.tick(now);
+  const auto right_timeout = right_.tick(now);
+  return std::min(left_timeout, right_timeout);
 }
 
 void Keyboard::generate_report(std::array<uint8_t, 6> &keycodes,
                                uint8_t &modifiers) {
   size_t keycode_idx = 0;
 
-  auto left_pressed = left_->get_pressed();
+  auto left_pressed = left_.get_pressed();
   for (uint8_t row = 0; row < Keypad::kMaxRows; ++row) {
     const auto row_bits = left_pressed[row];
     if (!row_bits) {

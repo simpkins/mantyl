@@ -26,16 +26,6 @@ App::~App() {
   singleton_ = nullptr;
 }
 
-void App::left_gpio_intr_handler(void* arg) {
-  auto *app = static_cast<App *>(arg);
-  app->on_gpio_interrupt(NotifyBits::Left);
-}
-
-void App::right_gpio_intr_handler(void* arg) {
-  auto *app = static_cast<App *>(arg);
-  app->on_gpio_interrupt(NotifyBits::Right);
-}
-
 void App::on_gpio_interrupt(NotifyBits bits) {
   BaseType_t high_task_wakeup = pdFALSE;
   xTaskNotifyFromISR(task_handle_, bits, eSetBits, &high_task_wakeup);
@@ -78,53 +68,29 @@ esp_err_t App::init() {
              esp_err_to_name(rc));
   }
 
-  ESP_LOGV(LogTag, "attempting left SX1509 init:");
-  rc = left_.init();
-  if (rc == ESP_OK) {
-    ESP_LOGI(LogTag, "successfully initialized left key matrix");
-  } else {
-    ESP_LOGE(LogTag,
-             "failed to initialize left key matrix: %d: %s",
-             rc,
-             esp_err_to_name(rc));
-  }
-
-  ESP_LOGV(LogTag, "attempting right SX1509 init:");
-  rc = right_.init();
-  if (rc == ESP_OK) {
-    ESP_LOGI(LogTag, "successfully initialized right key matrix");
-  } else {
-    // Maybe the right key matrix is not connected.
-    ESP_LOGE(LogTag,
-             "failed to initialize right key matrix: %d: %s",
-             rc,
-             esp_err_to_name(rc));
-  }
+  rc = keyboard_.early_init();
+  ESP_RETURN_ON_ERROR(rc, LogTag, "failed to initialize keyboard");
 
   return ESP_OK;
 }
 
 std::chrono::steady_clock::time_point
 App::keyboard_tick(std::chrono::steady_clock::time_point now) {
-  const auto left_timeout = left_.tick(now);
-  const auto right_timeout = right_.tick(now);
+  // We currently run both keyboard_.tick() and ui_.tick() any time we wake
+  // up, regardless of why we wake up.  We potentially could be smarter here in
+  // the future, and only run the handler for the specific event that triggered
+  // us to wake up.  However, always checking everything is simpler.
+  const auto kbd_timeout = keyboard_.tick(now);
   const auto ui_timeout = ui_.tick(now);
-  const auto next_timeout =
-      now + std::min(std::min(left_timeout, right_timeout), ui_timeout);
+  const auto next_timeout = std::min(kbd_timeout, ui_timeout);
   ESP_LOGD(LogTag,
-           "tick: left=%ld (%d) right=%ld (%d)",
-           static_cast<long int>(left_timeout.count()),
-           (int)left_.num_pressed(),
-           static_cast<long int>(right_timeout.count()),
-           (int)right_.num_pressed());
-  return next_timeout;
+           "tick: next_timeout=%ld",
+           static_cast<long int>(next_timeout.count()));
+  return now + next_timeout;
 }
 
 void App::keyboard_task() {
-  ESP_ERROR_CHECK(gpio_isr_handler_add(
-      left_.interrupt_pin(), left_gpio_intr_handler, this));
-  ESP_ERROR_CHECK(gpio_isr_handler_add(
-      right_.interrupt_pin(), right_gpio_intr_handler, this));
+  ESP_ERROR_CHECK(keyboard_.kbd_task_init());
 
   auto now = std::chrono::steady_clock::now();
   auto next_timeout = keyboard_tick(now);
@@ -164,14 +130,11 @@ void App::keyboard_task_fn(void* arg) {
 void App::main() {
   ESP_ERROR_CHECK(init());
 
-  bool debug_mode = true; // TODO: read setting from flash
   bool boot_into_debug_mode = false;
-  if (debug_mode) {
-    vTaskDelay(pdMS_TO_TICKS(10));
-    if (left_.is_interrupt_asserted()) {
-      ESP_LOGI(LogTag, "key held down during init");
-      boot_into_debug_mode = true;
-    }
+  vTaskDelay(pdMS_TO_TICKS(10));
+  if (keyboard_.should_boot_in_debug_mode()) {
+    ESP_LOGI(LogTag, "key held down during init: booting in debug mode");
+    boot_into_debug_mode = true;
   }
 
   ESP_LOGI(LogTag, "initializing USB...");

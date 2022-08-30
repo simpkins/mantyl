@@ -41,6 +41,13 @@ public:
 
   void notify_new_log_message();
 
+  void left_keypad_interrupt() {
+      on_gpio_interrupt(NotifyBits::Left);
+  }
+  void right_keypad_interrupt() {
+      on_gpio_interrupt(NotifyBits::Right);
+  }
+
 private:
   enum NotifyBits : unsigned long {
     Left = 0x01,
@@ -51,8 +58,6 @@ private:
   App(App const &) = delete;
   App &operator=(App const &) = delete;
 
-  static void left_gpio_intr_handler(void *arg);
-  static void right_gpio_intr_handler(void *arg);
   static void keyboard_task_fn(void *arg);
 
   void keyboard_task();
@@ -68,9 +73,8 @@ private:
       PinConfig::RightI2cSDA, PinConfig::RightI2cSCL, I2C_NUM_1};
   SSD1306 display_{i2c_left_, 0x3c, GPIO_NUM_1};
   UI ui_{&display_};
-  Keypad left_{"left", i2c_left_, 0x3e, GPIO_NUM_33, 7, 8};
-  Keypad right_{"right", i2c_right_, 0x3f, GPIO_NUM_11, 6, 8};
-  Keyboard kbd_{&left_, &right_};
+  Keyboard keyboard_{i2c_left_, i2c_right_};
+
   SemaphoreHandle_t done_sem_{};
   TaskHandle_t task_handle_{};
 };
