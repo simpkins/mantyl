@@ -6,7 +6,7 @@
 
 #include "I2cMaster.h"
 #include "Keyboard.h"
-#include "Keypad.h"
+#include "KeymapDB.h"
 #include "SSD1306.h"
 #include "UI.h"
 #include "UsbDevice.h"
@@ -76,7 +76,8 @@ private:
       PinConfig::RightI2cSDA, PinConfig::RightI2cSCL, I2C_NUM_1};
   SSD1306 display_{i2c_left_, 0x3c, GPIO_NUM_1};
   UI ui_{&display_};
-  Keyboard keyboard_{i2c_left_, i2c_right_};
+  KeymapDB keymap_db_;
+  Keyboard keyboard_{i2c_left_, i2c_right_, keymap_db_.get_builtin()};
 
   TaskHandle_t task_handle_{};
 };

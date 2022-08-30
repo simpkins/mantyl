@@ -8,9 +8,11 @@
 
 namespace mantyl {
 
+class Keymap;
+
 class Keyboard {
 public:
-  Keyboard(I2cMaster &i2c_left, I2cMaster &i2c_right);
+  Keyboard(I2cMaster &i2c_left, I2cMaster &i2c_right, const Keymap& keymap);
 
   /**
    * Initialize the keypads.
@@ -26,6 +28,17 @@ public:
    */
   [[nodiscard]] esp_err_t kbd_task_init();
 
+  /**
+   * Set the current Keymap.
+   *
+   * Note that the Keyboard stores a reference to the Keymap, and does not make
+   * a copy.  The caller must ensure that the Keymap is valid for the lifetime
+   * of the Keyboard object.
+   */
+  void set_keymap(const Keymap &keymap) {
+    keymap_ = &keymap;
+  }
+
   bool should_boot_in_debug_mode();
 
   std::chrono::milliseconds tick(std::chrono::steady_clock::time_point now);
@@ -36,7 +49,6 @@ private:
   Keyboard(Keyboard const &) = delete;
   Keyboard &operator=(Keyboard const &) = delete;
 
-  uint8_t lookup_keycode(bool left, uint8_t row, uint8_t col) const;
   void send_report();
 
   void on_left_press(uint8_t row, uint8_t col);
@@ -44,6 +56,7 @@ private:
   void on_right_press(uint8_t row, uint8_t col);
   void on_right_release(uint8_t row, uint8_t col);
 
+  const Keymap* keymap_{nullptr};
   Keypad left_;
   Keypad right_;
   bool need_to_send_report_{false};
