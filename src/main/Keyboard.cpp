@@ -24,14 +24,14 @@ void right_gpio_intr_handler(void*) {
 namespace mantyl {
 
 Keyboard::Keyboard(I2cMaster &i2c_left, I2cMaster &i2c_right)
-    : left_{"left", i2c_left, 0x3e, GPIO_NUM_33, 7, 8},
-      right_{"right", i2c_right, 0x3f, GPIO_NUM_11, 6, 8} {
-  left_.set_callback([this]() {
-    send_report();
-  });
-  right_.set_callback([this]() {
-    send_report();
-  });
+    : left_{"left", i2c_left, 0x3e, GPIO_NUM_33, /*rows=*/7, /*cols=*/8},
+      right_{"right", i2c_right, 0x3f, GPIO_NUM_11, /*rows=*/6, /*cols=*/8} {
+  left_.set_callbacks(
+      [this](uint8_t row, uint8_t col) { on_left_press(row, col); },
+      [this](uint8_t row, uint8_t col) { on_left_release(row, col); });
+  right_.set_callbacks(
+      [this](uint8_t row, uint8_t col) { on_right_press(row, col); },
+      [this](uint8_t row, uint8_t col) { on_right_release(row, col); });
 }
 
 esp_err_t Keyboard::early_init() {
@@ -101,6 +101,33 @@ void Keyboard::generate_report(std::array<uint8_t, 6> &keycodes,
       }
     }
   }
+}
+
+void Keyboard::on_left_press(uint8_t row, uint8_t col) {
+  // Row 6 contains the directional switch controlling the UI
+  if (row == 6) {
+    App::get()->on_ui_key_press(col);
+    return;
+  }
+
+  send_report();
+}
+
+void Keyboard::on_left_release(uint8_t row, uint8_t col) {
+  if (row == 6) {
+    App::get()->on_ui_key_release(col);
+    return;
+  }
+
+  send_report();
+}
+
+void Keyboard::on_right_press(uint8_t row, uint8_t col) {
+  send_report();
+}
+
+void Keyboard::on_right_release(uint8_t row, uint8_t col) {
+  send_report();
 }
 
 void Keyboard::send_report() {

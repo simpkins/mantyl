@@ -48,6 +48,9 @@ public:
       on_gpio_interrupt(NotifyBits::Right);
   }
 
+  void on_ui_key_press(uint8_t key);
+  void on_ui_key_release(uint8_t key);
+
 private:
   enum NotifyBits : unsigned long {
     Left = 0x01,

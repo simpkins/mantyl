@@ -16,7 +16,7 @@ public:
   static constexpr uint8_t kMaxRows = 8;
   static constexpr uint8_t kMaxCols = 8;
   using PressedBitmap = std::array<uint8_t, kMaxRows>;
-  using Callback = std::function<void()>;
+  using Callback = std::function<void(uint8_t, uint8_t)>;
 
   Keypad(std::string_view name, I2cMaster &bus, uint8_t addr, gpio_num_t int_pin, uint8_t rows, uint8_t columns)
       : name_{name}, sx1509_{bus, addr, int_pin}, rows_{rows}, columns_{columns} {}
@@ -43,8 +43,9 @@ public:
     return pressed_keys_;
   }
 
-  void set_callback(Callback &&fn) {
-    callback_ = std::move(fn);
+  void set_callbacks(Callback &&press_fn, Callback &&release_fn) {
+    press_callback_ = std::move(press_fn);
+    release_callback_ = std::move(release_fn);
   }
 
 private:
@@ -72,7 +73,8 @@ private:
   bool initialized_{false};
   uint8_t last_row_seen_{0};
   PressedBitmap pressed_keys_{};
-  Callback callback_;
+  Callback press_callback_;
+  Callback release_callback_;
 
   uint16_t num_pressed_{0};
   std::chrono::steady_clock::time_point last_scan_detected_{};

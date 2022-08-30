@@ -30,7 +30,6 @@ public:
 
   std::chrono::milliseconds tick(std::chrono::steady_clock::time_point now);
 
-  void send_report();
   void generate_report(std::array<uint8_t, 6> &keycodes, uint8_t &modifiers);
 
 private:
@@ -38,6 +37,12 @@ private:
   Keyboard &operator=(Keyboard const &) = delete;
 
   uint8_t lookup_keycode(bool left, uint8_t row, uint8_t col) const;
+  void send_report();
+
+  void on_left_press(uint8_t row, uint8_t col);
+  void on_left_release(uint8_t row, uint8_t col);
+  void on_right_press(uint8_t row, uint8_t col);
+  void on_right_release(uint8_t row, uint8_t col);
 
   Keypad left_;
   Keypad right_;

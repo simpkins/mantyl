@@ -74,6 +74,14 @@ esp_err_t App::init() {
   return ESP_OK;
 }
 
+void App::on_ui_key_press(uint8_t key) {
+  ESP_LOGI(LogTag, "UI key press: %d", key);
+}
+
+void App::on_ui_key_release(uint8_t key) {
+  ESP_LOGI(LogTag, "UI key release: %d", key);
+}
+
 std::chrono::steady_clock::time_point
 App::keyboard_tick(std::chrono::steady_clock::time_point now) {
   // We currently run both keyboard_.tick() and ui_.tick() any time we wake
