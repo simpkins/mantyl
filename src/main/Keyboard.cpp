@@ -23,10 +23,9 @@ Keyboard::Keyboard(Keypad *left, Keypad *right) : left_{left}, right_{right} {
   });
 }
 
-void Keyboard::send_report() {
-  std::array<uint8_t, 6> keycodes = {};
+void Keyboard::generate_report(std::array<uint8_t, 6> &keycodes,
+                               uint8_t &modifiers) {
   size_t keycode_idx = 0;
-  uint8_t modifiers = 0;
 
   auto left_pressed = left_->get_pressed();
   for (uint8_t row = 0; row < Keypad::kMaxRows; ++row) {
@@ -45,6 +44,12 @@ void Keyboard::send_report() {
       }
     }
   }
+}
+
+void Keyboard::send_report() {
+  std::array<uint8_t, 6> keycodes = {};
+  uint8_t modifiers = 0;
+  generate_report(keycodes, modifiers);
 
   // TODO: this tud_mounted() check seems racy, since we are running
   // on a different task than the main USB task.

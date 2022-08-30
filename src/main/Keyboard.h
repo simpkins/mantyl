@@ -13,6 +13,7 @@ public:
   Keyboard(Keypad* left, Keypad* right);
 
   void send_report();
+  void generate_report(std::array<uint8_t, 6> &keycodes, uint8_t &modifiers);
 
 private:
   Keyboard(Keyboard const &) = delete;
