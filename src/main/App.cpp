@@ -46,8 +46,6 @@ void App::notify_new_log_message() {
 }
 
 esp_err_t App::init() {
-  done_sem_ = xSemaphoreCreateBinary();
-
   auto rc = i2c_left_.init(I2cClockSpeed);
   ESP_RETURN_ON_ERROR(rc, LogTag, "failed to initialize left I2C bus");
 
@@ -124,18 +122,10 @@ void App::keyboard_task() {
     now = std::chrono::steady_clock::now();
     next_timeout = keyboard_tick(now);
   }
-  xSemaphoreGive(done_sem_);
-}
-
-void App::keyboard_task_fn(void* arg) {
-  auto *app = static_cast<App *>(arg);
-  ESP_LOGD(LogTag, "keyboard_task start; app=%p\n", app);
-  app->keyboard_task();
-  ESP_LOGW(LogTag, "keyboard_task suspending\n");
-  vTaskSuspend(nullptr);
 }
 
 void App::main() {
+  task_handle_ = xTaskGetCurrentTaskHandle();
   ESP_ERROR_CHECK(init());
 
   bool boot_into_debug_mode = false;
@@ -151,26 +141,7 @@ void App::main() {
     ESP_LOGE(LogTag, "failed to initialize USB: %d", usb_rc);
   }
 
-  static constexpr configSTACK_DEPTH_TYPE keyboard_task_stack_size = 4096;
-  const auto rc = xTaskCreatePinnedToCore(keyboard_task_fn,
-                                          "keyboard",
-                                          keyboard_task_stack_size,
-                                          this,
-                                          2,
-                                          &task_handle_,
-                                          0);
-  if (rc != pdPASS) {
-    ESP_LOGE(LogTag, "failed to create keyboard task");
-    return;
-  }
-
-  // Wait for the keyboard task to finish.
-  // (This should normally never happen.)
-  while (true) {
-    if (xSemaphoreTake(done_sem_, portMAX_DELAY) == pdTRUE) {
-      break;
-    }
-  }
+  keyboard_task();
 }
 
 } // namespace mantyl

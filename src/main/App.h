@@ -78,7 +78,6 @@ private:
   UI ui_{&display_};
   Keyboard keyboard_{i2c_left_, i2c_right_};
 
-  SemaphoreHandle_t done_sem_{};
   TaskHandle_t task_handle_{};
 };
 
