@@ -94,10 +94,8 @@ UsbDevice::UsbDevice()
 
 UsbDevice::~UsbDevice() = default;
 
-esp_err_t UsbDevice::init() {
+esp_err_t UsbDevice::init(bool enable_cdc) {
   ESP_LOGI(LogTag, "USB initialization");
-
-  bool enable_cdc = false;
 
   device_desc_.iSerialNumber = add_serial_descriptor();
   init_config_desc(enable_cdc);

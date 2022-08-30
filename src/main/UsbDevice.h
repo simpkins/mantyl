@@ -17,7 +17,7 @@ public:
   UsbDevice();
   ~UsbDevice();
 
-  [[nodiscard]] esp_err_t init();
+  [[nodiscard]] esp_err_t init(bool enable_cdc);
 
   uint8_t const *get_device_descriptor() const;
   uint8_t const *get_config_descriptor(uint8_t index) const;
