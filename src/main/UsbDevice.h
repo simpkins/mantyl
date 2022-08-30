@@ -34,6 +34,10 @@ public:
                          uint8_t const *buffer,
                          uint16_t bufsize);
 
+  static uint8_t getKeyboardHidReportID() {
+    return kbd_report_id_;
+  }
+
 private:
   UsbDevice(UsbDevice const &) = delete;
   UsbDevice &operator=(UsbDevice const &) = delete;

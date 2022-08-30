@@ -46,6 +46,7 @@ private:
 
   Keypad left_;
   Keypad right_;
+  bool need_to_send_report_{false};
 };
 
 } // namespace mantyl

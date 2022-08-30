@@ -3,6 +3,7 @@
 
 #include "App.h"
 #include "Keypad.h"
+#include "UsbDevice.h"
 
 #include <class/hid/hid.h>
 #include <class/hid/hid_device.h>
@@ -75,8 +76,20 @@ esp_err_t Keyboard::kbd_task_init() {
 
 std::chrono::milliseconds
 Keyboard::tick(std::chrono::steady_clock::time_point now) {
+  if (need_to_send_report_) {
+    // If we still needed to send a report to indicate the state from a
+    // previous tick, attempt to do so now.
+    send_report();
+  }
+
   const auto left_timeout = left_.tick(now);
   const auto right_timeout = right_.tick(now);
+
+  if (need_to_send_report_) {
+    // If we failed to send a keyboard report, and still need to attempt to
+    // send one, ask to be called back very soon.
+    return std::chrono::milliseconds(1);
+  }
   return std::min(left_timeout, right_timeout);
 }
 
@@ -135,18 +148,18 @@ void Keyboard::send_report() {
   uint8_t modifiers = 0;
   generate_report(keycodes, modifiers);
 
-  // TODO: this tud_mounted() check seems racy, since we are running
-  // on a different task than the main USB task.
-  if (tud_mounted()) {
-    // TODO: use UsbDevice::kbd_report_id_
-    if (!tud_hid_keyboard_report(1, modifiers, keycodes.data())) {
-      // TODO: tud_hid_keyboard_report() is asynchronous, and the send does not
-      // complete immediately.  We can fail here if a previous send is still in
-      // progress and we cannot claim the endpoint.
-      //
-      // In this case, we need to trigger the send attempt again later.
-      ESP_LOGW(LogTag, "failed to send keyboard HID report");
-    }
+  if (!tud_hid_keyboard_report(
+          UsbDevice::getKeyboardHidReportID(), modifiers, keycodes.data())) {
+    // tud_hid_keyboard_report() is asynchronous, and the send does not
+    // complete immediately.  We can fail here if a previous send is still in
+    // progress and we cannot claim the endpoint.
+    //
+    // Mark that we are out of sync and need to attempt to send another report
+    // soon.
+    ESP_LOGD(LogTag, "failed to send keyboard HID report");
+    need_to_send_report_ = true;
+  } else {
+    need_to_send_report_ = false;
   }
 }
 
