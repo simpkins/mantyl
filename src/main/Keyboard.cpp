@@ -51,6 +51,11 @@ void Keyboard::send_report() {
   if (tud_mounted()) {
     // TODO: use UsbDevice::kbd_report_id_
     if (!tud_hid_keyboard_report(1, modifiers, keycodes.data())) {
+      // TODO: tud_hid_keyboard_report() is asynchronous, and the send does not
+      // complete immediately.  We can fail here if a previous send is still in
+      // progress and we cannot claim the endpoint.
+      //
+      // In this case, we need to trigger the send attempt again later.
       ESP_LOGW(LogTag, "failed to send keyboard HID report");
     }
   }
