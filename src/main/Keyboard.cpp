@@ -162,18 +162,34 @@ void Keyboard::send_report() {
   uint8_t modifiers = 0;
   generate_report(keycodes, modifiers);
 
-  if (!tud_hid_keyboard_report(
-          UsbDevice::getKeyboardHidReportID(), modifiers, keycodes.data())) {
-    // tud_hid_keyboard_report() is asynchronous, and the send does not
-    // complete immediately.  We can fail here if a previous send is still in
-    // progress and we cannot claim the endpoint.
-    //
-    // Mark that we are out of sync and need to attempt to send another report
-    // soon.
-    ESP_LOGD(LogTag, "failed to send keyboard HID report");
-    need_to_send_report_ = true;
-  } else {
-    need_to_send_report_ = false;
+  // Note: this code is buggy and racy.  The TinyUSB APIs on FreeRTOS seem to
+  // have some designed-in concurrency problems.  The HID APIs do not
+  // perform locking, and are not safe to call anywhere other than the TinyUSB
+  // task.  Unfortunately, on FreeRTOS the tud_task() call blocks forever
+  // waiting for events, and never returns, making it difficult to do any
+  // user-defined work on this task.
+  //
+  // This code follows the behavior of the examples from TinyUSB and the
+  // ESP-IDF, but is racy and can crash.  In particular, the TinyUSB task can
+  // change the USB state between our call to tud_hid_ready() and the call to
+  // tud_hid_keyboard_report().  If we end up calling tud_hid_keyboard_report()
+  // when the device is not actually mounted, this will result in a crash.
+  //
+  // https://github.com/espressif/esp-idf/issues/9691
+  need_to_send_report_ = true;
+  if (tud_hid_ready()) {
+    if (tud_hid_keyboard_report(
+            UsbDevice::getKeyboardHidReportID(), modifiers, keycodes.data())) {
+      need_to_send_report_ = false;
+    } else {
+      // tud_hid_keyboard_report() is asynchronous, and the send does not
+      // complete immediately.  We can fail here if a previous send is still in
+      // progress and we cannot claim the endpoint.
+      //
+      // Mark that we are out of sync and need to attempt to send another report
+      // soon.
+      ESP_LOGD(LogTag, "failed to send keyboard HID report");
+    }
   }
 }
 
