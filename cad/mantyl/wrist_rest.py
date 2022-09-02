@@ -364,17 +364,17 @@ class WristRest:
             obj, self.in_bottom_bl.x - 1.5, self.in_bottom_bl.y - 1.5, 60, 0
         )
         add_foot(
-            obj, self.in_bottom_br.x + 1.0, self.in_bottom_br.y - 1.0, 135, 0
+            obj, self.in_bottom_br.x + 1.0, self.in_bottom_br.y - 1.0, 135, 2
         )
         add_foot(
-            obj, self.in_bottom_tr.x + 1.0, self.in_bottom_tr.y + 1.0, 225, 0
+            obj, self.in_bottom_tr.x + 1.0, self.in_bottom_tr.y + 1.0, 225, 3
         )
         add_foot(
             obj,
             self.thumb_in_bottom_tl.x - 1.5,
             self.thumb_in_bottom_tl.y + 2.0,
             -65,
-            0,
+            2.5,
         )
 
     def add_screw_holes(self, obj: bpy.types.Object) -> None:
