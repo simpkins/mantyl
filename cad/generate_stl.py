@@ -20,6 +20,7 @@ from mantyl import (
     oled_holder,
     screw_holes,
     sx1509_holder,
+    wrist_rest,
     usb_cutout,
 )
 
@@ -53,6 +54,8 @@ def main() -> None:
     export_stl("left_thumb_underlay", kbd_halves.left_thumb_underlay)
     export_stl("oled_backplate", oled_holder.oled_backplate_left)
     export_stl("usb_backplate", usb_cutout.backplate)
+    export_stl("right_wrist_rest", wrist_rest.right)
+    export_stl("left_wrist_rest", wrist_rest.left)
 
     sys.exit(0)
 

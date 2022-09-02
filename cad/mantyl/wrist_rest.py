@@ -392,18 +392,18 @@ class WristRest:
         add_screw_hole(x=x_spacing * 0.5, z=22)
 
 
-def right(kbd: Keyboard) -> bpy.types.Object:
+def right() -> bpy.types.Object:
+    kbd = Keyboard()
+    kbd.gen_mesh()
     return WristRest(kbd).gen()
 
 
-def left(kbd: Keyboard) -> bpy.types.Object:
-    obj = WristRest(kbd).gen()
+def left() -> bpy.types.Object:
+    obj = right()
     with blender_util.TransformContext(obj) as ctx:
         ctx.mirror_x()
     return obj
 
 
 def test() -> bpy.types.Object:
-    kbd = Keyboard()
-    kbd.gen_mesh()
-    return right(kbd)
+    return right()
