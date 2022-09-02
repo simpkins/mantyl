@@ -239,17 +239,26 @@ class Mesh:
         self.faces = [tuple(reversed(face)) for face in self.faces]
 
 
-def intersect_line_and_plane(
-    line: Tuple[Point, Point], plane: Tuple[Point, Point, Point]
-) -> Optional[Point]:
-    # Compute the plane's normal vector
+def _plane_normal(plane: Tuple[Point, Point, Point]) -> Point:
     da = plane[1] - plane[0]
     db = plane[2] - plane[0]
-    normal = Point(
+    return Point(
         da.y * db.z - da.z * db.y,
         da.z * db.x - da.x * db.z,
         da.x * db.y - da.y * db.x,
     )
+
+
+def plane_normal(plane: Tuple[Point, Point, Point]) -> Point:
+    """Compute the unit normal vector of a plane."""
+    return _plane_normal(plane).unit() * -1.0
+
+
+def intersect_line_and_plane(
+    line: Tuple[Point, Point], plane: Tuple[Point, Point, Point]
+) -> Optional[Point]:
+    # Compute the plane's normal vector
+    normal = _plane_normal(plane)
 
     line_vector = line[1] - line[0]
     dot = normal.dot(line_vector)
