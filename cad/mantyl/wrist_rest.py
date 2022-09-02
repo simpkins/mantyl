@@ -9,7 +9,9 @@ import bpy
 
 from . import cad
 from . import blender_util
+from .foot import add_foot
 from .keyboard import Keyboard
+from .screw_holes import gen_screw_hole
 
 
 class WristRest:
@@ -60,6 +62,9 @@ class WristRest:
             bpy.ops.mesh.remove_doubles()
             bpy.ops.mesh.select_all(action="DESELECT")
 
+        bpy.ops.object.mode_set(mode="OBJECT")
+        self.add_feet(obj)
+        self.add_screw_holes(obj)
         return obj
 
     def _get_bevel_weights(self, edges) -> Dict[int, float]:
@@ -342,12 +347,49 @@ class WristRest:
         self._bevel_edge(self.top_tr, self.bottom_tr, w_main)
         self._bevel_edge(self.top_tl, self.top_tr, w_main)
 
-        self._bevel_edge(self.in_top_tr, self.in_bottom_tr, w_inner)
-        self._bevel_edge(self.in_top_br, self.in_bottom_br, w_inner)
-        self._bevel_edge(self.in_top_bl, self.in_bottom_bl, w_inner)
+        # self._bevel_edge(self.in_top_tr, self.in_bottom_tr, w_inner)
+        # self._bevel_edge(self.in_top_br, self.in_bottom_br, w_inner)
+        # self._bevel_edge(self.in_top_bl, self.in_bottom_bl, w_inner)
         self._bevel_edge(self.in_top_bl, self.thumb_in_top_tl, w_inner)
         self._bevel_edge(self.thumb_in_bottom_l, self.thumb_in_top_l, w_inner)
-        self._bevel_edge(self.thumb_in_bottom_tl, self.thumb_in_top_tl, w_inner)
+        # self._bevel_edge(self.thumb_in_bottom_tl, self.thumb_in_top_tl, w_inner)
+
+        self._bevel_edge(self.corner_tl, self.corner_tr, 0.1)
+        self._bevel_edge(self.corner_tr, self.top_tl, 0.1)
+        self._bevel_edge(self.corner_tl, self.corner_bottom_tl, 0.25)
+        self._bevel_edge(self.corner_tr, self.corner_bottom_tr, 0.1)
+
+    def add_feet(self, obj: bpy.types.Object) -> None:
+        add_foot(
+            obj, self.in_bottom_bl.x - 1.5, self.in_bottom_bl.y - 1.5, 60, 0
+        )
+        add_foot(
+            obj, self.in_bottom_br.x + 1.0, self.in_bottom_br.y - 1.0, 135, 0
+        )
+        add_foot(
+            obj, self.in_bottom_tr.x + 1.0, self.in_bottom_tr.y + 1.0, 225, 0
+        )
+        add_foot(
+            obj,
+            self.thumb_in_bottom_tl.x - 1.5,
+            self.thumb_in_bottom_tl.y + 2.0,
+            -65,
+            0,
+        )
+
+    def add_screw_holes(self, obj: bpy.types.Object) -> None:
+        def add_screw_hole(x: float, z: float) -> None:
+            screw_hole = gen_screw_hole(self.wall_thickness)
+            blender_util.apply_to_wall(
+                screw_hole, self.kbd.fr.out2, self.kbd.fl.out2, x=x, z=z
+            )
+            blender_util.difference(obj, screw_hole)
+
+        x_spacing = 45
+        add_screw_hole(x=x_spacing * -0.5, z=8)
+        add_screw_hole(x=x_spacing * 0.5, z=8)
+        add_screw_hole(x=x_spacing * -0.5, z=22)
+        add_screw_hole(x=x_spacing * 0.5, z=22)
 
 
 def right(kbd: Keyboard) -> bpy.types.Object:
