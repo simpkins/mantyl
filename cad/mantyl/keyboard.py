@@ -10,8 +10,9 @@ from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import bpy
 
+from . import cad
 from .blender_util import blender_mesh, new_mesh_obj
-from .cad import Mesh, MeshPoint, Point, Transform, intersect_line_and_plane
+from .cad import Mesh, MeshPoint, Point, Transform
 
 
 class Keyboard:
@@ -1340,9 +1341,12 @@ class Keyboard:
         """Compute the z height of the underside of the thumb area,
         at the x, y coordinates from the input point.
         """
-        line = (Point(in2.x, in2.y, 0.0), Point(in2.x, in2.y, 1.0))
-        plane = (self.t00.l_tl.point, self.t00.l_tr.point, self.t00.l_br.point)
-        intersect = intersect_line_and_plane(line, plane)
+        plane = cad.Plane(
+            self.t00.l_tl.point, self.t00.l_tr.point, self.t00.l_br.point
+        )
+        intersect = plane.intersect_line(
+            Point(in2.x, in2.y, 0.0), Point(in2.x, in2.y, 1.0)
+        )
         if intersect is None:
             raise Exception("thumb grid is completely vertical")
         return Point(in2.x, in2.y, intersect.z)

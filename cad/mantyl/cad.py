@@ -152,6 +152,91 @@ class Point:
         return (self.x * p.x) + (self.y * p.y) + (self.z * p.z)
 
 
+class Plane:
+    __slots__ = ["p0", "p1", "p2"]
+
+    def __init__(self, p0: Point, p1: Point, p2: Point) -> None:
+        self.p0 = p0
+        self.p1 = p1
+        self.p2 = p2
+
+    def normal(self) -> Point:
+        """Compute the unit normal vector of the plane."""
+        try:
+            return self._normal_impl().unit() * -1.0
+        except ZeroDivisionError:
+            # All 3 points lie along the same line
+            raise ValueError("cannot compute the normal of a degenerate plane")
+
+    def _normal_impl(self) -> Point:
+        da = self.p1 - self.p0
+        db = self.p2 - self.p0
+        return Point(
+            da.y * db.z - da.z * db.y,
+            da.z * db.x - da.x * db.z,
+            da.x * db.y - da.y * db.x,
+        )
+
+    def intersect_line(self, line0: Point, line1: Point) -> Optional[Point]:
+        """Return the point where the line connecting line0 and line1 intersects
+        with this plane.
+
+        Returns None if the line is parallel to this plane, or if the plane is
+        degenerate (all 3 points in the plane are on the same line).
+        """
+        # Compute the plane's normal vector
+        normal = self._normal_impl()
+
+        line_vector = line1 - line0
+        dot = normal.dot(line_vector)
+        if dot == 0.0:
+            return None
+
+        w = line0 - self.p0
+        fraction = -normal.dot(w) / dot
+        return line0 + (line_vector * fraction)
+
+    def z_intersect(self, x: float, y: float) -> float:
+        """Given an X, Y position, return the Z coordinates of the plane at
+        this X, y position.
+
+        Throws an exception if the plane is vertical or degenerate.
+        """
+        intersect = self.intersect_line(Point(x, y, 0.0), Point(x, y, 1.0))
+        if intersect is None:
+            raise ValueError("cannot find Z intersect on a vertical plane")
+        return intersect.z
+
+    def shifted_along_normal(self, offset: float) -> Plane:
+        """Return a new plane that is parallel to this plane,
+        but shifted along the normal by the specified amount.
+        """
+        v = self.normal() * offset
+        return Plane(self.p0 + v, self.p1 + v, self.p2 + v)
+
+    def intersect_plane(self, plane: Plane) -> Optional[Tuple[Point, Point]]:
+        """Return the line created by the intersection of this plane with
+        another plane.
+
+        Returns None if the two planes are parallel.
+        """
+        p0 = self.intersect_line(plane.p0, plane.p1)
+        if p0 is None:
+            p0 = self.intersect_line(plane.p0, plane.p2)
+            if p0 is None:
+                return None
+            p1 = self.intersect_line(plane.p1, plane.p2)
+        else:
+            p1 = self.intersect_line(plane.p0, plane.p2)
+            if p1 is None:
+                p1 = self.intersect_line(plane.p1, plane.p2)
+
+        if p1 is None:
+            return None
+
+        return (p0, p1)
+
+
 class MeshPoint:
     __slots__ = ["mesh", "_index", "point"]
     mesh: Mesh
@@ -237,37 +322,6 @@ class Mesh:
         for mp in self.points:
             mp.point.x = -1.0 * mp.x
         self.faces = [tuple(reversed(face)) for face in self.faces]
-
-
-def _plane_normal(plane: Tuple[Point, Point, Point]) -> Point:
-    da = plane[1] - plane[0]
-    db = plane[2] - plane[0]
-    return Point(
-        da.y * db.z - da.z * db.y,
-        da.z * db.x - da.x * db.z,
-        da.x * db.y - da.y * db.x,
-    )
-
-
-def plane_normal(plane: Tuple[Point, Point, Point]) -> Point:
-    """Compute the unit normal vector of a plane."""
-    return _plane_normal(plane).unit() * -1.0
-
-
-def intersect_line_and_plane(
-    line: Tuple[Point, Point], plane: Tuple[Point, Point, Point]
-) -> Optional[Point]:
-    # Compute the plane's normal vector
-    normal = _plane_normal(plane)
-
-    line_vector = line[1] - line[0]
-    dot = normal.dot(line_vector)
-    if dot == 0.0:
-        return None
-
-    w = line[0] - plane[0]
-    fraction = -normal.dot(w) / dot
-    return line[0] + (line_vector * fraction)
 
 
 def cube(x: float, y: float, z: float) -> Mesh:
