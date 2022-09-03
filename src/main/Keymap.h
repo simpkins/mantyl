@@ -12,6 +12,25 @@ struct KeyInfo {
   uint8_t modifiers{};
 };
 
+constexpr uint8_t KeySpecial = 0x01;
+
+enum class SpecialAction : uint8_t {
+  UiLeft,
+  UiRight,
+  UiUp,
+  UiDown,
+  UiPress,
+  NextKeymap,
+  PrevKeymap,
+  SetKeymap1,
+  SetKeymap2,
+  SetKeymap3,
+  SetKeymap4,
+  SetKeymap5,
+  ToggleDisplay,
+  ToggleScreensaver,
+};
+
 class Keymap {
 public:
   static constexpr size_t kNumKeys = 96;

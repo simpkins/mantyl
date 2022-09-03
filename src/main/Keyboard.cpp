@@ -31,11 +31,11 @@ Keyboard::Keyboard(I2cMaster &i2c_left,
       left_{"left", i2c_left, 0x3e, GPIO_NUM_33, /*rows=*/7, /*cols=*/8},
       right_{"right", i2c_right, 0x3f, GPIO_NUM_11, /*rows=*/6, /*cols=*/8} {
   left_.set_callbacks(
-      [this](uint8_t row, uint8_t col) { on_left_press(row, col); },
-      [this](uint8_t row, uint8_t col) { on_left_release(row, col); });
+      [this](uint8_t row, uint8_t col) { on_key_press(true, row, col); },
+      [this](uint8_t row, uint8_t col) { on_key_release(true, row, col); });
   right_.set_callbacks(
-      [this](uint8_t row, uint8_t col) { on_right_press(row, col); },
-      [this](uint8_t row, uint8_t col) { on_right_release(row, col); });
+      [this](uint8_t row, uint8_t col) { on_key_press(false, row, col); },
+      [this](uint8_t row, uint8_t col) { on_key_release(false, row, col); });
 }
 
 esp_err_t Keyboard::early_init() {
@@ -82,7 +82,7 @@ Keyboard::tick(std::chrono::steady_clock::time_point now) {
   if (need_to_send_report_) {
     // If we still needed to send a report to indicate the state from a
     // previous tick, attempt to do so now.
-    send_report();
+    send_hid_report();
   }
 
   const auto left_timeout = left_.tick(now);
@@ -111,7 +111,10 @@ void Keyboard::generate_report(std::array<uint8_t, 6> &keycodes,
         const auto is_pressed = (row_bits >> col) & 0x1;
         if (is_pressed) {
           const auto info = keymap_->get_key(is_left, row, col);
-          if (info.key != HID_KEY_NONE && keycode_idx < keycodes.size()) {
+          if (info.key == HID_KEY_NONE || info.key == KeySpecial) {
+            continue;
+          }
+          if (keycode_idx < keycodes.size()) {
             keycodes[keycode_idx] = info.key;
           }
           ++keycode_idx;
@@ -130,34 +133,36 @@ void Keyboard::generate_report(std::array<uint8_t, 6> &keycodes,
   }
 }
 
-void Keyboard::on_left_press(uint8_t row, uint8_t col) {
-  // Row 6 contains the directional switch controlling the UI
+void Keyboard::on_key_press(bool is_left, uint8_t row, uint8_t col) {
+  on_key_change(is_left, row, col, true);
+}
+
+void Keyboard::on_key_release(bool is_left, uint8_t row, uint8_t col) {
+  on_key_change(is_left, row, col, false);
+}
+
+void Keyboard::on_key_change(bool is_left, uint8_t row, uint8_t col, bool press) {
+  // Row 6 on the left keypad contains the directional
+  // switch controlling the UI
   if (row == 6) {
-    App::get()->on_ui_key_press(col);
+    const auto action = static_cast<SpecialAction>(
+        static_cast<uint8_t>(SpecialAction::UiLeft) + col);
+    App::get()->on_special_action(action, press);
     return;
   }
 
-  send_report();
-}
-
-void Keyboard::on_left_release(uint8_t row, uint8_t col) {
-  if (row == 6) {
-    App::get()->on_ui_key_release(col);
+  const auto info = keymap_->get_key(is_left, row, col);
+  if (info.key == KeySpecial) {
+    const auto action = static_cast<SpecialAction>(info.modifiers);
+    App::get()->on_special_action(action, press);
     return;
   }
 
-  send_report();
+  // A normal key press or release
+  send_hid_report();
 }
 
-void Keyboard::on_right_press(uint8_t row, uint8_t col) {
-  send_report();
-}
-
-void Keyboard::on_right_release(uint8_t row, uint8_t col) {
-  send_report();
-}
-
-void Keyboard::send_report() {
+void Keyboard::send_hid_report() {
   std::array<uint8_t, 6> keycodes = {};
   uint8_t modifiers = 0;
   generate_report(keycodes, modifiers);

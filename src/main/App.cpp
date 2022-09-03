@@ -72,12 +72,12 @@ esp_err_t App::init() {
   return ESP_OK;
 }
 
-void App::on_ui_key_press(uint8_t key) {
-  ESP_LOGI(LogTag, "UI key press: %d", key);
-}
-
-void App::on_ui_key_release(uint8_t key) {
-  ESP_LOGI(LogTag, "UI key release: %d", key);
+void App::on_special_action(SpecialAction action, bool press) {
+  if (press) {
+    ESP_LOGI(LogTag, "UI key press: %d", static_cast<int>(action));
+  } else {
+    ESP_LOGI(LogTag, "UI key release: %d", static_cast<int>(action));
+  }
 }
 
 std::chrono::steady_clock::time_point

@@ -49,12 +49,11 @@ private:
   Keyboard(Keyboard const &) = delete;
   Keyboard &operator=(Keyboard const &) = delete;
 
-  void send_report();
+  void send_hid_report();
 
-  void on_left_press(uint8_t row, uint8_t col);
-  void on_left_release(uint8_t row, uint8_t col);
-  void on_right_press(uint8_t row, uint8_t col);
-  void on_right_release(uint8_t row, uint8_t col);
+  void on_key_press(bool is_left, uint8_t row, uint8_t col);
+  void on_key_release(bool is_left, uint8_t row, uint8_t col);
+  void on_key_change(bool is_left, uint8_t row, uint8_t col, bool press);
 
   const Keymap* keymap_{nullptr};
   Keypad left_;
