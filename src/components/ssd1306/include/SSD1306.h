@@ -60,7 +60,7 @@ public:
    *
    * Returns the offset where the text finished.
    */
-  WriteResult write_text(std::string_view str, OffsetRange range);
+  WriteResult write_text(std::string_view str, OffsetRange range, bool pad = false);
 
   /**
    * Write a string of text, centered in the specified range.

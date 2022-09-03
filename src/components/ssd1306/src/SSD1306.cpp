@@ -135,7 +135,7 @@ esp_err_t SSD1306::flush() {
   return ESP_OK;
 }
 
-SSD1306::WriteResult SSD1306::write_text(std::string_view str, OffsetRange range) {
+SSD1306::WriteResult SSD1306::write_text(std::string_view str, OffsetRange range, bool pad) {
   auto px_offset = range.first;
   bool first = true;
   size_t char_idx = 0;
@@ -156,6 +156,11 @@ SSD1306::WriteResult SSD1306::write_text(std::string_view str, OffsetRange range
     }
     memcpy(buffer_.get() + px_offset, glyph.data, glyph.width);
     px_offset += glyph.width;
+  }
+
+  if (pad && px_offset < range.second) {
+    const auto pad_len = range.second - px_offset;
+    memset(buffer_.get() + px_offset, 0, pad_len);
   }
 
   return WriteResult{px_offset, char_idx};
