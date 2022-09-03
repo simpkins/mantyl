@@ -36,13 +36,7 @@ void App::on_gpio_interrupt(NotifyBits bits) {
 }
 
 void App::notify_new_log_message() {
-  if (task_handle_) {
-    xTaskNotify(task_handle_, NotifyBits::LogMessage, eSetBits);
-  } else {
-    // TODO: delete this eventually once done debugging the initialization
-    // code.  This isn't really safe.
-    ui_.display_log_messages();
-  }
+  xTaskNotify(task_handle_, NotifyBits::LogMessage, eSetBits);
 }
 
 esp_err_t App::init() {
@@ -73,11 +67,32 @@ esp_err_t App::init() {
 }
 
 void App::on_special_action(SpecialAction action, bool press) {
-  if (press) {
-    ESP_LOGI(LogTag, "UI key press: %d", static_cast<int>(action));
-  } else {
+  if (!press) {
+    // For now we ignore key release events
     ESP_LOGI(LogTag, "UI key release: %d", static_cast<int>(action));
+    return;
   }
+
+  ESP_LOGI(LogTag, "UI key press: %d", static_cast<int>(action));
+  switch (action) {
+  case SpecialAction::UiLeft:
+    ui_.button_left();
+    break;
+  case SpecialAction::UiRight:
+    ui_.button_right();
+    break;
+  case SpecialAction::UiUp:
+    ui_.button_up();
+    break;
+  case SpecialAction::UiDown:
+    ui_.button_down();
+    break;
+  case SpecialAction::UiPress:
+    ui_.button_press();
+    break;
+  }
+
+  ESP_LOGW(LogTag, "unknown action code: %d", static_cast<int>(action));
 }
 
 std::chrono::steady_clock::time_point

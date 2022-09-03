@@ -20,15 +20,6 @@ enum class SpecialAction : uint8_t {
   UiUp,
   UiDown,
   UiPress,
-  NextKeymap,
-  PrevKeymap,
-  SetKeymap1,
-  SetKeymap2,
-  SetKeymap3,
-  SetKeymap4,
-  SetKeymap5,
-  ToggleDisplay,
-  ToggleScreensaver,
 };
 
 class Keymap {

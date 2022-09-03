@@ -107,6 +107,29 @@ esp_err_t UI::init() {
   return ESP_OK;
 }
 
+void UI::button_left() {
+  // TODO
+}
+
+void UI::button_right() {
+  // TODO
+}
+
+void UI::button_up() {
+  // TODO
+}
+
+void UI::button_down() {
+  // TODO
+}
+
+void UI::button_press() {
+  // It is difficult to press the directional switch directly in without also
+  // accidentally pressing other directions.  Therefore we do not use the
+  // center press in the UI.  All "confirm" actions are done with a right press
+  // instead.
+}
+
 void UI::start_fade_timer() {
   fade_start_ = std::chrono::steady_clock::now();
   const uint8_t init_contrast = 0xff;
@@ -168,6 +191,8 @@ void UI::display_log_messages() {
   display_->clear();
   start_fade_timer();
 
+  // TODO: just print the last message.  As-is this code writes multiple
+  // messages but doesn't clear previous ones properly.
   for (const auto& msg : messages) {
     std::string_view str(msg.data(), msg.size());
     for (const auto& line_range :

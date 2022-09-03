@@ -34,6 +34,12 @@ public:
 
   void display_log_messages();
 
+  void button_left();
+  void button_right();
+  void button_up();
+  void button_down();
+  void button_press();
+
 private:
   UI(UI const &) = delete;
   UI &operator=(UI const &) = delete;
