@@ -117,7 +117,13 @@ const uint8_t font_data_tilde[] = {0x08, 0x04, 0x08, 0x10, 0x08};
 
 const uint8_t font_data_unknown[] = {0x7f, 0x41, 0x41, 0x41, 0x7f};
 
-template<size_t N>
+const uint8_t font_data_right_pointing_pointer[] = {0x7f, 0x3e, 0x1c, 0x08};
+const uint8_t font_data_left_pointing_pointer[] = {0x08, 0x1c, 0x3e, 0x7f};
+const uint8_t font_data_up_pointing_triangle[] = {0x30, 0x3c, 0x3f, 0x3c, 0x30};
+const uint8_t font_data_down_pointing_triangle[] = {
+    0x03, 0x0f, 0x3f, 0x0f, 0x03};
+
+template <size_t N>
 constexpr mantyl::Glyph make_glyph(const uint8_t (&data)[N]) {
   return mantyl::Glyph{N, data};
 }
@@ -143,8 +149,8 @@ constexpr Font make_font() {
     font['\x0d'] = unknown_glyph;
     font['\x0e'] = unknown_glyph;
     font['\x0f'] = unknown_glyph;
-    font['\x10'] = unknown_glyph;
-    font['\x11'] = unknown_glyph;
+    font['\x10'] = make_glyph(font_data_right_pointing_pointer);
+    font['\x11'] = make_glyph(font_data_left_pointing_pointer);
     font['\x12'] = unknown_glyph;
     font['\x13'] = unknown_glyph;
     font['\x14'] = unknown_glyph;
@@ -157,8 +163,8 @@ constexpr Font make_font() {
     font['\x1b'] = unknown_glyph;
     font['\x1c'] = unknown_glyph;
     font['\x1d'] = unknown_glyph;
-    font['\x1e'] = unknown_glyph;
-    font['\x1f'] = unknown_glyph;
+    font['\x1e'] = make_glyph(font_data_up_pointing_triangle);
+    font['\x1f'] = make_glyph(font_data_down_pointing_triangle);
 
     font[' '] = make_glyph(font_data_space);
     font['!'] = make_glyph(font_data_bang);

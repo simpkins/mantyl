@@ -29,9 +29,12 @@ struct Glyph {
 };
 
 /*
-* A variable-width 8-pixel high font.
-* Characters are no wider than 6 pixels.
-*/
+ * A variable-width 8-pixel high font.
+ * Characters are no wider than 6 pixels.
+ *
+ * This provides ASCII characters, plus some symbols and line drawing
+ * characters from Code Page 437.
+ */
 class Font6x8 {
 public:
   static const Glyph& lookupGlyph(char c);
