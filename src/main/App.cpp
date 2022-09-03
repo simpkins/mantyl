@@ -69,27 +69,27 @@ esp_err_t App::init() {
 void App::on_special_action(SpecialAction action, bool press) {
   if (!press) {
     // For now we ignore key release events
-    ESP_LOGI(LogTag, "UI key release: %d", static_cast<int>(action));
+    ESP_LOGD(LogTag, "UI key release: %d", static_cast<int>(action));
     return;
   }
 
-  ESP_LOGI(LogTag, "UI key press: %d", static_cast<int>(action));
+  ESP_LOGD(LogTag, "UI key press: %d", static_cast<int>(action));
   switch (action) {
   case SpecialAction::UiLeft:
     ui_.button_left();
-    break;
+    return;
   case SpecialAction::UiRight:
     ui_.button_right();
-    break;
+    return;
   case SpecialAction::UiUp:
     ui_.button_up();
-    break;
+    return;
   case SpecialAction::UiDown:
     ui_.button_down();
-    break;
+    return;
   case SpecialAction::UiPress:
     ui_.button_press();
-    break;
+    return;
   }
 
   ESP_LOGW(LogTag, "unknown action code: %d", static_cast<int>(action));

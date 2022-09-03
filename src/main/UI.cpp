@@ -113,6 +113,41 @@ void UI::button_left() {
 
 void UI::button_right() {
   // TODO
+
+  static constexpr SSD1306::OffsetRange LeftLine0{0, 8};
+  static constexpr SSD1306::OffsetRange LeftLine1{128, 136};
+  static constexpr SSD1306::OffsetRange LeftLine2{256, 264};
+  static constexpr SSD1306::OffsetRange LeftLine3{384, 392};
+
+  static constexpr SSD1306::OffsetRange MenuLine0{8, 122};
+  static constexpr SSD1306::OffsetRange MenuLine1{136, 250};
+  static constexpr SSD1306::OffsetRange MenuLine2{264, 378};
+  static constexpr SSD1306::OffsetRange MenuLine3{392, 506};
+
+  static constexpr SSD1306::OffsetRange RightLine0{122, 128};
+  static constexpr SSD1306::OffsetRange RightLine1{250, 256};
+  static constexpr SSD1306::OffsetRange RightLine2{378, 384};
+  static constexpr SSD1306::OffsetRange RightLine3{506, 512};
+
+  auto result = display_->write_text("\x10", LeftLine0, true);
+  result = display_->write_text("", LeftLine1, true);
+  result = display_->write_text("", LeftLine2, true);
+  result = display_->write_text("", LeftLine3, true);
+
+  result = display_->write_text("Select Keymap", MenuLine0, true);
+  result = display_->write_text("Edit Keymaps", MenuLine1, true);
+  result = display_->write_text("Settings", MenuLine2, true);
+  result = display_->write_text("Info", MenuLine3, true);
+
+  result = display_->write_text("", RightLine0, true);
+  result = display_->write_text("", RightLine1, true);
+  result = display_->write_text("", RightLine2, true);
+  result = display_->write_text("\x1f", RightLine3, true);
+
+  start_fade_timer();
+  auto rc = display_->flush();
+  rc = display_->display_on();
+  static_cast<void>(rc);
 }
 
 void UI::button_up() {
@@ -193,11 +228,12 @@ void UI::display_log_messages() {
 
   // TODO: just print the last message.  As-is this code writes multiple
   // messages but doesn't clear previous ones properly.
-  for (const auto& msg : messages) {
+  if (!messages.empty()) {
+    const auto &msg = messages.back();
     std::string_view str(msg.data(), msg.size());
     for (const auto& line_range :
          {SSD1306::Line0, SSD1306::Line1, SSD1306::Line2, SSD1306::Line3}) {
-      auto result = display_->write_text(str, line_range);
+      auto result = display_->write_text(str, line_range, /*pad=*/true);
       str = str.substr(result.char_end);
       if (str.empty()) {
         break;

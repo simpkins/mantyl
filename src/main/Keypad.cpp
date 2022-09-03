@@ -175,13 +175,13 @@ void Keypad::update_row(uint8_t row, uint8_t cols) {
     if (old_pressed != new_pressed) {
       if (new_pressed) {
         ++num_pressed_;
-        ESP_LOGI(LogTag, "%s press: %d, %d", name_.c_str(), row, col);
+        ESP_LOGD(LogTag, "%s press: %d, %d", name_.c_str(), row, col);
         if (press_callback_) {
           press_callback_(row, col);
         }
       } else {
         --num_pressed_;
-        ESP_LOGI(LogTag, "%s release: %d, %d", name_.c_str(), row, col);
+        ESP_LOGD(LogTag, "%s release: %d, %d", name_.c_str(), row, col);
         if (release_callback_) {
           release_callback_(row, col);
         }
