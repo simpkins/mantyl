@@ -83,8 +83,8 @@ UsbDevice::UsbDevice()
                    .bDeviceSubClass = 1, // Boot
                    .bDeviceProtocol = 1, // Keyboard
                    .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
-                   .idVendor = 0x303A, // Espressif's Vendor ID
-                   .idProduct = 0x9990,
+                   .idVendor = 0x6666, // Prototype product vendor ID
+                   .idProduct = 0x1234,
                    .bcdDevice = 0x0001, // Device FW version
                    // String descriptor indices
                    .iManufacturer = add_string_literal("Adam Simpkins"),
@@ -235,7 +235,7 @@ void UsbDevice::init_config_desc(bool debug) {
     // USB Hosts will generally cache the descriptors for a given
     // (vendor ID + product ID), so if we want to use a different product ID
     // when for the alternate descriptor contents.
-    device_desc_.idProduct = 0x9991;
+    device_desc_.idProduct = 0x9999;
     device_desc_.bDeviceClass = TUSB_CLASS_MISC;
     device_desc_.bDeviceSubClass = MISC_SUBCLASS_COMMON;
     device_desc_.bDeviceProtocol = MISC_PROTOCOL_IAD;
