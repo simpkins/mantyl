@@ -18,6 +18,7 @@ private:
   KeymapDB &operator=(KeymapDB const &) = delete;
 
   Keymap builtin_;
+  Keymap wasd_;
 };
 
 } // namespace mantyl

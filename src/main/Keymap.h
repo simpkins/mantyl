@@ -20,6 +20,13 @@ enum class SpecialAction : uint8_t {
   UiUp,
   UiDown,
   UiPress,
+  KeymapNext,
+  KeymapPrev,
+  Keymap1,
+  Keymap2,
+  Keymap3,
+  Keymap4,
+  Keymap5,
 };
 
 class Keymap {

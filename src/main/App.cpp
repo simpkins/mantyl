@@ -90,6 +90,15 @@ void App::on_special_action(SpecialAction action, bool press) {
   case SpecialAction::UiPress:
     ui_.button_press();
     return;
+  case SpecialAction::KeymapNext:
+  case SpecialAction::KeymapPrev:
+  case SpecialAction::Keymap1:
+  case SpecialAction::Keymap2:
+  case SpecialAction::Keymap3:
+  case SpecialAction::Keymap4:
+  case SpecialAction::Keymap5:
+    // TODO
+    return;
   }
 
   ESP_LOGW(LogTag, "unknown action code: %d", static_cast<int>(action));
