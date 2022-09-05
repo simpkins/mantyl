@@ -237,15 +237,18 @@ class I2cCutout:
         return main
 
 
-class CableCover:
+class CableCap:
     h = 4.50
     w = 20.5
 
     face_y = 0.0
-    flange_d = 2.25
+    flange_d = 2.15
+    flange_thickness = 1.0
 
     # The depth of the back wall of the inner cavity.
     cavity_d = 7.00
+    flange_back_d = flange_d + flange_thickness
+    conn_back_d = 4.0
     bulge_d = 4.0
     back_d = 8.5
 
@@ -253,19 +256,25 @@ class CableCover:
     def gen(cls) -> bpy.types.Object:
         main = cls.gen_main_mesh()
 
-        strain_relief = blender_util.cylinder(r=2.5, h=5, r2=3)
+        cable_d = 5.4
+
+        strain_relief = blender_util.cylinder(r=2.3, h=5, r2=3)
         with blender_util.TransformContext(strain_relief) as ctx:
             ctx.rotate(90, "Y")
-            ctx.translate((cls.w * 0.5) + 2.8, 5, 0)
+            ctx.translate((cls.w * 0.5) + 2.8, cable_d, 0)
 
-        cable_hole = blender_util.cylinder(r=2, h=8)
+        cable_hole = blender_util.cylinder(r=1.8, h=10)
         with blender_util.TransformContext(cable_hole) as ctx:
             ctx.rotate(90, "Y")
-            ctx.translate((cls.w * 0.5) + 3, 5, 0)
+            ctx.translate((cls.w * 0.5) + 3, cable_d, 0)
 
         blender_util.union(main, strain_relief)
         blender_util.difference(main, cable_hole)
 
+        if False:
+            with blender_util.TransformContext(main) as ctx:
+                ctx.translate(0, -cls.back_d, 0)
+                ctx.rotate(-90, "X")
         return main
 
     @classmethod
@@ -278,6 +287,7 @@ class CableCover:
         half_h = cls.h * 0.5
         half_w = cls.w * 0.5
 
+        flange_r = core_r
         cavity_r = core_r + 0.25
 
         bulge_r = core_r + 2.0
@@ -301,6 +311,11 @@ class CableCover:
 
         right_back_orig = mesh.add_xyz(half_w - half_h, cls.back_d, 0.0)
         left_back_orig = mesh.add_xyz(-(half_w - half_h), cls.back_d, 0.0)
+
+        right_flange_back_points: List[MeshPoint] = []
+        right_conn_back_points: List[MeshPoint] = []
+        left_flange_back_points: List[MeshPoint] = []
+        left_conn_back_points: List[MeshPoint] = []
 
         fn = 16
         for n in range(fn + 1):
@@ -349,24 +364,87 @@ class CableCover:
                 mesh.add_xyz(left_orig.x - back_x, cls.back_d, back_z)
             )
 
+            right_flange_back_points.append(
+                mesh.add_xyz(right_orig.x + x, cls.flange_back_d, z)
+            )
+            right_conn_back_points.append(
+                mesh.add_xyz(right_orig.x + x, cls.conn_back_d, z)
+            )
+            left_flange_back_points.append(
+                mesh.add_xyz(left_orig.x - x, cls.flange_back_d, z)
+            )
+            left_conn_back_points.append(
+                mesh.add_xyz(left_orig.x - x, cls.conn_back_d, z)
+            )
+
         flange_tr = mesh.add_xyz(
-            right_orig.x + cavity_r, cls.flange_d, right_orig.z + cavity_r
+            right_orig.x + flange_r, cls.flange_d, right_orig.z + flange_r
         )
         flange_br = mesh.add_xyz(
-            right_orig.x + cavity_r, cls.flange_d, right_orig.z - cavity_r
+            right_orig.x + flange_r, cls.flange_d, right_orig.z - flange_r
         )
-        cavity_tr = mesh.add_xyz(
-            right_orig.x + cavity_r, cls.cavity_d, right_orig.z + cavity_r
+        flange_back_tr = mesh.add_xyz(
+            right_orig.x + flange_r, cls.flange_back_d, right_orig.z + flange_r
         )
-        cavity_br = mesh.add_xyz(
-            right_orig.x + cavity_r, cls.cavity_d, right_orig.z - cavity_r
+        flange_back_br = mesh.add_xyz(
+            right_orig.x + flange_r, cls.flange_back_d, right_orig.z - flange_r
         )
 
         flange_tl = mesh.add_xyz(
-            left_orig.x - cavity_r, cls.flange_d, left_orig.z + cavity_r
+            left_orig.x - flange_r, cls.flange_d, left_orig.z + flange_r
         )
         flange_bl = mesh.add_xyz(
-            left_orig.x - cavity_r, cls.flange_d, left_orig.z - cavity_r
+            left_orig.x - flange_r, cls.flange_d, left_orig.z - flange_r
+        )
+        flange_back_tl = mesh.add_xyz(
+            left_orig.x - flange_r, cls.flange_back_d, left_orig.z + flange_r
+        )
+        flange_back_bl = mesh.add_xyz(
+            left_orig.x - flange_r, cls.flange_back_d, left_orig.z - flange_r
+        )
+
+        mesh.add_quad(
+            flange_tr,
+            right_inner_points[len(right_inner_points) // 2],
+            right_flange_back_points[len(right_flange_back_points) // 2],
+            flange_back_tr,
+        )
+        mesh.add_quad(
+            right_flange_back_points[len(right_flange_back_points) // 2],
+            right_inner_points[len(right_inner_points) // 2],
+            flange_br,
+            flange_back_br,
+        )
+        mesh.add_quad(
+            flange_tl,
+            flange_back_tl,
+            left_flange_back_points[len(left_flange_back_points) // 2],
+            left_inner_points[len(left_inner_points) // 2],
+        )
+        mesh.add_quad(
+            left_inner_points[len(left_inner_points) // 2],
+            left_flange_back_points[len(left_flange_back_points) // 2],
+            flange_back_bl,
+            flange_bl,
+        )
+
+        conn_back_tr = mesh.add_xyz(
+            right_orig.x + cavity_r, cls.conn_back_d, left_orig.z + cavity_r
+        )
+        conn_back_br = mesh.add_xyz(
+            right_orig.x + cavity_r, cls.conn_back_d, left_orig.z - cavity_r
+        )
+        conn_back_tl = mesh.add_xyz(
+            left_orig.x - cavity_r, cls.conn_back_d, left_orig.z + cavity_r
+        )
+        conn_back_bl = mesh.add_xyz(
+            left_orig.x - cavity_r, cls.conn_back_d, left_orig.z - cavity_r
+        )
+        cavity_tr = mesh.add_xyz(
+            right_orig.x + cavity_r, cls.cavity_d, left_orig.z + cavity_r
+        )
+        cavity_br = mesh.add_xyz(
+            right_orig.x + cavity_r, cls.cavity_d, left_orig.z - cavity_r
         )
         cavity_tl = mesh.add_xyz(
             left_orig.x - cavity_r, cls.cavity_d, left_orig.z + cavity_r
@@ -374,8 +452,6 @@ class CableCover:
         cavity_bl = mesh.add_xyz(
             left_orig.x - cavity_r, cls.cavity_d, left_orig.z - cavity_r
         )
-        mesh.add_quad(flange_tr, flange_br, cavity_br, cavity_tr)
-        mesh.add_quad(flange_bl, flange_tl, cavity_tl, cavity_bl)
 
         for idx in range(1, len(right_face_points)):
             mesh.add_quad(
@@ -401,6 +477,19 @@ class CableCover:
                 left_face_points[idx - 1],
                 left_inner_points[idx - 1],
                 left_inner_points[idx],
+            )
+
+            mesh.add_quad(
+                right_conn_back_points[idx],
+                right_conn_back_points[idx - 1],
+                right_flange_back_points[idx - 1],
+                right_flange_back_points[idx],
+            )
+            mesh.add_quad(
+                left_conn_back_points[idx - 1],
+                left_conn_back_points[idx],
+                left_flange_back_points[idx],
+                left_flange_back_points[idx - 1],
             )
 
             mesh.add_quad(
@@ -439,6 +528,28 @@ class CableCover:
                     flange_tl,
                     left_inner_points[idx],
                 )
+
+                mesh.add_tri(
+                    right_flange_back_points[idx],
+                    right_flange_back_points[idx - 1],
+                    flange_back_tr,
+                )
+                mesh.add_tri(
+                    right_conn_back_points[idx - 1],
+                    right_conn_back_points[idx],
+                    conn_back_tr,
+                )
+
+                mesh.add_tri(
+                    left_flange_back_points[idx - 1],
+                    left_flange_back_points[idx],
+                    flange_back_tl,
+                )
+                mesh.add_tri(
+                    left_conn_back_points[idx],
+                    left_conn_back_points[idx - 1],
+                    conn_back_tl,
+                )
             else:
                 mesh.add_tri(
                     right_inner_points[idx],
@@ -449,6 +560,28 @@ class CableCover:
                     left_inner_points[idx - 1],
                     flange_bl,
                     left_inner_points[idx],
+                )
+
+                mesh.add_tri(
+                    right_flange_back_points[idx],
+                    right_flange_back_points[idx - 1],
+                    flange_back_br,
+                )
+                mesh.add_tri(
+                    right_conn_back_points[idx - 1],
+                    right_conn_back_points[idx],
+                    conn_back_br,
+                )
+
+                mesh.add_tri(
+                    left_flange_back_points[idx - 1],
+                    left_flange_back_points[idx],
+                    flange_back_bl,
+                )
+                mesh.add_tri(
+                    left_conn_back_points[idx],
+                    left_conn_back_points[idx - 1],
+                    conn_back_bl,
                 )
 
             if not hide_back:
@@ -465,30 +598,83 @@ class CableCover:
 
         if cavity_r > core_r:
             mesh.add_tri(
-                flange_tl,
-                flange_bl,
-                left_inner_points[len(right_face_points) // 2],
+                conn_back_tl,
+                conn_back_bl,
+                left_conn_back_points[len(right_face_points) // 2],
             )
             mesh.add_tri(
-                flange_tr,
-                right_inner_points[len(right_face_points) // 2],
-                flange_br,
+                conn_back_tr,
+                right_conn_back_points[len(right_face_points) // 2],
+                conn_back_br,
             )
             mesh.add_quad(
-                flange_tr,
-                flange_tl,
-                left_inner_points[0],
-                right_inner_points[0],
+                conn_back_tr,
+                conn_back_tl,
+                left_conn_back_points[0],
+                right_conn_back_points[0],
             )
             mesh.add_quad(
-                right_inner_points[-1],
-                left_inner_points[-1],
-                flange_bl,
-                flange_br,
+                right_conn_back_points[-1],
+                left_conn_back_points[-1],
+                conn_back_bl,
+                conn_back_br,
             )
 
-        mesh.add_quad(cavity_tr, cavity_tl, flange_tl, flange_tr)
-        mesh.add_quad(flange_br, flange_bl, cavity_bl, cavity_br)
+        mesh.add_quad(
+            flange_back_tr,
+            right_flange_back_points[0],
+            right_inner_points[0],
+            flange_tr,
+        )
+        mesh.add_quad(
+            right_flange_back_points[0],
+            left_flange_back_points[0],
+            left_inner_points[0],
+            right_inner_points[0],
+        )
+        mesh.add_quad(
+            left_flange_back_points[0],
+            flange_back_tl,
+            flange_tl,
+            left_inner_points[0],
+        )
+        mesh.add_quad(
+            flange_br,
+            right_inner_points[-1],
+            right_flange_back_points[-1],
+            flange_back_br,
+        )
+        mesh.add_quad(
+            right_inner_points[-1],
+            left_inner_points[-1],
+            left_flange_back_points[-1],
+            right_flange_back_points[-1],
+        )
+        mesh.add_quad(
+            left_inner_points[-1],
+            flange_bl,
+            flange_back_bl,
+            left_flange_back_points[-1],
+        )
+
+        mesh.add_quad(
+            right_conn_back_points[0],
+            left_conn_back_points[0],
+            left_flange_back_points[0],
+            right_flange_back_points[0],
+        )
+        mesh.add_quad(
+            right_flange_back_points[-1],
+            left_flange_back_points[-1],
+            left_conn_back_points[-1],
+            right_conn_back_points[-1],
+        )
+
+        mesh.add_quad(cavity_tr, cavity_tl, conn_back_tl, conn_back_tr)
+        mesh.add_quad(cavity_br, cavity_tr, conn_back_tr, conn_back_br)
+        mesh.add_quad(conn_back_bl, conn_back_tl, cavity_tl, cavity_bl)
+        mesh.add_quad(conn_back_br, conn_back_bl, cavity_bl, cavity_br)
+
         if not hide_back:
             mesh.add_quad(cavity_tl, cavity_tr, cavity_br, cavity_bl)
             mesh.add_quad(
@@ -579,13 +765,14 @@ def test() -> bpy.types.Object:
     return wall
 
 
-def cable_cover_test() -> bpy.types.Object:
-    return CableCover.gen()
+def cable_cap_test() -> bpy.types.Object:
+    return CableCap.gen()
 
-    wall = blender_util.range_cube((-11, 11), (0, 4), (0, 10))
-    i2c_cutout = I2cCutout.gen()
-    blender_util.apply_to_wall(
-        i2c_cutout, cad.Point(-10, 0, 0), cad.Point(10, 0, 0), x=0.0, z=5.0
-    )
-    blender_util.difference(wall, i2c_cutout)
-    return wall
+
+def cable_cap() -> bpy.types.Object:
+    cap = CableCap.gen()
+    with blender_util.TransformContext(cap) as ctx:
+        ctx.translate(0, -CableCap.back_d, 0)
+        ctx.rotate(-90, "X")
+
+    return cap

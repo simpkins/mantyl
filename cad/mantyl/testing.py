@@ -30,7 +30,7 @@ def test() -> None:
     # sx1509_holder.test_screw_holder()
     # oled_holder.test()
     # usb_cutout.test()
-    i2c_conn.cable_cover_test()
+    i2c_conn.cable_cap_test()
 
     bpy.ops.object.mode_set(mode="EDIT")
     # blender_util.set_shading_mode("WIREFRAME")

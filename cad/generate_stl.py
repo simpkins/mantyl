@@ -16,6 +16,7 @@ sys.path.insert(0, base_dir)
 
 from mantyl import (
     blender_util,
+    i2c_conn,
     kbd_halves,
     oled_holder,
     screw_holes,
@@ -56,6 +57,7 @@ def main() -> None:
     export_stl("usb_backplate", usb_cutout.backplate)
     export_stl("right_wrist_rest", wrist_rest.right)
     export_stl("left_wrist_rest", wrist_rest.left)
+    export_stl("cable_cap", i2c_conn.cable_cap)
 
     sys.exit(0)
 
