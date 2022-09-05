@@ -91,13 +91,25 @@ void App::on_special_action(SpecialAction action, bool press) {
     ui_.button_press();
     return;
   case SpecialAction::KeymapNext:
+    keymap_db_.next_keymap();
+    return;
   case SpecialAction::KeymapPrev:
+    keymap_db_.prev_keymap();
+    return;
+  case SpecialAction::Keymap0:
+    keymap_db_.set_keymap(0);
+    return;
   case SpecialAction::Keymap1:
+    keymap_db_.set_keymap(1);
+    return;
   case SpecialAction::Keymap2:
+    keymap_db_.set_keymap(2);
+    return;
   case SpecialAction::Keymap3:
+    keymap_db_.set_keymap(3);
+    return;
   case SpecialAction::Keymap4:
-  case SpecialAction::Keymap5:
-    // TODO
+    keymap_db_.set_keymap(4);
     return;
   }
 

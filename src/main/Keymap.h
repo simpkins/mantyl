@@ -22,11 +22,11 @@ enum class SpecialAction : uint8_t {
   UiPress,
   KeymapNext,
   KeymapPrev,
+  Keymap0,
   Keymap1,
   Keymap2,
   Keymap3,
   Keymap4,
-  Keymap5,
 };
 
 class Keymap {
@@ -42,6 +42,10 @@ public:
     }
     size_t idx = (left ? 0 : 48) + (row * 8) + col;
     return keys_[idx];
+  }
+
+  const std::string& name() const {
+    return name_;
   }
 
 private:

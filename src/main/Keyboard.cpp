@@ -3,6 +3,7 @@
 
 #include "App.h"
 #include "Keypad.h"
+#include "KeymapDB.h"
 #include "UsbDevice.h"
 
 #include <class/hid/hid.h>
@@ -26,8 +27,8 @@ namespace mantyl {
 
 Keyboard::Keyboard(I2cMaster &i2c_left,
                    I2cMaster &i2c_right,
-                   const Keymap &keymap)
-    : keymap_{&keymap},
+                   const KeymapDB &keymap_db)
+    : keymap_db_{&keymap_db},
       left_{"left", i2c_left, 0x3e, GPIO_NUM_33, /*rows=*/7, /*cols=*/8},
       right_{"right", i2c_right, 0x3f, GPIO_NUM_11, /*rows=*/6, /*cols=*/8} {
   left_.set_callbacks(
@@ -110,7 +111,7 @@ void Keyboard::generate_report(std::array<uint8_t, 6> &keycodes,
       for (uint8_t col = 0; col < Keypad::kMaxCols; ++col) {
         const auto is_pressed = (row_bits >> col) & 0x1;
         if (is_pressed) {
-          const auto info = keymap_->get_key(is_left, row, col);
+          const auto info = keymap_db_->get_key(is_left, row, col);
           if (info.key == HID_KEY_NONE || info.key == KeySpecial) {
             continue;
           }
@@ -151,7 +152,7 @@ void Keyboard::on_key_change(bool is_left, uint8_t row, uint8_t col, bool press)
     return;
   }
 
-  const auto info = keymap_->get_key(is_left, row, col);
+  const auto info = keymap_db_->get_key(is_left, row, col);
   if (info.key == KeySpecial) {
     const auto action = static_cast<SpecialAction>(info.modifiers);
     App::get()->on_special_action(action, press);

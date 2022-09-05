@@ -2,6 +2,11 @@
 #include "KeymapDB.h"
 
 #include <class/hid/hid.h>
+#include <esp_log.h>
+
+namespace {
+const char *LogTag = "mantyl.app";
+}
 
 namespace mantyl {
 
@@ -20,7 +25,7 @@ KeymapDB::KeymapDB()
               {HID_KEY_SYSREQ_ATTENTION, 0},
 
               // Left Row 1
-              {KeySpecial, static_cast<uint8_t>(SpecialAction::Keymap1)},
+              {KeySpecial, static_cast<uint8_t>(SpecialAction::Keymap0)},
               {HID_KEY_1, 0},
               {HID_KEY_2, 0},
               {HID_KEY_3, 0},
@@ -143,7 +148,7 @@ KeymapDB::KeymapDB()
                 {HID_KEY_SYSREQ_ATTENTION, 0},
 
                 // Left Row 1
-                {KeySpecial, static_cast<uint8_t>(SpecialAction::Keymap1)},
+                {KeySpecial, static_cast<uint8_t>(SpecialAction::Keymap0)},
                 {HID_KEY_1, 0},
                 {HID_KEY_2, 0},
                 {HID_KEY_3, 0},
@@ -174,12 +179,12 @@ KeymapDB::KeymapDB()
 
                 // Left Row 4
                 {HID_KEY_SHIFT_LEFT, KEYBOARD_MODIFIER_LEFTSHIFT},
+                {HID_KEY_CONTROL_LEFT, KEYBOARD_MODIFIER_LEFTCTRL},
                 {HID_KEY_Z, 0},
                 {HID_KEY_X, 0},
                 {HID_KEY_C, 0},
                 {HID_KEY_V, 0},
                 {HID_KEY_B, 0},
-                {HID_KEY_PAGE_UP, 0},
                 {HID_KEY_NONE, 0}, // Not connected
 
                 // Left Row 5
@@ -230,7 +235,7 @@ KeymapDB::KeymapDB()
                 {HID_KEY_K, 0},
                 {HID_KEY_J, 0},
                 {HID_KEY_H, 0},
-                {HID_KEY_PRINT_SCREEN, 0},
+                {HID_KEY_PAGE_UP, 0},
                 {HID_KEY_NONE, 0}, // Not connected
 
                 // Right Row 4
@@ -253,5 +258,38 @@ KeymapDB::KeymapDB()
                 {HID_KEY_TAB, 0},       // thumb bottom middle
                 {HID_KEY_ARROW_DOWN, 0} // thumb bottom left
             }}) {}
+
+void KeymapDB::next_keymap() {
+  ++current_index_;
+  if (current_index_ >= keymaps_.size()) {
+    current_index_ = 0;
+  }
+  on_keymap_change();
+}
+
+void KeymapDB::prev_keymap() {
+  if (current_index_ == 0) {
+    current_index_ = keymaps_.size() - 1;
+  } else {
+    --current_index_;
+  }
+  on_keymap_change();
+}
+
+void KeymapDB::set_keymap(size_t index) {
+  if (index < keymaps_.size()) {
+    current_index_ = index;
+    on_keymap_change();
+  } else {
+    ESP_LOGW(LogTag, "keymap %zu does not exist", index);
+  }
+}
+
+void KeymapDB::on_keymap_change() {
+  ESP_LOGI(LogTag,
+           "changed to keymap %zu: %s",
+           current_index_,
+           current_keymap().name().c_str());
+}
 
 } // namespace mantyl
