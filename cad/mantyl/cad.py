@@ -377,10 +377,16 @@ def range_cube(
 
 
 def cylinder(
-    r: float, h: float, fn: int = 24, rotation: float = 360.0
+    r: float,
+    h: float,
+    fn: int = 24,
+    rotation: float = 360.0,
+    r2: Optional[float] = None,
 ) -> Mesh:
     top_z = h * 0.5
     bottom_z = -h * 0.5
+    if r2 is None:
+        r2 = r
 
     if rotation >= 360.0:
         rotation = 360.0
@@ -398,11 +404,13 @@ def cylinder(
         angle = (rotation / fn) * n
         rad = math.radians(angle)
 
-        circle_x = math.sin(rad) * r
-        circle_y = math.cos(rad) * r
+        top_x = math.sin(rad) * r
+        top_y = math.cos(rad) * r
+        bottom_x = math.sin(rad) * r2
+        bottom_y = math.cos(rad) * r2
 
-        top_points.append(mesh.add_xyz(circle_x, circle_y, top_z))
-        bottom_points.append(mesh.add_xyz(circle_x, circle_y, bottom_z))
+        top_points.append(mesh.add_xyz(top_x, top_y, top_z))
+        bottom_points.append(mesh.add_xyz(bottom_x, bottom_y, bottom_z))
 
     for idx in range(1, len(top_points)):
         # Note: this intentionally wraps around to -1 when idx == 0

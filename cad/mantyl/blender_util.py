@@ -237,8 +237,9 @@ def cylinder(
     fn: int = 24,
     rotation: float = 360.0,
     name: str = "cylinder",
+    r2: Optional[float] = None,
 ) -> bpy.types.Object:
-    mesh = cad.cylinder(r, h, fn=fn, rotation=rotation)
+    mesh = cad.cylinder(r, h, fn=fn, rotation=rotation, r2=r2)
     return new_mesh_obj(name, mesh)
 
 

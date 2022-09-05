@@ -237,6 +237,326 @@ class I2cCutout:
         return main
 
 
+class CableCover:
+    h = 4.50
+    w = 20.5
+
+    face_y = 0.0
+    flange_d = 2.25
+
+    # The depth of the back wall of the inner cavity.
+    cavity_d = 7.00
+    bulge_d = 4.0
+    back_d = 8.5
+
+    @classmethod
+    def gen(cls) -> bpy.types.Object:
+        main = cls.gen_main_mesh()
+
+        strain_relief = blender_util.cylinder(r=2.5, h=5, r2=3)
+        with blender_util.TransformContext(strain_relief) as ctx:
+            ctx.rotate(90, "Y")
+            ctx.translate((cls.w * 0.5) + 2.8, 5, 0)
+
+        cable_hole = blender_util.cylinder(r=2, h=8)
+        with blender_util.TransformContext(cable_hole) as ctx:
+            ctx.rotate(90, "Y")
+            ctx.translate((cls.w * 0.5) + 3, 5, 0)
+
+        blender_util.union(main, strain_relief)
+        blender_util.difference(main, cable_hole)
+
+        return main
+
+    @classmethod
+    def gen_main_mesh(cls) -> bpy.types.Object:
+        mesh = cad.Mesh()
+        hide_back = False
+
+        core_r = cls.h / 2.0
+        outer_r = core_r + 1.0
+        half_h = cls.h * 0.5
+        half_w = cls.w * 0.5
+
+        cavity_r = core_r + 0.25
+
+        bulge_r = core_r + 2.0
+        back_r = 3.5
+
+        left_face_points: List[MeshPoint] = []
+        left_outer_face_points: List[MeshPoint] = []
+        left_inner_points: List[MeshPoint] = []
+        right_face_points: List[MeshPoint] = []
+        right_outer_face_points: List[MeshPoint] = []
+        right_inner_points: List[MeshPoint] = []
+
+        left_back_points: List[MeshPoint] = []
+        right_back_points: List[MeshPoint] = []
+
+        right_bulge_points: List[MeshPoint] = []
+        left_bulge_points: List[MeshPoint] = []
+
+        right_orig = cad.Point(half_w - half_h, cls.face_y, 0.0)
+        left_orig = cad.Point(-(half_w - half_h), cls.face_y, 0.0)
+
+        right_back_orig = mesh.add_xyz(half_w - half_h, cls.back_d, 0.0)
+        left_back_orig = mesh.add_xyz(-(half_w - half_h), cls.back_d, 0.0)
+
+        fn = 16
+        for n in range(fn + 1):
+            angle = (180.0 / fn) * n
+            rad = math.radians(angle)
+
+            x = math.sin(rad) * core_r
+            z = math.cos(rad) * core_r
+            outer_x = math.sin(rad) * outer_r
+            outer_z = math.cos(rad) * outer_r
+            bulge_x = math.sin(rad) * bulge_r
+            bulge_z = math.cos(rad) * bulge_r
+            back_x = math.sin(rad) * back_r
+            back_z = math.cos(rad) * back_r
+
+            right_face_points.append(
+                mesh.add_xyz(right_orig.x + x, cls.face_y, z)
+            )
+            right_outer_face_points.append(
+                mesh.add_xyz(right_orig.x + outer_x, cls.face_y, outer_z)
+            )
+            right_inner_points.append(
+                mesh.add_xyz(right_orig.x + x, cls.flange_d, z)
+            )
+            right_bulge_points.append(
+                mesh.add_xyz(right_orig.x + bulge_x, cls.bulge_d, bulge_z)
+            )
+
+            left_face_points.append(
+                mesh.add_xyz(left_orig.x - x, cls.face_y, z)
+            )
+            left_outer_face_points.append(
+                mesh.add_xyz(left_orig.x - outer_x, cls.face_y, outer_z)
+            )
+            left_inner_points.append(
+                mesh.add_xyz(left_orig.x - x, cls.flange_d, z)
+            )
+            left_bulge_points.append(
+                mesh.add_xyz(left_orig.x - bulge_x, cls.bulge_d, bulge_z)
+            )
+
+            right_back_points.append(
+                mesh.add_xyz(right_orig.x + back_x, cls.back_d, back_z)
+            )
+            left_back_points.append(
+                mesh.add_xyz(left_orig.x - back_x, cls.back_d, back_z)
+            )
+
+        flange_tr = mesh.add_xyz(
+            right_orig.x + cavity_r, cls.flange_d, right_orig.z + cavity_r
+        )
+        flange_br = mesh.add_xyz(
+            right_orig.x + cavity_r, cls.flange_d, right_orig.z - cavity_r
+        )
+        cavity_tr = mesh.add_xyz(
+            right_orig.x + cavity_r, cls.cavity_d, right_orig.z + cavity_r
+        )
+        cavity_br = mesh.add_xyz(
+            right_orig.x + cavity_r, cls.cavity_d, right_orig.z - cavity_r
+        )
+
+        flange_tl = mesh.add_xyz(
+            left_orig.x - cavity_r, cls.flange_d, left_orig.z + cavity_r
+        )
+        flange_bl = mesh.add_xyz(
+            left_orig.x - cavity_r, cls.flange_d, left_orig.z - cavity_r
+        )
+        cavity_tl = mesh.add_xyz(
+            left_orig.x - cavity_r, cls.cavity_d, left_orig.z + cavity_r
+        )
+        cavity_bl = mesh.add_xyz(
+            left_orig.x - cavity_r, cls.cavity_d, left_orig.z - cavity_r
+        )
+        mesh.add_quad(flange_tr, flange_br, cavity_br, cavity_tr)
+        mesh.add_quad(flange_bl, flange_tl, cavity_tl, cavity_bl)
+
+        for idx in range(1, len(right_face_points)):
+            mesh.add_quad(
+                right_face_points[idx - 1],
+                right_outer_face_points[idx - 1],
+                right_outer_face_points[idx],
+                right_face_points[idx],
+            )
+            mesh.add_quad(
+                left_outer_face_points[idx - 1],
+                left_face_points[idx - 1],
+                left_face_points[idx],
+                left_outer_face_points[idx],
+            )
+            mesh.add_quad(
+                right_inner_points[idx],
+                right_inner_points[idx - 1],
+                right_face_points[idx - 1],
+                right_face_points[idx],
+            )
+            mesh.add_quad(
+                left_face_points[idx],
+                left_face_points[idx - 1],
+                left_inner_points[idx - 1],
+                left_inner_points[idx],
+            )
+
+            mesh.add_quad(
+                right_outer_face_points[idx - 1],
+                right_bulge_points[idx - 1],
+                right_bulge_points[idx],
+                right_outer_face_points[idx],
+            )
+            mesh.add_quad(
+                left_bulge_points[idx - 1],
+                left_outer_face_points[idx - 1],
+                left_outer_face_points[idx],
+                left_bulge_points[idx],
+            )
+            mesh.add_quad(
+                right_bulge_points[idx - 1],
+                right_back_points[idx - 1],
+                right_back_points[idx],
+                right_bulge_points[idx],
+            )
+            mesh.add_quad(
+                left_back_points[idx - 1],
+                left_bulge_points[idx - 1],
+                left_bulge_points[idx],
+                left_back_points[idx],
+            )
+
+            if idx < (len(right_face_points) / 2):
+                mesh.add_tri(
+                    right_inner_points[idx],
+                    flange_tr,
+                    right_inner_points[idx - 1],
+                )
+                mesh.add_tri(
+                    left_inner_points[idx - 1],
+                    flange_tl,
+                    left_inner_points[idx],
+                )
+            else:
+                mesh.add_tri(
+                    right_inner_points[idx],
+                    flange_br,
+                    right_inner_points[idx - 1],
+                )
+                mesh.add_tri(
+                    left_inner_points[idx - 1],
+                    flange_bl,
+                    left_inner_points[idx],
+                )
+
+            if not hide_back:
+                mesh.add_tri(
+                    right_back_points[idx - 1],
+                    right_back_orig,
+                    right_back_points[idx],
+                )
+                mesh.add_tri(
+                    left_back_points[idx],
+                    left_back_orig,
+                    left_back_points[idx - 1],
+                )
+
+        if cavity_r > core_r:
+            mesh.add_tri(
+                flange_tl,
+                flange_bl,
+                left_inner_points[len(right_face_points) // 2],
+            )
+            mesh.add_tri(
+                flange_tr,
+                right_inner_points[len(right_face_points) // 2],
+                flange_br,
+            )
+            mesh.add_quad(
+                flange_tr,
+                flange_tl,
+                left_inner_points[0],
+                right_inner_points[0],
+            )
+            mesh.add_quad(
+                right_inner_points[-1],
+                left_inner_points[-1],
+                flange_bl,
+                flange_br,
+            )
+
+        mesh.add_quad(cavity_tr, cavity_tl, flange_tl, flange_tr)
+        mesh.add_quad(flange_br, flange_bl, cavity_bl, cavity_br)
+        if not hide_back:
+            mesh.add_quad(cavity_tl, cavity_tr, cavity_br, cavity_bl)
+            mesh.add_quad(
+                right_back_points[0],
+                left_back_points[0],
+                left_back_orig,
+                right_back_orig,
+            )
+            mesh.add_quad(
+                right_back_orig,
+                left_back_orig,
+                left_back_points[-1],
+                right_back_points[-1],
+            )
+
+        mesh.add_quad(
+            left_face_points[0],
+            left_outer_face_points[0],
+            right_outer_face_points[0],
+            right_face_points[0],
+        )
+        mesh.add_quad(
+            left_outer_face_points[-1],
+            left_face_points[-1],
+            right_face_points[-1],
+            right_outer_face_points[-1],
+        )
+        mesh.add_quad(
+            left_face_points[-1],
+            left_inner_points[-1],
+            right_inner_points[-1],
+            right_face_points[-1],
+        )
+        mesh.add_quad(
+            left_inner_points[0],
+            left_face_points[0],
+            right_face_points[0],
+            right_inner_points[0],
+        )
+        mesh.add_quad(
+            left_outer_face_points[0],
+            left_bulge_points[0],
+            right_bulge_points[0],
+            right_outer_face_points[0],
+        )
+        mesh.add_quad(
+            left_bulge_points[-1],
+            left_outer_face_points[-1],
+            right_outer_face_points[-1],
+            right_bulge_points[-1],
+        )
+
+        mesh.add_quad(
+            right_bulge_points[0],
+            left_bulge_points[0],
+            left_back_points[0],
+            right_back_points[0],
+        )
+        mesh.add_quad(
+            left_bulge_points[-1],
+            right_bulge_points[-1],
+            right_back_points[-1],
+            left_back_points[-1],
+        )
+
+        return blender_util.new_mesh_obj("i2c_cutout", mesh)
+
+
 def add_i2c_connector(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
     i2c_cutout = I2cCutout.gen()
 
@@ -260,6 +580,8 @@ def test() -> bpy.types.Object:
 
 
 def cable_cover_test() -> bpy.types.Object:
+    return CableCover.gen()
+
     wall = blender_util.range_cube((-11, 11), (0, 4), (0, 10))
     i2c_cutout = I2cCutout.gen()
     blender_util.apply_to_wall(
