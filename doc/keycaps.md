@@ -15,13 +15,12 @@ The default layout does use two 1x1.5 keys, one on each thumb.
 
 # Notes on key sets
 
+kprepublic.com offers several DSA key sets that include nearly a full set of
+1x1 keys: https://kprepublic.com/collections/dsa-profile
+
 mechanicalkeyboards.com offers some DSA sets from Maxkey that are reasonably
 priced, and do include many 1x1 keys:
-
-- https://mechanicalkeyboards.com/shop/index.php?l=product_detail&p=2684
-
-I have used these for one build.  Unfortunately these are currently out of
-stock (as of 2022).
+https://mechanicalkeyboards.com/shop/index.php?l=product_detail&p=2684
 
 https://pimpmykeyboard.com also offers a number of DSA key sets.  Unfortunately
 these are significantly more expensive, and often do not include 1x1 key
