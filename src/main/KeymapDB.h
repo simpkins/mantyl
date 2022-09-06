@@ -29,7 +29,9 @@ private:
 
   Keymap builtin_;
   Keymap wasd_;
-  std::array<Keymap*, 2> keymaps_{&builtin_, &wasd_};
+  Keymap right_dir_;
+  Keymap numpad_;
+  std::array<Keymap*, 4> keymaps_{&builtin_, &wasd_, &right_dir_, &numpad_};
   size_t current_index_{0};
 };
 
