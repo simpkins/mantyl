@@ -72,11 +72,18 @@
 
   Any cherry-compatible key switches should work.
 
+* Screws
 
-# Volume control
+  * 8 #6-32 1/2" screws for connecting the wrist rests
+  * 3 #6-32 1/4" screws for the LED backplate
+  * 2 #6-32 1/4" screws for the USB connector backplate
+  * 8 #2 1/4" screws for the SX1509 boards
+  * 1 #2 1/4" screw for the FeatherS3
 
-I also wanted to include an audio volume control slider in the keyboard body.
-* 3.5mm Audio Jack
-  [Panel mount](https://www.adafruit.com/product/3692)
-  [3.5mm Audio Jack](https://www.sparkfun.com/products/8032)
-* Audio potentiometer: Alps Alpine: RSA0K12A1013 (100mm) or RS60N1219A04 (60mm)
+* Cable: Wire and Paracord
+
+  For making the cable that connects the two halves, I used some very thin wire
+  (34AWG wire), and threaded it through #95 paracord.  #275 paracord is just
+  slightly larger, and would also be a reasonable choice.
+
+  Wire: https://www.adafruit.com/product/4734
