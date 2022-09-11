@@ -1,7 +1,7 @@
 // Copyright (c) 2022, Adam Simpkins
 #pragma once
 
-#include "Keypad.h"
+#include "keyboard/Keypad.h"
 
 #include <array>
 #include <cstdint>

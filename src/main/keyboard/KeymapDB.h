@@ -1,7 +1,7 @@
 // Copyright (c) 2022, Adam Simpkins
 #pragma once
 
-#include "Keymap.h"
+#include "keyboard/Keymap.h"
 
 namespace mantyl {
 

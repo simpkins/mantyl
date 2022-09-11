@@ -1,7 +1,7 @@
 // Copyright (c) 2022, Adam Simpkins
 #pragma once
 
-#include "Anim.h"
+#include "ui/anim/Anim.h"
 
 namespace mantyl {
 

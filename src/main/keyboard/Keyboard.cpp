@@ -1,10 +1,10 @@
 // Copyright (c) 2022, Adam Simpkins
-#include "Keyboard.h"
+#include "keyboard/Keyboard.h"
 
 #include "App.h"
-#include "Keypad.h"
-#include "KeymapDB.h"
 #include "UsbDevice.h"
+#include "keyboard/KeymapDB.h"
+#include "keyboard/Keypad.h"
 
 #include <class/hid/hid.h>
 #include <class/hid/hid_device.h>

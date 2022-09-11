@@ -1,10 +1,10 @@
 // Copyright (c) 2022, Adam Simpkins
-#include "UI.h"
+#include "ui/UI.h"
 
 #include "App.h"
-#include "CompositeAnim.h"
-#include "ConstantAnim.h"
-#include "LinearAnim.h"
+#include "ui/anim/CompositeAnim.h"
+#include "ui/anim/ConstantAnim.h"
+#include "ui/anim/LinearAnim.h"
 #include "SSD1306.h"
 
 #include <esp_log.h>

@@ -5,10 +5,10 @@
 #include "config.h"
 
 #include "I2cMaster.h"
-#include "Keyboard.h"
-#include "KeymapDB.h"
+#include "keyboard/Keyboard.h"
+#include "keyboard/KeymapDB.h"
 #include "SSD1306.h"
-#include "UI.h"
+#include "ui/UI.h"
 #include "UsbDevice.h"
 
 #include <esp_err.h>
