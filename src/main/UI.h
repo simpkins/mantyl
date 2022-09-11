@@ -45,6 +45,7 @@ private:
   UI &operator=(UI const &) = delete;
 
   void start_fade_timer();
+  void render_menu();
 
   SSD1306* const display_{nullptr};
 
@@ -53,6 +54,9 @@ private:
 
   std::mutex log_mutex_;
   std::vector<std::vector<char>> log_messages_;
+
+  std::array<std::string_view, 4> menu_entries_;
+  int index_{0};
 };
 
 } // namespace mantyl

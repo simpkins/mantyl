@@ -79,7 +79,9 @@ int ui_vprintf(const char *format, va_list ap) {
 
 namespace mantyl {
 
-UI::UI(SSD1306 *display) : display_{display} {}
+UI::UI(SSD1306 *display)
+    : display_{display},
+      menu_entries_{{"Select Keymap", "Edit Keymap", "Settings", "Info"}} {}
 
 UI::~UI() {
   if (orig_log_vprintf) {
@@ -107,42 +109,31 @@ esp_err_t UI::init() {
   return ESP_OK;
 }
 
-void UI::button_left() {
-  // TODO
-}
+void UI::render_menu() {
+  SSD1306::WriteResult result;
+  constexpr size_t num_display_lines = 4;
+  size_t start_idx = num_display_lines * (index_ / num_display_lines);
+  for (size_t line_idx = 0; line_idx < num_display_lines; ++line_idx) {
+    size_t entry_idx = start_idx + line_idx;
+    const uint16_t line_px_start = 128 * line_idx;
+    const SSD1306::OffsetRange left_range{line_px_start, line_px_start + 8};
+    const SSD1306::OffsetRange text_range{line_px_start + 8, line_px_start + 122};
+    const SSD1306::OffsetRange right_range{line_px_start + 122, line_px_start + 128};
 
-void UI::button_right() {
-  // TODO
+    auto result = display_->write_text(index_ == entry_idx ? "\x10" : "", left_range, true);
+    result = display_->write_text(
+        entry_idx < menu_entries_.size() ? menu_entries_[entry_idx] : "",
+        text_range,
+        true);
 
-  static constexpr SSD1306::OffsetRange LeftLine0{0, 8};
-  static constexpr SSD1306::OffsetRange LeftLine1{128, 136};
-  static constexpr SSD1306::OffsetRange LeftLine2{256, 264};
-  static constexpr SSD1306::OffsetRange LeftLine3{384, 392};
-
-  static constexpr SSD1306::OffsetRange MenuLine0{8, 122};
-  static constexpr SSD1306::OffsetRange MenuLine1{136, 250};
-  static constexpr SSD1306::OffsetRange MenuLine2{264, 378};
-  static constexpr SSD1306::OffsetRange MenuLine3{392, 506};
-
-  static constexpr SSD1306::OffsetRange RightLine0{122, 128};
-  static constexpr SSD1306::OffsetRange RightLine1{250, 256};
-  static constexpr SSD1306::OffsetRange RightLine2{378, 384};
-  static constexpr SSD1306::OffsetRange RightLine3{506, 512};
-
-  auto result = display_->write_text("\x10", LeftLine0, true);
-  result = display_->write_text("", LeftLine1, true);
-  result = display_->write_text("", LeftLine2, true);
-  result = display_->write_text("", LeftLine3, true);
-
-  result = display_->write_text("Select Keymap", MenuLine0, true);
-  result = display_->write_text("Edit Keymaps", MenuLine1, true);
-  result = display_->write_text("Settings", MenuLine2, true);
-  result = display_->write_text("Info", MenuLine3, true);
-
-  result = display_->write_text("", RightLine0, true);
-  result = display_->write_text("", RightLine1, true);
-  result = display_->write_text("", RightLine2, true);
-  result = display_->write_text("\x1f", RightLine3, true);
+    std::string_view right_data;
+    if (line_idx == 0 && entry_idx > 0) {
+      right_data = "\x1e";
+    } else if (line_idx == 3 && entry_idx + 1 < menu_entries_.size()) {
+      right_data = "\x1f";
+    }
+    result = display_->write_text(right_data, right_range, true);
+  }
 
   start_fade_timer();
   auto rc = display_->flush();
@@ -150,11 +141,27 @@ void UI::button_right() {
   static_cast<void>(rc);
 }
 
+void UI::button_left() {
+  // TODO
+}
+
+void UI::button_right() {
+    render_menu();
+}
+
 void UI::button_up() {
+  if (index_ > 0) {
+    --index_;
+  }
+  render_menu();
   // TODO
 }
 
 void UI::button_down() {
+  if (index_ + 1 < menu_entries_.size()) {
+    ++index_;
+  }
+  render_menu();
   // TODO
 }
 
