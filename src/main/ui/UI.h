@@ -45,8 +45,20 @@ public:
   void button_down();
   void button_press();
 
-  void pop_mode();
   void start_fade_timer();
+
+  /**
+   * Push a new UIMode onto the stack.
+   */
+  void push_mode(std::unique_ptr<UIMode> mode);
+
+  /**
+   * Attempt to pop the current UIMode off the stack.
+   *
+   * May return nullptr if this is the top-most mode, which cannot be popped
+   * off.
+   */
+  std::unique_ptr<UIMode> pop_mode();
 
 private:
   UI(UI const &) = delete;

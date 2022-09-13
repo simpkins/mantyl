@@ -8,7 +8,7 @@ class UI;
 
 class UIMode {
 public:
-  explicit UIMode(UI* ui) : ui_{ui} {}
+  explicit UIMode(UI &ui) : ui_{&ui} {}
 
   UI &ui() {
     return *ui_;

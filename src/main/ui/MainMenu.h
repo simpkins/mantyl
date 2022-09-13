@@ -1,15 +1,13 @@
 // Copyright (c) 2022, Adam Simpkins
 #pragma once
 
-#include "ui/Menu.h"
+#include <memory>
 
 namespace mantyl {
 
-class MainMenu : public Menu {
-public:
-  explicit MainMenu(UI *ui);
+class UI;
+class UIMode;
 
-private:
-};
+std::unique_ptr<UIMode> create_main_menu(UI& ui);
 
 } // namespace mantyl

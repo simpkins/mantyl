@@ -153,18 +153,27 @@ void UI::button_press() {
 }
 
 void UI::on_first_button_activity() {
-  mode_stack_.push_back(std::make_unique<MainMenu>(this));
+  mode_stack_.push_back(create_main_menu(*this));
   mode_stack_.back()->render();
   start_fade_timer();
 }
 
-void UI::pop_mode() {
+void UI::push_mode(std::unique_ptr<UIMode> mode) {
+  mode_stack_.push_back(std::move(mode));
+  mode_stack_.back()->render();
+}
+
+std::unique_ptr<UIMode> UI::pop_mode() {
   // We don't allow popping the top-most mode from the stack.
   // This is generally the main menu.
-  if (mode_stack_.size() > 1) {
-    mode_stack_.pop_back();
-    mode_stack_.back()->render();
+  if (mode_stack_.size() <= 1) {
+      return nullptr;
   }
+
+  std::unique_ptr<UIMode> back = std::move(mode_stack_.back());
+  mode_stack_.pop_back();
+  mode_stack_.back()->render();
+  return back;
 }
 
 void UI::start_fade_timer() {

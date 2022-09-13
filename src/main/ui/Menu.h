@@ -3,6 +3,7 @@
 
 #include "ui/UIMode.h"
 
+#include <functional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -11,8 +12,7 @@ namespace mantyl {
 
 class Menu : public UIMode {
 public:
-  explicit Menu(UI *ui);
-  explicit Menu(UI *ui, std::vector<std::string> &&entries);
+  explicit Menu(UI &ui);
 
   void render() override;
 
@@ -21,11 +21,20 @@ public:
   void button_up() override;
   void button_down() override;
 
-protected:
+  // Functions for initializing the menu entries.
   void add_entry(std::string_view text);
+  void add_entry(std::string_view text, std::function<void()> &&fn);
 
 private:
-  std::vector<std::string> entries_;
+  struct MenuEntry {
+    MenuEntry(std::string_view t, std::function<void()> &&f)
+        : text(t), fn(std::move(f)) {}
+
+    std::string text;
+    std::function<void()> fn;
+  };
+
+  std::vector<MenuEntry> entries_;
   size_t index_{0};
 };
 

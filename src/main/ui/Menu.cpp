@@ -6,10 +6,7 @@
 
 namespace mantyl {
 
-Menu::Menu(UI *ui) : UIMode(ui) {}
-
-Menu::Menu(UI *ui, std::vector<std::string> &&entries)
-    : UIMode(ui), entries_(std::move(entries)) {}
+Menu::Menu(UI &ui) : UIMode(ui) {}
 
 void Menu::render() {
   SSD1306::WriteResult result;
@@ -25,7 +22,7 @@ void Menu::render() {
     auto result = display().write_text(
         index_ == entry_idx ? "\x10" : "", left_range, true);
     result = display().write_text(
-        entry_idx < entries_.size() ? entries_[entry_idx] : "",
+        entry_idx < entries_.size() ? entries_[entry_idx].text : "",
         text_range,
         true);
 
@@ -44,10 +41,18 @@ void Menu::render() {
 }
 
 void Menu::button_left() {
-  // pop menu
+  // Beware: pop_mode() will typically return a unique_ptr to ourself.  (It may
+  // return nullptr if we are the main menu, and cannot be popped off.)
+  // We will typically be deleted when it is destroyed, so we should not access
+  // any member variables after it goes out of scope.
+  auto self = ui().pop_mode();
+  static_cast<void>(self);
 }
 
 void Menu::button_right() {
+  if (index_ < entries_.size()) {
+    entries_[index_].fn();
+  }
 }
 
 void Menu::button_up() {
@@ -65,7 +70,11 @@ void Menu::button_down() {
 }
 
 void Menu::add_entry(std::string_view text) {
-  entries_.emplace_back(text);
+  entries_.emplace_back(text, []() {});
+}
+
+void Menu::add_entry(std::string_view text, std::function<void()> &&fn) {
+  entries_.emplace_back(text, std::move(fn));
 }
 
 } // namespace mantyl
