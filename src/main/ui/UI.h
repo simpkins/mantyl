@@ -14,6 +14,7 @@ template <typename T>
 class Anim;
 
 class SSD1306;
+class UIMode;
 
 class UI {
 public:
@@ -23,6 +24,10 @@ public:
   [[nodiscard]] esp_err_t init();
 
   std::chrono::milliseconds tick(std::chrono::steady_clock::time_point now);
+
+  SSD1306 &display() {
+    return *display_;
+  }
 
   /**
    * Append a new log message.
@@ -40,23 +45,24 @@ public:
   void button_down();
   void button_press();
 
+  void pop_mode();
+  void start_fade_timer();
+
 private:
   UI(UI const &) = delete;
   UI &operator=(UI const &) = delete;
 
-  void start_fade_timer();
-  void render_menu();
+  void on_first_button_activity();
 
   SSD1306* const display_{nullptr};
 
   std::chrono::steady_clock::time_point fade_start_;
   std::unique_ptr<Anim<uint8_t>> fade_;
 
+  std::vector<std::unique_ptr<UIMode>> mode_stack_;
+
   std::mutex log_mutex_;
   std::vector<std::vector<char>> log_messages_;
-
-  std::array<std::string_view, 4> menu_entries_;
-  int index_{0};
 };
 
 } // namespace mantyl

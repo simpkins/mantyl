@@ -2,10 +2,12 @@
 #include "ui/UI.h"
 
 #include "App.h"
+#include "SSD1306.h"
+#include "ui/MainMenu.h"
+#include "ui/UIMode.h"
 #include "ui/anim/CompositeAnim.h"
 #include "ui/anim/ConstantAnim.h"
 #include "ui/anim/LinearAnim.h"
-#include "SSD1306.h"
 
 #include <esp_log.h>
 
@@ -79,9 +81,7 @@ int ui_vprintf(const char *format, va_list ap) {
 
 namespace mantyl {
 
-UI::UI(SSD1306 *display)
-    : display_{display},
-      menu_entries_{{"Select Keymap", "Edit Keymap", "Settings", "Info"}} {}
+UI::UI(SSD1306 *display) : display_{display} {}
 
 UI::~UI() {
   if (orig_log_vprintf) {
@@ -109,60 +109,40 @@ esp_err_t UI::init() {
   return ESP_OK;
 }
 
-void UI::render_menu() {
-  SSD1306::WriteResult result;
-  constexpr size_t num_display_lines = 4;
-  size_t start_idx = num_display_lines * (index_ / num_display_lines);
-  for (size_t line_idx = 0; line_idx < num_display_lines; ++line_idx) {
-    size_t entry_idx = start_idx + line_idx;
-    const uint16_t line_px_start = 128 * line_idx;
-    const SSD1306::OffsetRange left_range{line_px_start, line_px_start + 8};
-    const SSD1306::OffsetRange text_range{line_px_start + 8, line_px_start + 122};
-    const SSD1306::OffsetRange right_range{line_px_start + 122, line_px_start + 128};
-
-    auto result = display_->write_text(index_ == entry_idx ? "\x10" : "", left_range, true);
-    result = display_->write_text(
-        entry_idx < menu_entries_.size() ? menu_entries_[entry_idx] : "",
-        text_range,
-        true);
-
-    std::string_view right_data;
-    if (line_idx == 0 && entry_idx > 0) {
-      right_data = "\x1e";
-    } else if (line_idx == 3 && entry_idx + 1 < menu_entries_.size()) {
-      right_data = "\x1f";
-    }
-    result = display_->write_text(right_data, right_range, true);
-  }
-
-  start_fade_timer();
-  auto rc = display_->flush();
-  rc = display_->display_on();
-  static_cast<void>(rc);
-}
-
 void UI::button_left() {
-  // TODO
+  if (mode_stack_.empty()) {
+    on_first_button_activity();
+    return;
+  }
+  mode_stack_.back()->button_left();
+  start_fade_timer();
 }
 
 void UI::button_right() {
-    render_menu();
+  if (mode_stack_.empty()) {
+    on_first_button_activity();
+    return;
+  }
+  mode_stack_.back()->button_right();
+  start_fade_timer();
 }
 
 void UI::button_up() {
-  if (index_ > 0) {
-    --index_;
+  if (mode_stack_.empty()) {
+    on_first_button_activity();
+    return;
   }
-  render_menu();
-  // TODO
+  mode_stack_.back()->button_up();
+  start_fade_timer();
 }
 
 void UI::button_down() {
-  if (index_ + 1 < menu_entries_.size()) {
-    ++index_;
+  if (mode_stack_.empty()) {
+    on_first_button_activity();
+    return;
   }
-  render_menu();
-  // TODO
+  mode_stack_.back()->button_down();
+  start_fade_timer();
 }
 
 void UI::button_press() {
@@ -172,15 +152,36 @@ void UI::button_press() {
   // instead.
 }
 
+void UI::on_first_button_activity() {
+  mode_stack_.push_back(std::make_unique<MainMenu>(this));
+  mode_stack_.back()->render();
+  start_fade_timer();
+}
+
+void UI::pop_mode() {
+  // We don't allow popping the top-most mode from the stack.
+  // This is generally the main menu.
+  if (mode_stack_.size() > 1) {
+    mode_stack_.pop_back();
+    mode_stack_.back()->render();
+  }
+}
+
 void UI::start_fade_timer() {
   fade_start_ = std::chrono::steady_clock::now();
   const uint8_t init_contrast = 0xff;
   auto constant_portion = std::make_unique<ConstantAnim<uint8_t>>(
-      init_contrast, std::chrono::seconds(2));
+      init_contrast, std::chrono::seconds(3));
   auto fade_portion = std::make_unique<LinearAnim<uint8_t>>(
-      init_contrast, 0x00, std::chrono::seconds(3));
+      init_contrast, 0x01, std::chrono::seconds(2));
+  auto dim_portion = std::make_unique<ConstantAnim<uint8_t>>(
+      0x01, std::chrono::seconds(2));
+  auto off_portion = std::make_unique<ConstantAnim<uint8_t>>(
+      0x00, std::chrono::seconds(1));
   fade_ = std::make_unique<CompositeAnim<uint8_t>>(std::move(constant_portion),
-                                                   std::move(fade_portion));
+                                                   std::move(fade_portion),
+                                                   std::move(dim_portion),
+                                                   std::move(off_portion));
   auto rc = display_->set_contrast(init_contrast);
   // Don't log any warnings if set_contrast() fails, since we don't want to
   // emit more log messages when an error occurs processing a log message.
@@ -195,6 +196,7 @@ std::chrono::milliseconds UI::tick(std::chrono::steady_clock::time_point now) {
     const auto contrast = fade_->get_value(anim_time);
     if (contrast == 0) {
       fade_.reset();
+      mode_stack_.clear();
       const auto rc = display_->display_off();
       if (rc != ESP_OK) {
         ESP_LOGW(LogTag, "error turning display off: %s", esp_err_to_name(rc));
