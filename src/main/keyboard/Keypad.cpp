@@ -61,6 +61,12 @@ std::chrono::milliseconds Keypad::tick(std::chrono::steady_clock::time_point now
   if (!initialized_) {
     // Periodically try to re-initialize the keypad.  The right keypad can be
     // unplugged, and we want to recognize it again if it is plugged back in.
+    //
+    // TODO: Implement improved detection of when the right keyboard half is
+    // plugged in.  The right I2C pull-ups are in the right half, so we should
+    // be able to unconfigure the right I2C bus, and enable interrupts for when
+    // the right SDA or SCL lines are pulled back up to immediately detect when
+    // the right half is reconnected.
     const auto time_since_last_init = now - last_scan_detected_;
     if (time_since_last_init < kReinitTimeout) {
       return kReinitTimeout -

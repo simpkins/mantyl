@@ -58,7 +58,7 @@ private:
    * Get the row index from the result of SX1509::read_keypad()
    */
   static int8_t get_row(uint16_t value);
-  static constexpr std::chrono::milliseconds kReinitTimeout{60 * 1000};
+  static constexpr std::chrono::milliseconds kReinitTimeout{1000};
   static constexpr std::chrono::milliseconds kReleaseTimeout{50};
 
   std::chrono::milliseconds on_interrupt();
