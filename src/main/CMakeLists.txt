@@ -14,4 +14,5 @@ idf_component_register(
   REQUIRES
     "tinyusb" "sx1509" "ssd1306" "i2c_cpp" "mantyl_util"
     "spi_flash" "log" "usb"
+    "esp_app_format"
 )

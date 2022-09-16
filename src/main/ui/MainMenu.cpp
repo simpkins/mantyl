@@ -6,6 +6,8 @@
 #include "ui/UIMode.h"
 #include "SSD1306.h"
 
+#include <esp_app_desc.h>
+
 #include <memory>
 
 namespace mantyl {
@@ -50,12 +52,35 @@ protected:
   }
 };
 
+class VersionPage : public LeafMode {
+protected:
+  using LeafMode::LeafMode;
+
+  void render_static() override {
+    const auto *app_desc = esp_app_get_description();
+    std::array<char, 48> buf;
+
+    snprintf(buf.data(), buf.size(), "Version: %s", app_desc->version);
+    display().write_text(buf.data(), SSD1306::Line0, true);
+
+    snprintf(buf.data(), buf.size(), "Build Date: %s", app_desc->date);
+    display().write_text(buf.data(), SSD1306::Line1, true);
+
+    snprintf(buf.data(), buf.size(), "Build Time: %s", app_desc->time);
+    display().write_text(buf.data(), SSD1306::Line2, true);
+
+    snprintf(buf.data(), buf.size(), "IDF: %s", app_desc->idf_ver);
+    display().write_text(buf.data(), SSD1306::Line3, true);
+  }
+};
+
 void push_info_menu(UI &ui) {
   auto info_menu = std::make_unique<Menu>(ui);
   info_menu->add_entry(
       "Owner", [&ui] { ui.push_mode(std::make_unique<OwnerPage>(ui)); });
+  info_menu->add_entry(
+      "Version", [&ui] { ui.push_mode(std::make_unique<VersionPage>(ui)); });
   info_menu->add_entry("Status");
-  info_menu->add_entry("Version");
   ui.push_mode(std::move(info_menu));
 }
 
