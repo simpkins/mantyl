@@ -74,13 +74,49 @@ protected:
   }
 };
 
+class StatusPage : public UIMode {
+public:
+  using UIMode::UIMode;
+
+  void render() {
+    render_contents();
+    auto rc = display().flush();
+    rc = display().display_on();
+    static_cast<void>(rc);
+  }
+
+  void button_left() override {
+    auto self = ui().pop_mode();
+    static_cast<void>(self);
+  }
+  void button_right() override {
+    render();
+  }
+  void button_up() override {
+    render();
+  }
+  void button_down() override {
+    render();
+  }
+
+private:
+  void render_contents() {
+    // TODO:
+    // - track start time in App, and display uptime here.
+    // - report whether right keyboard half is connected
+    // - report most recent error log
+    display().clear();
+  }
+};
+
 void push_info_menu(UI &ui) {
   auto info_menu = std::make_unique<Menu>(ui);
   info_menu->add_entry(
       "Owner", [&ui] { ui.push_mode(std::make_unique<OwnerPage>(ui)); });
   info_menu->add_entry(
       "Version", [&ui] { ui.push_mode(std::make_unique<VersionPage>(ui)); });
-  info_menu->add_entry("Status");
+  info_menu->add_entry(
+      "Status", [&ui] { ui.push_mode(std::make_unique<StatusPage>(ui)); });
   ui.push_mode(std::move(info_menu));
 }
 
