@@ -19,6 +19,7 @@ namespace mantyl {
 App* App::singleton_;
 
 App::App() {
+  boot_time_ = std::chrono::steady_clock::now();
   singleton_ = this;
 }
 

@@ -4,10 +4,14 @@
 #include "ui/Menu.h"
 #include "ui/UI.h"
 #include "ui/UIMode.h"
+#include "App.h"
 #include "SSD1306.h"
 
 #include <esp_app_desc.h>
+#include <esp_system.h>
 
+#include <cinttypes>
+#include <cstdint>
 #include <memory>
 
 namespace mantyl {
@@ -101,11 +105,27 @@ public:
 
 private:
   void render_contents() {
+    display().clear();
+    std::array<char, 48> buf;
+
+    const auto uptime =
+        std::chrono::steady_clock::now() - App::get()->get_boot_time();
+    const auto uptime_secs =
+        std::chrono::duration_cast<std::chrono::seconds>(uptime);
+
+    // TODO: format the uptime into Ndays HH:MM:SS
+    snprintf(buf.data(),
+             buf.size(),
+             "Uptime: %" PRId64,
+             static_cast<int64_t>(uptime_secs.count()));
+    display().write_text(buf.data(), SSD1306::Line0, true);
+
+    snprintf(buf.data(), buf.size(), "Reset Reason: %d", esp_reset_reason());
+    display().write_text(buf.data(), SSD1306::Line1, true);
+
     // TODO:
-    // - track start time in App, and display uptime here.
     // - report whether right keyboard half is connected
     // - report most recent error log
-    display().clear();
   }
 };
 

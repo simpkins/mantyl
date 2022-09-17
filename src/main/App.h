@@ -50,6 +50,10 @@ public:
 
   void on_special_action(SpecialAction action, bool press);
 
+  std::chrono::steady_clock::time_point get_boot_time() {
+    return boot_time_;
+  }
+
 private:
   enum NotifyBits : unsigned long {
     Left = 0x01,
@@ -78,6 +82,7 @@ private:
   KeymapDB keymap_db_;
   Keyboard keyboard_{i2c_left_, i2c_right_, keymap_db_};
 
+  std::chrono::steady_clock::time_point boot_time_;
   TaskHandle_t task_handle_{};
 };
 
