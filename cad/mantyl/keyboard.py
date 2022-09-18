@@ -234,7 +234,7 @@ class Keyboard:
             tf = tf.translate(0, 45, 18)
         elif row == 2:
             tf = tf.rotate(15, 0, 0)
-            tf = tf.translate(0, 24, 3.25)
+            tf = tf.translate(0, 24, 4)
         elif row == 3:
             tf = tf.rotate(-3, 0, 0)
             tf = tf.translate(0, 1, 2)
