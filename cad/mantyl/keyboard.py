@@ -10,6 +10,7 @@ from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import bpy
 
+from . import blender_util
 from . import cad
 from .blender_util import blender_mesh, new_mesh_obj
 from .cad import Mesh, MeshPoint, Point, Transform
@@ -398,6 +399,10 @@ class Keyboard:
             .translate(offset, -offset, 0)
             .transform(self._main_thumb_transform)
         )
+
+    def gen_keycaps(self) -> None:
+        for col, row in self.key_indices():
+            self._keys[col][row].dsa_keycap()
 
     def gen_main_grid(self) -> None:
         """Generate mesh faces for the main key hole section.
@@ -1939,6 +1944,100 @@ class KeyHole:
         mesh.add_quad(p0[0], p1[0], p2[0], p3[0])
         mesh.add_quad(p3[1], p2[1], p1[1], p0[1])
 
+    def dsa_keycap(self, ratio: float = 1.0) -> bpy.types.Object:
+        return dsa_keycap(ratio=ratio, transform=self.transform)
+
+
+def dsa_keycap(
+    ratio: float = 1.0,
+    include_base: bool = False,
+    transform: Optional[Transform] = None,
+) -> bpy.types.Object:
+    """
+    Create an approximation of a 1xN DSA keycap.
+
+    The ratio argument controls the length dimension (N).
+    DSA keycaps are commonly available in 1x1, 1.25, 1.5, 1.75, and 1x2
+
+    Signature Plastics DSA keycap specs:
+    https://www.solutionsinplastic.com/wp-content/uploads/2017/05/DSAFamily.pdf
+
+    In practice the keycaps I have have roughly the following measurements at
+    the base:
+    - 1x1: 18mm x 18mm
+    - 1x1.25: 18mm x 23mm
+    - 1x1.5: 18mm x 28mm
+    - 1x1.75: 18mm x 32.5mm
+    - 1x2: 18mm x 37.5mm
+    """
+    # The datasheet claims the height is 0.291" (7.4mm)
+    # However, for the keycaps I have the height appears to be closer
+    # to about 7.85mm.  The taper inwards only starts about 1mm up.
+    height = 7.85
+
+    lower_w = 18.415
+    lower_d = lower_w * ratio
+    # The height of the lower portion before it starts to taper in
+    lower_h = 1
+
+    upper_w = 12.7
+    upper_d = lower_d - (lower_w - upper_w)
+
+    # The offset from the key plate to the bottom of the key cap,
+    # when the key switch is not pressed.
+    switch_height = 6.5
+    z_offset = KeyHole.height + switch_height
+
+    z0 = z_offset
+    if include_base:
+        # Extend the lower edges of the keycap, to indicate the amount of space
+        # that will be taken up by the edge of the cap when the key is
+        # depressed.  This helps detect if there will be collisions with
+        # another key along the key's path of travel.
+        z0 = z_offset - switch_height
+
+    mesh = Mesh()
+
+    if transform is None:
+        transform = Transform()
+
+    def add_xyz(x: float, y: float, z: float) -> MeshPoint:
+        p = Point(x, y, z).transform(transform)
+        return mesh.add_point(p)
+
+    tr_z0 = add_xyz(lower_w * 0.5, lower_d * 0.5, z0)
+    tr_z1 = add_xyz(lower_w * 0.5, lower_d * 0.5, z_offset + lower_h)
+    tr_z2 = add_xyz(upper_w * 0.5, upper_d * 0.5, z_offset + height)
+
+    br_z0 = add_xyz(lower_w * 0.5, -lower_d * 0.5, z0)
+    br_z1 = add_xyz(lower_w * 0.5, -lower_d * 0.5, z_offset + lower_h)
+    br_z2 = add_xyz(upper_w * 0.5, -upper_d * 0.5, z_offset + height)
+
+    tl_z0 = add_xyz(-lower_w * 0.5, lower_d * 0.5, z0)
+    tl_z1 = add_xyz(-lower_w * 0.5, lower_d * 0.5, z_offset + lower_h)
+    tl_z2 = add_xyz(-upper_w * 0.5, upper_d * 0.5, z_offset + height)
+
+    bl_z0 = add_xyz(-lower_w * 0.5, -lower_d * 0.5, z0)
+    bl_z1 = add_xyz(-lower_w * 0.5, -lower_d * 0.5, z_offset + lower_h)
+    bl_z2 = add_xyz(-upper_w * 0.5, -upper_d * 0.5, z_offset + height)
+
+    mesh.add_quad(tl_z0, tl_z1, bl_z1, bl_z0)
+    mesh.add_quad(bl_z0, bl_z1, br_z1, br_z0)
+    mesh.add_quad(br_z0, br_z1, tr_z1, tr_z0)
+    mesh.add_quad(tr_z0, tr_z1, tl_z1, tl_z0)
+
+    mesh.add_quad(tl_z1, tl_z2, bl_z2, bl_z1)
+    mesh.add_quad(bl_z1, bl_z2, br_z2, br_z1)
+    mesh.add_quad(br_z1, br_z2, tr_z2, tr_z1)
+    mesh.add_quad(tr_z1, tr_z2, tl_z2, tl_z1)
+
+    mesh.add_quad(tl_z2, tr_z2, br_z2, bl_z2)
+    mesh.add_quad(tl_z0, bl_z0, br_z0, tr_z0)
+
+    kh = KeyHole(mesh, Transform())
+    kh.inner_walls()
+    return new_mesh_obj("keycap", mesh)
+
 
 class WallColumn:
     """A class representing a vertical column of points in the main grid walls.
@@ -2033,4 +2132,16 @@ def gen_keyboard(kbd: Keyboard) -> bpy.types.Object:
         bpy.ops.mesh.select_all(action="DESELECT")
 
     bpy.ops.object.mode_set(mode="OBJECT")
+    return obj
+
+
+def test() -> bpy.types.Object:
+    kbd = Keyboard()
+    kbd.gen_mesh(gen_walls=False)
+
+    mesh = blender_mesh("keyboard_mesh", kbd.mesh)
+    obj = new_mesh_obj("keyboard", mesh)
+
+    kbd.gen_keycaps()
+
     return obj
