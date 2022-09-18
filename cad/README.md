@@ -3,26 +3,38 @@
 This code requires Blender 2.91+ for its improved boolean operator support.
 I have primarily been using Blender 3.1.2 for development.
 
-## One-off Generation
+## Generating STL Files
 
-If you simply want to generate the keyboard mesh, the simplest way is
-by starting blender with the script on the command line:
+The `generate_stl.py` file will export STL files for all of the keyboard parts.
+It will place them inside an `_out/` directory.
+
+This script can be run from the command line as follows:
 
 ```
-blender -P main.py
+blender -b -P generate_stl.py
 ```
+
 ## Development
 
-If you want to modify the Python code that generates the mesh, you could add
-main.py as a script in Blender and then run it.  However, I find it easier to
-do development using the `auto_update.py` script.  This script monitors
-`main.py` and the modules it depends on, and re-runs main.py whenever the files
-change.  This makes it easy to edit the scripts with an external editor, and
-have blender re-render the mesh any time you save the files.
+If you want to make changes to the CAD logic, using the `test.py` script is the
+easiest way to do this.
 
-To do this, simply open `auto_update.py` in a blender text area, and then use
-Alt-P to run it.  It will start monitoring `main.py` when invoked.  Monitoring
-can be canceled through the Edit menu, if desired.
+You can start it from the command line as follows:
+
+```
+blender -P test.py
+```
+
+This will launch blender and run the code from
+[`mantyl/testing.py`](mantyl/testing.py).  Whenever
+any of the source code files are updated it will reload and re-run the code to
+redisplay the generated objects.
+
+This makes it easy to edit the Python source code and have blender
+automatically redisplay changes each time you save any of the files.
+
+The logic for monitoring source code changes is in
+[`mantyl/auto_update.py`](mantyl/auto_update.py).
 
 # Checking for Errors
 

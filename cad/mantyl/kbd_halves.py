@@ -283,7 +283,7 @@ def right_full() -> List[bpy.types.Object]:
         right_shell_obj(kbd),
         socket_underlay(kbd, mirror=False),
         thumb_underlay(kbd, mirror=False),
-        wrist_rest.right(kbd),
+        wrist_rest.right(),
     ]
 
 
@@ -296,5 +296,5 @@ def left_full() -> List[bpy.types.Object]:
         left_oled_backplate(kbd),
         socket_underlay(kbd, mirror=True),
         thumb_underlay(kbd, mirror=True),
-        wrist_rest.left(kbd),
+        wrist_rest.left(),
     ]
