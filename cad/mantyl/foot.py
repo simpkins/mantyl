@@ -18,7 +18,7 @@ from mantyl.keyboard import Keyboard
 class Foot:
     inner_r = 6.5
     outer_r = inner_r + 2.0
-    recess_h = 2.75
+    recess_h = 1.75
     base_h = 3.0
     top_h = 15.0
 
@@ -228,3 +228,9 @@ def add_feet(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
         angle,
         1.0
     )
+
+
+def test() -> bpy.types.Object:
+    foot, neg = gen_foot("foot", 0, 0, 0, 0)
+    difference(foot, neg)
+    return foot
