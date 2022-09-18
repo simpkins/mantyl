@@ -163,14 +163,14 @@ class Keyboard:
     def _key_tf_col1(self, row: int) -> Transform:
         tf = Transform()
         if row == 0:
-            tf = tf.rotate(0, 0, 8)
+            tf = tf.rotate(0, 0, 5)
             tf = tf.rotate(48, 0, 0)
-            tf = tf.translate(-2, 56, 32)
+            tf = tf.translate(-1, 55, 34)
         elif row == 1:
-            tf = tf.rotate(0, 0, 4)
+            tf = tf.rotate(0, 0, 1.75)
             tf = tf.rotate(0, 3, 0)
             tf = tf.rotate(38, 0, 0)
-            tf = tf.translate(0, 40.5, 18)
+            tf = tf.translate(0, 39.7, 19)
         elif row == 2:
             tf = tf.rotate(12, 0, 0)
             tf = tf.translate(0, 18, 9)
@@ -191,15 +191,15 @@ class Keyboard:
     def _key_tf_col2(self, row: int) -> Transform:
         tf = Transform()
         if row == 0:
-            tf = tf.rotate(0, 0, 8)
+            tf = tf.rotate(0, 0, 6)
             tf = tf.rotate(0, 4, 0)
             tf = tf.rotate(52, 0, 0)
-            tf = tf.translate(-2, 57, 34)
+            tf = tf.translate(-1.5, 56, 35)
         elif row == 1:
-            tf = tf.rotate(0, 0, 5)
-            tf = tf.rotate(0, 3, 0)
+            tf = tf.rotate(0, 0, 3)
+            tf = tf.rotate(0, 2, 0)
             tf = tf.rotate(38, 0, 0)
-            tf = tf.translate(0, 42, 17.5)
+            tf = tf.translate(0, 41, 18.5)
         elif row == 2:
             tf = tf.rotate(18, 0, 0)
             tf = tf.translate(0, 20.5, 8)
@@ -1950,7 +1950,7 @@ class KeyHole:
 
 def dsa_keycap(
     ratio: float = 1.0,
-    include_base: bool = False,
+    include_base: bool = True,
     transform: Optional[Transform] = None,
 ) -> bpy.types.Object:
     """
