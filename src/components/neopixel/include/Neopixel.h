@@ -2,6 +2,7 @@
 #pragma once
 
 #include <array>
+#include <tuple>
 
 #include <esp_err.h>
 #include <hal/gpio_hal.h>
@@ -17,6 +18,17 @@ public:
   esp_err_t init(gpio_num_t gpio);
 
   esp_err_t transmit(const void* payload, size_t size);
+
+  /**
+   * Convert an HSV value to RGB.
+   *
+   * h should be in the range [0, 360)
+   * s and v should be in the range [0.0, 1.0)
+   *
+   * Returns R, G, B values in the range [0.0, 1.0)
+   */
+  static std::tuple<float, float, float>
+  hsv2rgb(float h, float s, float v);
 
 private:
   enum TxState{
@@ -73,6 +85,13 @@ public:
     pixels_[offset] = g;
     pixels_[offset + 1] = r;
     pixels_[offset + 2] = b;
+  }
+  void set_hsv(size_t idx, float h, float s, float v) {
+    const auto rgb = NeopixelChainImpl::hsv2rgb(h, s, v);
+    set_rgb(idx,
+            std::get<0>(rgb) * 255,
+            std::get<1>(rgb) * 255,
+            std::get<2>(rgb) * 255);
   }
 
 private:

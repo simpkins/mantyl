@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Adam Simpkins
 #include "Neopixel.h"
 
+#include <cmath>
 #include <esp_check.h>
 #include <esp_log.h>
 
@@ -144,6 +145,45 @@ esp_err_t NeopixelChainImpl::init_encoder() {
   reset_code_.level1 = 0;
   reset_code_.duration1 = reset_ticks;
   return ESP_OK;
+}
+
+std::tuple<float, float, float>
+NeopixelChainImpl::hsv2rgb(float h, float s, float v) {
+  // clamp hue to [0.0, 360.0)
+  h = fmodf(h, 360.0);
+
+  if (s < 0) {
+    return {v, v, v};
+  }
+  if (v < 0) {
+    return {0.0, 0.0, 0.0};
+  }
+  // clamp s and v to 1.0
+  s = std::min(1.0f, s);
+  v = std::min(1.0f, v);
+
+  const auto hh = h / 60.0;
+  const auto i = static_cast<int>(hh);
+  const auto ff = hh - i;
+
+  const auto p = v * (1.0 - s);
+  const auto q = v * (1.0 - (s * ff));
+  const auto t = v * (1.0 - (s * (1.0 - ff)));
+
+  switch (i) {
+  case 0:
+    return {v, t, p};
+  case 1:
+    return {q, v, p};
+  case 2:
+    return {p, v, t};
+  case 3:
+    return {p, q, v};
+  case 4:
+    return {t, p, v};
+  default:
+    return {v, p, q};
+  }
 }
 
 } // namespace mantyl
