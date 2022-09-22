@@ -95,11 +95,44 @@ public:
   }
 
 private:
-  NeopixelChain(NeopixelChain const &) = delete;
-  NeopixelChain &operator=(NeopixelChain const &) = delete;
-
   NeopixelChainImpl impl_;
   std::array<uint8_t, 3 * kNumPixels> pixels_;
+};
+
+template<size_t N>
+class RGBWChain {
+public:
+  static constexpr size_t kNumPixels = N;
+
+  RGBWChain() = default;
+
+  esp_err_t init(gpio_num_t gpio) {
+    return impl_.init(gpio);
+  }
+
+  esp_err_t transmit() {
+    return impl_.transmit(pixels_.data(), pixels_.size());
+  }
+
+  void set_rgbw(size_t idx, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+    const auto offset = idx * 3;
+    pixels_[offset] = g;
+    pixels_[offset + 1] = r;
+    pixels_[offset + 2] = b;
+    pixels_[offset + 3] = w;
+  }
+  void set_hsvw(size_t idx, float h, float s, float v, uint8_t w) {
+    const auto rgb = NeopixelChainImpl::hsv2rgb(h, s, v);
+    set_rgbw(idx,
+            std::get<0>(rgb) * 255,
+            std::get<1>(rgb) * 255,
+            std::get<2>(rgb) * 255,
+            w);
+  }
+
+private:
+  NeopixelChainImpl impl_;
+  std::array<uint8_t, 4 * kNumPixels> pixels_;
 };
 
 } // namespace mantyl
