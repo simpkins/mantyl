@@ -2,14 +2,11 @@
 #include "keyboard/Keyboard.h"
 
 #include "App.h"
-#include "UsbDevice.h"
 #include "keyboard/KeymapDB.h"
 #include "keyboard/Keypad.h"
+#include "usb/hid.h"
 
-#include <class/hid/hid.h>
-#include <class/hid/hid_device.h>
 #include <esp_log.h>
-#include <tinyusb.h>
 
 namespace {
 const char *LogTag = "mantyl.keyboard";
@@ -112,7 +109,8 @@ void Keyboard::generate_report(std::array<uint8_t, 6> &keycodes,
         const auto is_pressed = (row_bits >> col) & 0x1;
         if (is_pressed) {
           const auto info = keymap_db_->get_key(is_left, row, col);
-          if (info.key == HID_KEY_NONE || info.key == KeySpecial) {
+          if (info.key == static_cast<uint8_t>(hid::Key::None) ||
+              info.key == KeySpecial) {
             continue;
           }
           if (keycode_idx < keycodes.size()) {
@@ -168,6 +166,8 @@ void Keyboard::send_hid_report() {
   uint8_t modifiers = 0;
   generate_report(keycodes, modifiers);
 
+  // TODO: re-enable this logic with my own custom USB stack
+#if 0
   // Note: this code is buggy and racy.  The TinyUSB APIs on FreeRTOS seem to
   // have some designed-in concurrency problems.  The HID APIs do not
   // perform locking, and are not safe to call anywhere other than the TinyUSB
@@ -185,7 +185,7 @@ void Keyboard::send_hid_report() {
   need_to_send_report_ = true;
   if (tud_hid_ready()) {
     if (tud_hid_keyboard_report(
-            UsbDevice::getKeyboardHidReportID(), modifiers, keycodes.data())) {
+            OldUsbDevice::getKeyboardHidReportID(), modifiers, keycodes.data())) {
       need_to_send_report_ = false;
     } else {
       // tud_hid_keyboard_report() is asynchronous, and the send does not
@@ -197,6 +197,7 @@ void Keyboard::send_hid_report() {
       ESP_LOGD(LogTag, "failed to send keyboard HID report");
     }
   }
+#endif
 }
 
 } // namespace mantyl

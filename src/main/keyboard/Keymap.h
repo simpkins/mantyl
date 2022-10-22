@@ -7,12 +7,14 @@
 
 namespace mantyl {
 
-struct KeyInfo {
-  uint8_t key{};
-  uint8_t modifiers{};
-};
+namespace hid {
+enum class Key : uint8_t;
+enum class Modifier : uint8_t;
+}
 
-constexpr uint8_t KeySpecial = 0x01;
+enum SpecialKeyMarker {
+  KeySpecial = 0xff,
+};
 
 enum class SpecialAction : uint8_t {
   UiLeft,
@@ -27,6 +29,21 @@ enum class SpecialAction : uint8_t {
   Keymap2,
   Keymap3,
   Keymap4,
+};
+
+struct KeyInfo {
+  constexpr KeyInfo() = default;
+  constexpr KeyInfo(uint8_t k, uint8_t m) : key(k), modifiers(m) {}
+  constexpr KeyInfo(hid::Key k, hid::Modifier m)
+      : key(static_cast<uint8_t>(k)), modifiers(static_cast<uint8_t>(m)) {}
+  constexpr KeyInfo(hid::Key k, uint8_t m)
+      : key(static_cast<uint8_t>(k)), modifiers(m) {}
+
+  constexpr KeyInfo(SpecialKeyMarker, SpecialAction action)
+      : key(KeySpecial), modifiers(static_cast<uint8_t>(action)) {}
+
+  uint8_t key{};
+  uint8_t modifiers{};
 };
 
 class Keymap {

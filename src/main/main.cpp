@@ -46,6 +46,8 @@ extern "C" void app_main() {
 
   mantyl::print_info();
 
+  // TODO: move the App to a static storage variable, so it does not take
+  // up room on the stack
   mantyl::App app;
   app.main();
   ESP_LOGW(LogTag, "main task exiting");

@@ -1,6 +1,8 @@
 // Copyright (c) 2022, Adam Simpkins
 #include "App.h"
 
+#include "usb/Esp32UsbDevice.h"
+
 #include <driver/i2c.h>
 #include <esp_check.h>
 #include <esp_chip_info.h>
@@ -162,6 +164,7 @@ void App::keyboard_task() {
 }
 
 void App::main() {
+#if 0
   task_handle_ = xTaskGetCurrentTaskHandle();
   ESP_ERROR_CHECK(init());
 
@@ -179,6 +182,16 @@ void App::main() {
   }
 
   keyboard_task();
+#endif
+
+  auto usb = std::make_unique<Esp32UsbDevice>();
+  const auto usb_rc = usb->init();
+  if (usb_rc != ESP_OK) {
+    ESP_LOGE(LogTag, "failed to initialize USB: %d", usb_rc);
+  }
+  ESP_LOGI(LogTag, "USB initialization DONE");
+
+  usb->loop();
 }
 
 } // namespace mantyl

@@ -9,7 +9,6 @@
 #include "keyboard/KeymapDB.h"
 #include "SSD1306.h"
 #include "ui/UI.h"
-#include "UsbDevice.h"
 
 #include <esp_err.h>
 #include <freertos/FreeRTOS.h>
@@ -34,9 +33,6 @@ public:
 
   UI &ui() {
     return ui_;
-  }
-  UsbDevice &usb() {
-    return usb_;
   }
 
   void notify_new_log_message();
@@ -73,7 +69,6 @@ private:
 
   static App *singleton_;
 
-  UsbDevice usb_;
   I2cMaster i2c_left_{PinConfig::LeftI2cSDA, PinConfig::LeftI2cSCL, I2C_NUM_0};
   I2cMaster i2c_right_{
       PinConfig::RightI2cSDA, PinConfig::RightI2cSCL, I2C_NUM_1};

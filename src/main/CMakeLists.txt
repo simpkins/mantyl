@@ -7,9 +7,11 @@ idf_component_register(
     "ui/Menu.cpp"
     "ui/UI.cpp"
     "ui/UIMode.cpp"
+    "usb/Esp32UsbDevice.cpp"
+    "usb/UsbDevice.cpp"
+    "usb/UsbDescriptorMap.cpp"
     "App.cpp"
     "main.cpp"
-    "UsbDevice.cpp"
   INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
   REQUIRES
     "tinyusb" "sx1509" "ssd1306" "i2c_cpp" "mantyl_util"

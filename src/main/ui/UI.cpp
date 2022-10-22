@@ -12,6 +12,7 @@
 #include <esp_log.h>
 
 #include <cstdarg>
+#include <cstring>
 
 namespace {
 const char *LogTag = "mantyl.ui";
