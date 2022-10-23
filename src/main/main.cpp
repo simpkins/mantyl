@@ -9,6 +9,8 @@
 #include <esp_flash.h>
 #include <esp_log.h>
 
+#include <memory>
+
 namespace {
 const char *LogTag = "mantyl.main";
 }
@@ -46,9 +48,9 @@ extern "C" void app_main() {
 
   mantyl::print_info();
 
-  // TODO: move the App to a static storage variable, so it does not take
-  // up room on the stack
-  mantyl::App app;
-  app.main();
+  // TODO: it would be nicer to make the App constructor constexpr,
+  // and then declare App as a static constinit variable.
+  auto app = std::make_unique<mantyl::App>();
+  app->main();
   ESP_LOGW(LogTag, "main task exiting");
 }
