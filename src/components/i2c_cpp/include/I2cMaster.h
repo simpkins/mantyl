@@ -11,7 +11,7 @@ namespace mantyl {
 
 class I2cMaster {
 public:
-  I2cMaster(int sda, int scl, i2c_port_t port = I2C_NUM_0)
+  constexpr I2cMaster(int sda, int scl, i2c_port_t port = I2C_NUM_0)
       : port_{port}, sda_{sda}, scl_{scl} {}
 
   i2c_port_t port() const {

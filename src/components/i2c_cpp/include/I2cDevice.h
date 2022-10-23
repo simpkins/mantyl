@@ -7,8 +7,8 @@ namespace mantyl {
 
 class I2cDevice {
 public:
-  I2cDevice(I2cMaster &bus, uint8_t addr) : bus_{&bus}, addr_{addr} {}
-  I2cDevice(I2cDevice &&) = default;
+  constexpr I2cDevice(I2cMaster &bus, uint8_t addr) : bus_{&bus}, addr_{addr} {}
+  constexpr I2cDevice(I2cDevice &&) = default;
   I2cDevice &operator=(I2cDevice &&) = default;
 
   uint8_t address() const {
