@@ -9,8 +9,6 @@ const char *LogTag = "mantyl.usb.device";
 
 namespace mantyl {
 
-UsbDevice::UsbDevice() = default;
-
 void UsbDevice::on_bus_reset(uint16_t max_ep0_packet_size) {
   ESP_EARLY_LOGI(
       LogTag, "on_bus_reset: max_ep0_packet_size=%d", max_ep0_packet_size);

@@ -27,8 +27,6 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 namespace mantyl {
 
-Esp32UsbDevice::Esp32UsbDevice() = default;
-
 Esp32UsbDevice::~Esp32UsbDevice() {
   if (interrupt_handle_) {
     esp_intr_free(interrupt_handle_);
@@ -108,33 +106,33 @@ esp_err_t Esp32UsbDevice::init(PhyType phy_type) {
   // TinyUSB.
 
   // Ensure the data line pull-up is disabled as we perform initialization.
-  set_bits(USB0.dctl, USB_SFTDISCON_M);
+  set_bits(usb_->dctl, USB_SFTDISCON_M);
 
   // During initialization, send a stall on receipt of
   // any non-zero length OUT packet.  Also set speed.
-  set_bits(USB0.dcfg, USB_NZSTSOUTHSHK_M | Speed::Full48Mhz);
+  set_bits(usb_->dcfg, USB_NZSTSOUTHSHK_M | Speed::Full48Mhz);
 
   // Configure AHB interrupts:
   // - enable interrupt when TxFIFO is empty
   // - global interrupts enable flag
-  set_bits(USB0.gahbcfg, USB_NPTXFEMPLVL_M | USB_GLBLLNTRMSK_M);
+  set_bits(usb_->gahbcfg, USB_NPTXFEMPLVL_M | USB_GLBLLNTRMSK_M);
   // USB configuration:
   // - Force device mode (rather than OTG)
-  set_bits(USB0.gusbcfg, USB_FORCEDEVMODE_M);
+  set_bits(usb_->gusbcfg, USB_FORCEDEVMODE_M);
   // OTG configuration:
   // - disable overrides
-  clear_bits(USB0.gotgctl,
+  clear_bits(usb_->gotgctl,
              USB_BVALIDOVVAL_M | USB_BVALIDOVEN_M | USB_VBVALIDOVVAL_M);
 
   // Configure all endpoints to NAK
   all_endpoints_nak();
 
   // Interrupt configuration
-  USB0.gintmsk = 0;          // mask all interrupts
-  USB0.gotgint = 0xffffffff; // clear OTG interrupts
-                             // (even though we leave OTG interrupts disabled)
-  USB0.gintsts = 0xffffffff; // clear pending interrupts
-  USB0.gintmsk = USB_MODEMISMSK_M | USB_RXFLVIMSK_M | USB_ERLYSUSPMSK_M |
+  usb_->gintmsk = 0;          // mask all interrupts
+  usb_->gotgint = 0xffffffff; // clear OTG interrupts
+                              // (even though we leave OTG interrupts disabled)
+  usb_->gintsts = 0xffffffff; // clear pending interrupts
+  usb_->gintmsk = USB_MODEMISMSK_M | USB_RXFLVIMSK_M | USB_ERLYSUSPMSK_M |
                  USB_USBSUSPMSK_M | USB_USBRSTMSK_M | USB_ENUMDONEMSK_M |
                  USB_RESETDETMSK_M | USB_DISCONNINTMSK_M;
 
@@ -142,7 +140,7 @@ esp_err_t Esp32UsbDevice::init(PhyType phy_type) {
       enable_interrupts(), LogTag, "error enabling USB interrupts");
 
   // Enable the data line pull-up to connect to the bus.
-  clear_bits(USB0.dctl, USB_SFTDISCON_M);
+  clear_bits(usb_->dctl, USB_SFTDISCON_M);
 
   return ESP_OK;
 }
@@ -179,7 +177,7 @@ esp_err_t Esp32UsbDevice::enable_interrupts() {
 
 void Esp32UsbDevice::all_endpoints_nak() {
   for (int ep_num = 0; ep_num < USB_OUT_EP_NUM; ++ep_num) {
-    set_bits(USB0.out_ep_reg[ep_num].doepctl, USB_DO_SNAK0_M);
+    set_bits(usb_->out_ep_reg[ep_num].doepctl, USB_DO_SNAK0_M);
   }
 }
 
@@ -189,8 +187,8 @@ void Esp32UsbDevice::static_interrupt_handler(void *arg) {
 }
 
 void Esp32UsbDevice::interrupt_handler() {
-  const uint32_t mask = USB0.gintmsk;
-  const uint32_t int_status = USB0.gintsts & mask;
+  const uint32_t mask = usb_->gintmsk;
+  const uint32_t int_status = usb_->gintsts & mask;
   static std::atomic<unsigned int> s_intr_count;
   auto intr_count = s_intr_count.fetch_add(1);
   ESP_EARLY_LOGI(LogTag,
@@ -212,30 +210,30 @@ void Esp32UsbDevice::interrupt_handler() {
     // These two tend to be asserted together when first initializing the bus
     // as a device.
     ESP_EARLY_LOGI(LogTag, "USB int: reset");
-    USB0.gintsts = USB_USBRST_M | USB_RESETDET_M;
+    usb_->gintsts = USB_USBRST_M | USB_RESETDET_M;
     allocated_fifos_ = 1;
     bus_reset();
   }
 
   if (int_status & USB_ENUMDONE_M) {
-    USB0.gintsts = USB_ENUMDONE_M;
+    usb_->gintsts = USB_ENUMDONE_M;
     enum_done();
   }
 
   if (int_status & USB_ERLYSUSPMSK_M) {
     ESP_EARLY_LOGI(LogTag, "USB int: early suspend");
-    USB0.gintsts = USB_ERLYSUSPMSK_M;
+    usb_->gintsts = USB_ERLYSUSPMSK_M;
   }
 
   if (int_status & USB_USBSUSP_M) {
     ESP_EARLY_LOGI(LogTag, "USB int: suspend");
-    USB0.gintsts = USB_USBSUSP_M;
+    usb_->gintsts = USB_USBSUSP_M;
     send_event_from_isr<SuspendEvent>();
   }
 
   if (int_status & USB_WKUPINT_M) {
     ESP_EARLY_LOGI(LogTag, "USB int: resume");
-    USB0.gintsts = USB_WKUPINT_M;
+    usb_->gintsts = USB_WKUPINT_M;
     send_event_from_isr<ResumeEvent>();
   }
 
@@ -246,26 +244,26 @@ void Esp32UsbDevice::interrupt_handler() {
     // have triggered a remote wakeup.  Re-disable SOF interrupts, and then
     // send a resume event to the main event handler.
     ESP_EARLY_LOGI(LogTag, "USB int: start of frame");
-    USB0.gintsts = USB_SOF_M;
-    clear_bits(USB0.gintmsk, USB_SOFMSK_M);
+    usb_->gintsts = USB_SOF_M;
+    clear_bits(usb_->gintmsk, USB_SOFMSK_M);
     send_event_from_isr<ResumeEvent>();
   }
 
   if (int_status & USB_RXFLVI_M) {
     ESP_EARLY_LOGI(LogTag, "USB int: rx");
-    // No need to update USB0.gintsts to indicate we have handled the
+    // No need to update usb_->gintsts to indicate we have handled the
     // interrupt; this will be cleared when we read from the fifo.
 
     // Disable the RXFLVL interrupt while reading data from the FIFO
-    clear_bits(USB0.gintmsk, USB_RXFLVIMSK_M);
+    clear_bits(usb_->gintmsk, USB_RXFLVIMSK_M);
     read_rx_fifo();
-    set_bits(USB0.gintmsk, USB_RXFLVIMSK_M);
+    set_bits(usb_->gintmsk, USB_RXFLVIMSK_M);
   }
 
   if (int_status & USB_OEPINT_M) {
     // OUT endpoint interrupt
     ESP_EARLY_LOGI(LogTag, "USB int: OUT endpoint");
-    // No need to update USB0.gintsts to indicate we have handled the
+    // No need to update usb_->gintsts to indicate we have handled the
     // interrupt; handle_out_endpoint_intr() will update the endpoint doepint
     // register instead.
     handle_out_endpoint_intr();
@@ -274,18 +272,18 @@ void Esp32UsbDevice::interrupt_handler() {
   if (int_status & USB_IEPINT_M) {
     // IN endpoint interrupt
     ESP_EARLY_LOGI(LogTag, "USB int: IN endpoint");
-    // No need to update USB0.gintsts to indicate we have handled the
+    // No need to update usb_->gintsts to indicate we have handled the
     // interrupt; handle_in_endpoint_intr() will update the endpoint diepint
     // register instead.
     handle_in_endpoint_intr();
   }
 
   // Clear other interrupt bits that we do not handle.
-  USB0.gintsts = USB_CURMOD_INT_M | USB_MODEMIS_M | USB_NPTXFEMP_M |
-                 USB_GINNAKEFF_M | USB_GOUTNAKEFF | USB_ERLYSUSP_M |
-                 USB_ISOOUTDROP_M | USB_EOPF_M | USB_EPMIS_M |
-                 USB_INCOMPISOIN_M | USB_INCOMPIP_M | USB_FETSUSP_M |
-                 USB_PTXFEMP_M;
+  usb_->gintsts = USB_CURMOD_INT_M | USB_MODEMIS_M | USB_NPTXFEMP_M |
+                  USB_GINNAKEFF_M | USB_GOUTNAKEFF | USB_ERLYSUSP_M |
+                  USB_ISOOUTDROP_M | USB_EOPF_M | USB_EPMIS_M |
+                  USB_INCOMPISOIN_M | USB_INCOMPIP_M | USB_FETSUSP_M |
+                  USB_PTXFEMP_M;
   ESP_EARLY_LOGI(LogTag, "USB interrupt %u done", intr_count);
 }
 
@@ -293,11 +291,11 @@ void Esp32UsbDevice::bus_reset() {
   all_endpoints_nak();
 
   // clear the device address
-  clear_bits(USB0.dcfg, USB_DEVADDR_M);
+  clear_bits(usb_->dcfg, USB_DEVADDR_M);
 
-  USB0.daintmsk = USB_OUTEPMSK0_M | USB_INEPMSK0_M;
-  USB0.doepmsk = USB_SETUPMSK_M | USB_XFERCOMPLMSK;
-  USB0.diepmsk = USB_TIMEOUTMSK_M | USB_DI_XFERCOMPLMSK_M;
+  usb_->daintmsk = USB_OUTEPMSK0_M | USB_INEPMSK0_M;
+  usb_->doepmsk = USB_SETUPMSK_M | USB_XFERCOMPLMSK;
+  usb_->diepmsk = USB_TIMEOUTMSK_M | USB_DI_XFERCOMPLMSK_M;
 
   // The Espressif tinyusb code uses 52 for the shared RX fifo size.
   // Note that this is 52 4-byte words, or 208 bytes total.
@@ -306,37 +304,37 @@ void Esp32UsbDevice::bus_reset() {
   // also the technical reference manual copy I have (v1.0, which was just
   // released a few weeks ago) does not appear to explicitly document the RX
   // FIFO size recommendations that they reference.
-  set_bits(USB0.grstctl, 0x10 << USB_TXFNUM_S); // fifo 0x10,
-  set_bits(USB0.grstctl, USB_TXFFLSH_M);        // Flush fifo
-  USB0.grxfsiz = 52;
+  set_bits(usb_->grstctl, 0x10 << USB_TXFNUM_S); // fifo 0x10,
+  set_bits(usb_->grstctl, USB_TXFFLSH_M);        // Flush fifo
+  usb_->grxfsiz = 52;
 
   // Control IN uses FIFO 0 with 64 bytes ( 16 32-bit word )
-  USB0.gnptxfsiz = (16 << USB_NPTXFDEP_S) | (USB0.grxfsiz & 0x0000ffffUL);
+  usb_->gnptxfsiz = (16 << USB_NPTXFDEP_S) | (usb_->grxfsiz & 0x0000ffffUL);
 
   // Ready to receive SETUP packet.
-  set_bits(USB0.out_ep_reg[0].doeptsiz, USB_SUPCNT0_M);
+  set_bits(usb_->out_ep_reg[0].doeptsiz, USB_SUPCNT0_M);
 
-  set_bits(USB0.gintmsk, USB_IEPINTMSK_M | USB_OEPINTMSK_M);
+  set_bits(usb_->gintmsk, USB_IEPINTMSK_M | USB_OEPINTMSK_M);
 }
 
 void Esp32UsbDevice::enum_done() {
   // The Device Status register (DSTS_REG) contains the enumerated speed
   // We pretty much always expect this to be Speed::Full48Mhz
-  uint32_t enum_spd = (USB0.dsts >> USB_ENUMSPD_S) & (USB_ENUMSPD_V);
+  uint32_t enum_spd = (usb_->dsts >> USB_ENUMSPD_S) & (USB_ENUMSPD_V);
   ESP_EARLY_LOGI(LogTag, "USB int: enumeration done; speed=%d", enum_spd);
 
   uint16_t max_ep0_packet_size;
   if (enum_spd == Speed::Full48Mhz) {
     // Max packet size is 64 bytes
-    clear_bits(USB0.in_ep_reg[0].diepctl, USB_D_MPS0_V);
+    clear_bits(usb_->in_ep_reg[0].diepctl, USB_D_MPS0_V);
     max_ep0_packet_size = 64;
   } else {
     // Max packet size is 8 bits
-    set_bits(USB0.in_ep_reg[0].diepctl, USB_D_MPS0_V);
+    set_bits(usb_->in_ep_reg[0].diepctl, USB_D_MPS0_V);
     max_ep0_packet_size = 8;
   }
   // Clear the stall bit
-  clear_bits(USB0.in_ep_reg[0].diepctl, USB_D_STALL0_M);
+  clear_bits(usb_->in_ep_reg[0].diepctl, USB_D_STALL0_M);
 
   xfer_status_[0].out.max_size = max_ep0_packet_size;
   xfer_status_[0].in.max_size = max_ep0_packet_size;
@@ -355,7 +353,7 @@ void Esp32UsbDevice::read_rx_fifo() {
     ChannelHalted = 7, // host mode only
   };
 
-  uint32_t const ctl_word = USB0.grxstsp;
+  uint32_t const ctl_word = usb_->grxstsp;
   uint8_t const pktsts = (ctl_word & USB_PKTSTS_M) >> USB_PKTSTS_S;
   switch (pktsts) {
   case Pktsts::GlobalOutNak:
@@ -380,13 +378,13 @@ void Esp32UsbDevice::read_rx_fifo() {
     ESP_EARLY_LOGI(LogTag, "USB RX: setup done");
     // Set the USB_SUPCNT0_M bits in the doeptsiz register, to indicate that
     // we can receive up to 3 DATA packets in this setup transfer.
-    set_bits(USB0.out_ep_reg[endpoint_num].doeptsiz, USB_SUPCNT0_M);
+    set_bits(usb_->out_ep_reg[endpoint_num].doeptsiz, USB_SUPCNT0_M);
     break;
   }
   case Pktsts::SetupReceived: {
     // We should receive a SetupComplete interrupt after SetupReceived.
     // We simply store the setup packet data here.
-    volatile uint32_t *rx_fifo = USB0.fifo[0];
+    volatile uint32_t *rx_fifo = usb_->fifo[0];
     setup_packet_.u32[0] = (*rx_fifo);
     setup_packet_.u32[1] = (*rx_fifo);
     ESP_EARLY_LOGI(LogTag,
@@ -405,7 +403,7 @@ void Esp32UsbDevice::receive_packet(uint8_t endpoint_num, uint16_t packet_size) 
   // TODO: do this work in the main task rather than the interrupt handler?
   auto *xfer = &xfer_status_[endpoint_num].out;
   // All OUT transfers are performed using FIFO 0.
-  volatile uint32_t *rx_fifo = USB0.fifo[0];
+  volatile uint32_t *rx_fifo = usb_->fifo[0];
 
   // We can read up to the smaller of:
   // - the remaining size until the buffer is full
@@ -449,8 +447,8 @@ bool Esp32UsbDevice::transmit_packet(uint8_t endpoint_num, uint8_t fifo_num) {
   ESP_EARLY_LOGI(LogTag, "USB: transmit_packet");
 
   auto &xfer = xfer_status_[endpoint_num].in;
-  volatile usb_in_endpoint_t *in_ep = &USB0.in_ep_reg[endpoint_num];
-  volatile uint32_t *tx_fifo = USB0.fifo[fifo_num];
+  volatile usb_in_endpoint_t *in_ep = &usb_->in_ep_reg[endpoint_num];
+  volatile uint32_t *tx_fifo = usb_->fifo[fifo_num];
 
   // soc/usb_reg.h documents the transfer size (USB_D_XFERSIZE0) only being
   // 8 bits wide, but it seems like it is actually 19 bits wide.
@@ -495,7 +493,7 @@ bool Esp32UsbDevice::transmit_packet(uint8_t endpoint_num, uint8_t fifo_num) {
 
 void Esp32UsbDevice::handle_out_endpoint_intr() {
   for (uint8_t epnum = 0; epnum < USB_OUT_EP_NUM; ++epnum) {
-    if (USB0.daint & (1 << (16 + epnum))) {
+    if (usb_->daint & (1 << (16 + epnum))) {
       handle_out_intr(epnum);
     }
   }
@@ -503,7 +501,7 @@ void Esp32UsbDevice::handle_out_endpoint_intr() {
 
 void Esp32UsbDevice::handle_in_endpoint_intr() {
   for (uint8_t epnum = 0; epnum < USB_IN_EP_NUM; ++epnum) {
-    if (USB0.daint & (1 << epnum)) {
+    if (usb_->daint & (1 << epnum)) {
       handle_in_intr(epnum);
     }
   }
@@ -512,18 +510,18 @@ void Esp32UsbDevice::handle_in_endpoint_intr() {
 void Esp32UsbDevice::handle_out_intr(uint8_t epnum) {
   // Setup OUT transfer done.
   // This should presumably only happen for endpoint 0.
-  if ((USB0.out_ep_reg[epnum].doepint & USB_SETUP0_M)) {
+  if ((usb_->out_ep_reg[epnum].doepint & USB_SETUP0_M)) {
     ESP_EARLY_LOGI(LogTag, "USB: OUT SETUP received on EP%u", epnum);
     // Clear the interrupt bits
-    USB0.out_ep_reg[epnum].doepint = USB_STUPPKTRCVD0_M | USB_SETUP0_M;
+    usb_->out_ep_reg[epnum].doepint = USB_STUPPKTRCVD0_M | USB_SETUP0_M;
     send_event_from_isr<SetupPacket>(setup_packet_.setup);
   }
 
   // OUT transfer complete (one packet received)
-  if (USB0.out_ep_reg[epnum].doepint & USB_XFERCOMPL0_M) {
+  if (usb_->out_ep_reg[epnum].doepint & USB_XFERCOMPL0_M) {
     ESP_EARLY_LOGI(LogTag, "USB: OUT transfer complete on EP%u", epnum);
     // Clear the interrupt bit
-    USB0.out_ep_reg[epnum].doepint = USB_XFERCOMPL0_M;
+    usb_->out_ep_reg[epnum].doepint = USB_XFERCOMPL0_M;
 
     auto &xfer = xfer_status_[epnum].out;
     // Transfer complete if short packet or total length is received
@@ -531,10 +529,10 @@ void Esp32UsbDevice::handle_out_intr(uint8_t epnum) {
       send_event_from_isr<OutXferCompleteEvent>(epnum, xfer.received_bytes);
     } else {
       // Schedule another packet to be received.
-      set_bits(USB0.out_ep_reg[epnum].doeptsiz,
+      set_bits(usb_->out_ep_reg[epnum].doeptsiz,
                USB_PKTCNT0_M |
                    ((xfer.max_size & USB_XFERSIZE0_V) << USB_XFERSIZE0_S));
-      set_bits(USB0.out_ep_reg[epnum].doepctl, USB_EPENA0_M | USB_CNAK0_M);
+      set_bits(usb_->out_ep_reg[epnum].doepctl, USB_EPENA0_M | USB_CNAK0_M);
     }
   }
 }
@@ -542,40 +540,40 @@ void Esp32UsbDevice::handle_out_intr(uint8_t epnum) {
 void Esp32UsbDevice::handle_in_intr(uint8_t epnum) {
   ESP_EARLY_LOGI(LogTag, "USB IN interrupt: EP%u", epnum);
   // IN transfer complete
-  if (USB0.in_ep_reg[epnum].diepint & USB_D_XFERCOMPL0_M) {
+  if (usb_->in_ep_reg[epnum].diepint & USB_D_XFERCOMPL0_M) {
     ESP_EARLY_LOGI(LogTag, "USB: IN transfer complete on EP%u", epnum);
-    USB0.in_ep_reg[epnum].diepint = USB_D_XFERCOMPL0_M;
+    usb_->in_ep_reg[epnum].diepint = USB_D_XFERCOMPL0_M;
     auto *xfer = &xfer_status_[epnum].in;
     send_event_from_isr<InXferCompleteEvent>(epnum, xfer->size);
   }
 
   // FIFO empty
-  if (USB0.in_ep_reg[epnum].diepint & USB_D_TXFEMP0_M) {
+  if (usb_->in_ep_reg[epnum].diepint & USB_D_TXFEMP0_M) {
     ESP_EARLY_LOGI(LogTag, "USB IN FIFO empty: EP%u", epnum);
-    USB0.in_ep_reg[epnum].diepint = USB_D_TXFEMP0_M;
+    usb_->in_ep_reg[epnum].diepint = USB_D_TXFEMP0_M;
     const bool all_sent = transmit_packet(epnum, epnum);
     // Turn off the FIFO empty interrupt if all bytes have been written
     if (all_sent) {
       ESP_EARLY_LOGI(LogTag, "USB: clear fifo empty interrupt");
-      clear_bits(USB0.dtknqr4_fifoemptymsk, 1 << epnum);
+      clear_bits(usb_->dtknqr4_fifoemptymsk, 1 << epnum);
     }
   }
 
   // Transfer timeout
-  if (USB0.in_ep_reg[epnum].diepint & USB_D_TIMEOUT0_M) {
+  if (usb_->in_ep_reg[epnum].diepint & USB_D_TIMEOUT0_M) {
     ESP_EARLY_LOGW(LogTag, "USB IN transfer timeout on EP%u", epnum);
     // Clear interrupt or endpoint will hang.
-    USB0.in_ep_reg[epnum].diepint = USB_D_TIMEOUT0_M;
+    usb_->in_ep_reg[epnum].diepint = USB_D_TIMEOUT0_M;
     send_event_from_isr<InXferFailedEvent>(epnum);
   }
 }
 
 void Esp32UsbDevice::set_address(uint8_t address) {
-  set_bits(USB0.dcfg, (address & USB_DEVADDR_V) << USB_DEVADDR_S);
+  set_bits(usb_->dcfg, (address & USB_DEVADDR_V) << USB_DEVADDR_S);
 }
 
 void Esp32UsbDevice::stall_in_endpoint(uint8_t endpoint_num) {
-  usb_in_endpoint_t *in_ep = &(USB0.in_ep_reg[0]);
+  usb_in_endpoint_t *in_ep = &(usb_->in_ep_reg[0]);
 
   if ((endpoint_num == 0) || !(in_ep[endpoint_num].diepctl & USB_D_EPENA1_M)) {
     // For endpoint 0 and other endpoints that are already disabled,
@@ -605,15 +603,15 @@ void Esp32UsbDevice::stall_in_endpoint(uint8_t endpoint_num) {
   // Flush the transmit FIFO.
   uint8_t const fifo_num =
       ((in_ep[endpoint_num].diepctl >> USB_D_TXFNUM1_S) & USB_D_TXFNUM1_V);
-  set_bits(USB0.grstctl, fifo_num << USB_TXFNUM_S);
-  set_bits(USB0.grstctl, USB_TXFFLSH_M);
-  while ((USB0.grstctl & USB_TXFFLSH_M) != 0) {
+  set_bits(usb_->grstctl, fifo_num << USB_TXFNUM_S);
+  set_bits(usb_->grstctl, USB_TXFFLSH_M);
+  while ((usb_->grstctl & USB_TXFFLSH_M) != 0) {
     // Busy loop until the FIFO has been cleared.
   }
 }
 
 void Esp32UsbDevice::stall_out_endpoint(uint8_t endpoint_num) {
-  usb_out_endpoint_t *out_ep = &(USB0.out_ep_reg[0]);
+  usb_out_endpoint_t *out_ep = &(usb_->out_ep_reg[0]);
 
   // Only disable currently enabled non-control endpoint
   if ((endpoint_num == 0) || !(out_ep[endpoint_num].doepctl & USB_EPENA0_M)) {
@@ -622,8 +620,8 @@ void Esp32UsbDevice::stall_out_endpoint(uint8_t endpoint_num) {
     set_bits(out_ep[endpoint_num].doepctl, USB_STALL0_M);
   } else {
     // Enable the Global NAK flag.
-    set_bits(USB0.dctl, USB_SGOUTNAK_M);
-    while ((USB0.gintsts & USB_GOUTNAKEFF_M) == 0) {
+    set_bits(usb_->dctl, USB_SGOUTNAK_M);
+    while ((usb_->gintsts & USB_GOUTNAKEFF_M) == 0) {
       // Busy loop until we have seen the USB_GOUTNAKEFF_M interrupt.
       // TODO: It would ideally be nicer to make this API asynchronous, and
       // finish the operation in the interrupt handler rather than busy
@@ -639,12 +637,12 @@ void Esp32UsbDevice::stall_out_endpoint(uint8_t endpoint_num) {
 
     // Clear the Global NAK flag to allow other OUT endpoints to continue
     // functioning.
-    set_bits(USB0.dctl, USB_CGOUTNAK_M);
+    set_bits(usb_->dctl, USB_CGOUTNAK_M);
   }
 }
 
 void Esp32UsbDevice::clear_in_stall(uint8_t endpoint_num) {
-  usb_in_endpoint_t *in_ep = &(USB0.in_ep_reg[0]);
+  usb_in_endpoint_t *in_ep = &(usb_->in_ep_reg[0]);
   clear_bits(in_ep[endpoint_num].diepctl, USB_D_STALL1_M);
 
   // Reset the DATA0/1 toggle bit to DATA0 after a stall on interrupt and bulk
@@ -657,7 +655,7 @@ void Esp32UsbDevice::clear_in_stall(uint8_t endpoint_num) {
 }
 
 void Esp32UsbDevice::clear_out_stall(uint8_t endpoint_num) {
-  usb_out_endpoint_t *out_ep = &(USB0.out_ep_reg[0]);
+  usb_out_endpoint_t *out_ep = &(usb_->out_ep_reg[0]);
   clear_bits(out_ep[endpoint_num].doepctl, USB_STALL1_M);
 
   // Reset the DATA0/1 toggle bit to DATA0 after a stall on interrupt and bulk
@@ -690,16 +688,16 @@ void Esp32UsbDevice::start_in_send(uint8_t endpoint_num,
 
   // Schedule the transfer
   // Set dieptsiz so we will get a transfer complete interrupt when done.
-  USB0.in_ep_reg[endpoint_num].dieptsiz =
+  usb_->in_ep_reg[endpoint_num].dieptsiz =
       (num_packets << USB_D_PKTCNT0_S) | (size << USB_D_XFERSIZE0_S);
   // Enable the endpoint, and clear the NAK bit.
-  set_bits(USB0.in_ep_reg[endpoint_num].diepctl,
+  set_bits(usb_->in_ep_reg[endpoint_num].diepctl,
            USB_D_EPENA1_M | USB_D_CNAK1_M);
 
   // If we have data to send, enable the fifo empty interrupt to
   // notify us when we can put data in the fifo.
   if (size != 0) {
-    set_bits(USB0.dtknqr4_fifoemptymsk, 1 << endpoint_num);
+    set_bits(usb_->dtknqr4_fifoemptymsk, 1 << endpoint_num);
   }
 }
 
@@ -719,10 +717,10 @@ void Esp32UsbDevice::start_out_read(uint8_t endpoint_num,
 
   // Schedule the OUT transfer.
   // Each complete packet will trigger an XFRC interrupt.
-  set_bits(USB0.out_ep_reg[endpoint_num].doeptsiz,
+  set_bits(usb_->out_ep_reg[endpoint_num].doeptsiz,
            USB_PKTCNT0_M |
                ((xfer.max_size & USB_XFERSIZE0_V) << USB_XFERSIZE0_S));
-  set_bits(USB0.out_ep_reg[endpoint_num].doepctl, USB_EPENA0_M | USB_CNAK0_M);
+  set_bits(usb_->out_ep_reg[endpoint_num].doepctl, USB_EPENA0_M | USB_CNAK0_M);
 }
 
 uint8_t Esp32UsbDevice::get_free_fifo() {
@@ -733,11 +731,11 @@ uint8_t Esp32UsbDevice::get_free_fifo() {
 }
 
 void Esp32UsbDevice::close_all_endpoints() {
-  usb_out_endpoint_t *out_ep = &(USB0.out_ep_reg[0]);
-  usb_in_endpoint_t *in_ep = &(USB0.in_ep_reg[0]);
+  usb_out_endpoint_t *out_ep = &(usb_->out_ep_reg[0]);
+  usb_in_endpoint_t *in_ep = &(usb_->in_ep_reg[0]);
 
   // Disable non-control interrupt
-  USB0.daintmsk = USB_OUTEPMSK0_M | USB_INEPMSK0_M;
+  usb_->daintmsk = USB_OUTEPMSK0_M | USB_INEPMSK0_M;
 
   for (uint8_t n = 1; n < xfer_status_.size(); n++) {
     // disable OUT endpoint

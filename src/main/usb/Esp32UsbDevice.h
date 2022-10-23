@@ -10,6 +10,7 @@
 #include <esp_err.h>
 #include <esp_intr_alloc.h>
 #include <esp_private/usb_phy.h>
+#include <soc/usb_struct.h>
 #include <soc/usb_types.h>
 
 #include <freertos/FreeRTOS.h>
@@ -24,7 +25,7 @@ public:
     External,
   };
 
-  Esp32UsbDevice();
+  constexpr Esp32UsbDevice(usb_dev_t* usb = &USB0) : usb_{usb} {}
   ~Esp32UsbDevice();
 
   [[nodiscard]] esp_err_t init(PhyType phy_type = PhyType::Internal);
@@ -71,7 +72,7 @@ private:
   static_assert(std::is_trivially_copyable_v<Event>,
                 "Event must be trivially copyable");
 
-  // Speed bits used by the USB0.dcfg and USB0.dsts registers.
+  // Speed bits used by the dcfg and dsts registers.
   // These unfortunately are not defined in soc/usb_reg.h
   enum Speed : uint32_t {
     High30Mhz = 0,
@@ -102,6 +103,11 @@ private:
   static constexpr uint8_t kMaxInFIFOs = 5;
   // The size of each IN FIFO, in bytes
   static constexpr uint16_t kInFIFOSize = 1024;
+
+  // The interrupt handler maintains a pointer to the Esp32UsbDevice object,
+  // so we cannot be copied or moved.
+  Esp32UsbDevice(const Esp32UsbDevice&) = delete;
+  Esp32UsbDevice& operator=(const Esp32UsbDevice&) = delete;
 
   [[nodiscard]] esp_err_t init_phy(PhyType phy_type);
 
@@ -154,6 +160,7 @@ private:
   uint8_t get_free_fifo();
   void close_all_endpoints() override;
 
+  usb_dev_t* usb_ = nullptr;
   usb_phy_handle_t phy_ = nullptr;
   intr_handle_t interrupt_handle_ = nullptr;
   uint8_t allocated_fifos_ = 1; // FIFO0 is always in use
@@ -161,7 +168,7 @@ private:
   union {
     std::array<uint32_t, 2> u32;
     SetupPacket setup;
-  } setup_packet_;
+  } setup_packet_ = {};
 
   StaticQueue_t queue_storage_;
   QueueHandle_t event_queue_;

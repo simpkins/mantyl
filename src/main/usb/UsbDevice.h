@@ -38,7 +38,7 @@ public:
 #endif
   };
 
-  UsbDevice();
+  constexpr UsbDevice() = default;
 
 protected:
   // Figure 9-1 in the USB 2.0 spec lists the various device states.
