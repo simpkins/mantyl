@@ -1,8 +1,8 @@
 // Copyright (c) 2022, Adam Simpkins
 #pragma once
 
-#include "usb/usb_types.h"
-#include "usb/UsbDescriptorMap.h"
+#include "mantyl_usb/usb_types.h"
+#include "mantyl_usb/UsbDescriptorMap.h"
 
 #include <cstdint>
 #include <string_view>

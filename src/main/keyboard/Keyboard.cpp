@@ -4,7 +4,7 @@
 #include "App.h"
 #include "keyboard/KeymapDB.h"
 #include "keyboard/Keypad.h"
-#include "usb/hid.h"
+#include "mantyl_usb/hid.h"
 
 #include <esp_log.h>
 

@@ -1,7 +1,7 @@
 // Copyright (c) 2022, Adam Simpkins
 #include "keyboard/KeymapDB.h"
 
-#include "usb/hid.h"
+#include "mantyl_usb/hid.h"
 
 #include <esp_log.h>
 

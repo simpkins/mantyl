@@ -1,5 +1,5 @@
 // Copyright (c) 2022, Adam Simpkins
-#include "UsbDevice.h"
+#include "mantyl_usb/UsbDevice.h"
 
 #include <esp_log.h>
 

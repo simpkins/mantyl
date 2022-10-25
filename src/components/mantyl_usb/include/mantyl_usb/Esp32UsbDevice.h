@@ -1,7 +1,7 @@
 // Copyright (c) 2022, Adam Simpkins
 #pragma once
 
-#include "usb/UsbDevice.h"
+#include "mantyl_usb/UsbDevice.h"
 
 #include <array>
 #include <cstdint>

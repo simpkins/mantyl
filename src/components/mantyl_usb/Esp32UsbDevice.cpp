@@ -1,5 +1,5 @@
 // Copyright (c) 2022, Adam Simpkins
-#include "usb/Esp32UsbDevice.h"
+#include "mantyl_usb/Esp32UsbDevice.h"
 
 #include <esp_check.h>
 #include <esp_log.h>

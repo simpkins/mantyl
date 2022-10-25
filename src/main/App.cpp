@@ -1,7 +1,7 @@
 // Copyright (c) 2022, Adam Simpkins
 #include "App.h"
 
-#include "usb/Esp32UsbDevice.h"
+#include "mantyl_usb/Esp32UsbDevice.h"
 
 #include <driver/i2c.h>
 #include <esp_check.h>

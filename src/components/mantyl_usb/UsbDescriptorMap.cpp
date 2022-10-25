@@ -1,7 +1,7 @@
 // Copyright (c) 2022, Adam Simpkins
-#include "usb/UsbDescriptorMap.h"
+#include "mantyl_usb/UsbDescriptorMap.h"
 
-#include "usb/usb_types.h"
+#include "mantyl_usb/usb_types.h"
 
 #include <array>
 
