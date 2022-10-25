@@ -4,7 +4,6 @@
 #include "ui/Menu.h"
 #include "ui/UI.h"
 #include "ui/UIMode.h"
-#include "App.h"
 #include "SSD1306.h"
 
 #include <esp_app_desc.h>
@@ -109,7 +108,7 @@ private:
     std::array<char, 48> buf;
 
     const auto uptime =
-        std::chrono::steady_clock::now() - App::get()->get_boot_time();
+        std::chrono::steady_clock::now() - ui().get_boot_time();
     const auto uptime_secs =
         std::chrono::duration_cast<std::chrono::seconds>(uptime);
 

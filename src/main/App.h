@@ -5,7 +5,7 @@
 #include "config.h"
 
 #include "I2cMaster.h"
-#include "keyboard/Keyboard.h"
+#include "Keyboard.h"
 #include "keyboard/KeymapDB.h"
 #include "SSD1306.h"
 #include "ui/UI.h"
@@ -18,7 +18,7 @@
 
 namespace mantyl {
 
-class App {
+class App : public UI::Callback {
 public:
   App();
   ~App();
@@ -35,8 +35,6 @@ public:
     return ui_;
   }
 
-  void notify_new_log_message();
-
   void left_keypad_interrupt() {
       on_gpio_interrupt(NotifyBits::Left);
   }
@@ -46,9 +44,10 @@ public:
 
   void on_special_action(SpecialAction action, bool press);
 
-  std::chrono::steady_clock::time_point get_boot_time() {
+  std::chrono::steady_clock::time_point get_boot_time() override {
     return boot_time_;
   }
+  void notify_new_log_message() override;
 
 private:
   enum NotifyBits : unsigned long {
@@ -73,7 +72,7 @@ private:
   I2cMaster i2c_right_{
       PinConfig::RightI2cSDA, PinConfig::RightI2cSCL, I2C_NUM_1};
   SSD1306 display_{i2c_left_, 0x3c, GPIO_NUM_1};
-  UI ui_{&display_};
+  UI ui_{this, &display_};
   KeymapDB keymap_db_;
   Keyboard keyboard_{i2c_left_, i2c_right_, keymap_db_};
 

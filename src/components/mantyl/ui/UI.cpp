@@ -1,7 +1,6 @@
 // Copyright (c) 2022, Adam Simpkins
 #include "ui/UI.h"
 
-#include "App.h"
 #include "SSD1306.h"
 #include "ui/MainMenu.h"
 #include "ui/UIMode.h"
@@ -17,77 +16,22 @@
 namespace {
 const char *LogTag = "mantyl.ui";
 vprintf_like_t orig_log_vprintf;
+mantyl::UI *ui_singleton = nullptr;
 
 constexpr size_t max_log_msg_len = 128;
-
-int ui_vprintf(const char *format, va_list ap) {
-  // Write to the original log function
-  int result = 0;
-  const auto orig_fn = orig_log_vprintf;
-  if (orig_fn) {
-    va_list ap2;
-    va_copy(ap2, ap);
-    result = orig_fn(format, ap2);
-    va_end(ap2);
-  }
-
-  // Format for our own logging purposes
-  std::vector<char> buf;
-  buf.resize(max_log_msg_len);
-  auto size_written = vsnprintf(buf.data(), buf.size(), format, ap);
-  if (size_written >= 0 && size_written < buf.size()) {
-    buf.resize(size_written);
-  }
-
-#if CONFIG_LOG_COLORS
-  // Strip off color escape sequences.
-  static constexpr std::string_view kResetSequence(LOG_RESET_COLOR "\n");
-  if (buf.size() >= kResetSequence.size()) {
-    if (memcmp(buf.data() + buf.size() - kResetSequence.size(),
-               kResetSequence.data(),
-               kResetSequence.size()) == 0) {
-      buf.resize(buf.size() - kResetSequence.size());
-    }
-  }
-
-  if (buf.size() >= 3 && buf[0] == '\033' && buf[1] == '[') {
-    size_t strip_idx = 2;
-    while (strip_idx < buf.size()) {
-      if (buf[strip_idx] == 'm') {
-        ++strip_idx;
-        break;
-      }
-      ++strip_idx;
-    }
-    // It might be nicer to store both a vector and a string_view,
-    // so that we could strip without actually doing a memmove().
-    memmove(buf.data(), buf.data() + strip_idx, buf.size() - strip_idx);
-    buf.resize(buf.size() - strip_idx);
-  }
-#else
-  // Strip off a trailing newline
-  if (buf.size() >= 1 && buf[buf.size() - 1] == '\n') {
-    buf.resize(buf.size() - 1);
-  }
-#endif // CONFIG_LOG_COLORS
-
-  auto* app = mantyl::App::get();
-  app->ui().append_log_message(std::move(buf));
-  app->notify_new_log_message();
-
-  return result;
-}
 
 } // namespace
 
 namespace mantyl {
 
-UI::UI(SSD1306 *display) : display_{display} {}
+UI::UI(Callback *callback, SSD1306 *display)
+    : callback_{callback}, display_{display} {}
 
 UI::~UI() {
   if (orig_log_vprintf) {
     esp_log_set_vprintf(orig_log_vprintf);
   }
+  ui_singleton = nullptr;
 }
 
 esp_err_t UI::init() {
@@ -105,6 +49,7 @@ esp_err_t UI::init() {
     return rc;
   }
 
+  ui_singleton = this;
   orig_log_vprintf = esp_log_set_vprintf(ui_vprintf);
 
   return ESP_OK;
@@ -262,6 +207,63 @@ void UI::display_log_messages() {
   auto rc = display_->flush();
   rc = display_->display_on();
   static_cast<void>(rc);
+}
+
+int UI::ui_vprintf(const char *format, va_list ap) {
+  // Write to the original log function
+  int result = 0;
+  const auto orig_fn = orig_log_vprintf;
+  if (orig_fn) {
+    va_list ap2;
+    va_copy(ap2, ap);
+    result = orig_fn(format, ap2);
+    va_end(ap2);
+  }
+
+  // Format for our own logging purposes
+  std::vector<char> buf;
+  buf.resize(max_log_msg_len);
+  auto size_written = vsnprintf(buf.data(), buf.size(), format, ap);
+  if (size_written >= 0 && size_written < buf.size()) {
+    buf.resize(size_written);
+  }
+
+#if CONFIG_LOG_COLORS
+  // Strip off color escape sequences.
+  static constexpr std::string_view kResetSequence(LOG_RESET_COLOR "\n");
+  if (buf.size() >= kResetSequence.size()) {
+    if (memcmp(buf.data() + buf.size() - kResetSequence.size(),
+               kResetSequence.data(),
+               kResetSequence.size()) == 0) {
+      buf.resize(buf.size() - kResetSequence.size());
+    }
+  }
+
+  if (buf.size() >= 3 && buf[0] == '\033' && buf[1] == '[') {
+    size_t strip_idx = 2;
+    while (strip_idx < buf.size()) {
+      if (buf[strip_idx] == 'm') {
+        ++strip_idx;
+        break;
+      }
+      ++strip_idx;
+    }
+    // It might be nicer to store both a vector and a string_view,
+    // so that we could strip without actually doing a memmove().
+    memmove(buf.data(), buf.data() + strip_idx, buf.size() - strip_idx);
+    buf.resize(buf.size() - strip_idx);
+  }
+#else
+  // Strip off a trailing newline
+  if (buf.size() >= 1 && buf[buf.size() - 1] == '\n') {
+    buf.resize(buf.size() - 1);
+  }
+#endif // CONFIG_LOG_COLORS
+
+  ui_singleton->append_log_message(std::move(buf));
+  ui_singleton->callback_->notify_new_log_message();
+
+  return result;
 }
 
 } // namespace mantyl

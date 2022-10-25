@@ -1,5 +1,5 @@
 // Copyright (c) 2022, Adam Simpkins
-#include "keyboard/Keyboard.h"
+#include "Keyboard.h"
 
 #include "App.h"
 #include "keyboard/KeymapDB.h"
