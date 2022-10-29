@@ -2,43 +2,104 @@
 #pragma once
 
 #include "mantyl_usb/usb_types.h"
-#include "mantyl_usb/UsbDescriptorMap.h"
 
 #include <cstdint>
+#include <optional>
 #include <string_view>
 
 namespace mantyl {
 
-class UsbDevice {
+using buf_view = std::basic_string_view<uint8_t>;
+
+/**
+ * UsbDeviceImpl defines the API that USB devices implement.
+ *
+ * When a device is plugged into the bus, the typical order of events will be:
+ * - on_reset()
+ * - on_enumerated() once USB speed has been negotiated
+ * - some number of get_descriptor() queries triggered by the host to query the
+ *   device type, available configurations, and other information
+ * - on_configured() when the host selects a device configuration to use.
+ *
+ * After this, additional get_descriptor() calls may occur, as well as other
+ * USB events interacting with the various configured endpoints and interfaces.
+ */
+class UsbDeviceImpl {
 public:
-  class StateCallback {
-  public:
-    virtual ~StateCallback() {}
+  virtual ~UsbDeviceImpl() {}
 
-    /**
-     * on_suspend() will be invoked when the USB bus is suspended.
-     *
-     * The USB spec requires that devices actually enter a suspend state within
-     * 10ms, and draw no more than the suspend current.  The suspend current
-     * is:
-     * - 500 uA for low-power devices
-     * - 2.5 mA for high-power devices that support remote-wakeup
-     */
-    virtual void on_suspend() = 0;
-    virtual void on_wakeup() {}
+  /**
+   * Return the given USB descriptor.
+   *
+   * The returned buffer must remain valid for the lifetime of the UsbDevice,
+   * or until the UsbDevice is disconnected.
+   */
+  virtual std::optional<buf_view> get_descriptor(uint16_t value,
+                                                 uint16_t index) = 0;
 
-    virtual void on_reset() {}
-    virtual bool on_configured(uint8_t config_id) = 0;
-    virtual void on_unconfigured() {}
+  /**
+   * on_reset() will be called when a reset state is detected on the bus.
+   *
+   * Implementations do not necessarily need to take any action on this event,
+   * and the default implementation is a no-op.
+   *
+   * After a reset, on_enumerated() will be called once the device has been
+   * re-enumerated on the bus.
+   */
+  virtual void on_reset() {}
+
+  /**
+   * Called once the device has been enumerated on the bus, and the USB speed
+   * has been selected.
+   *
+   * Receives as input the maximum allowed packet size for endpoint 0, which is
+   * based on the selected speed.
+   *
+   * The implementation may select a lower actual maximum packet size for
+   * endpoint 0, and should return the selected size.  The implementation must
+   * ensure that the bMaxPacketSize field in the device descriptor returned by
+   * get_descriptor() matches this value.  Implementations may want to update
+   * their device descriptor contents when on_enumerated() is called.
+   */
+  virtual uint8_t on_enumerated(uint8_t max_ep0_size) = 0;
+
+  /**
+   * on_suspend() will be invoked when the USB bus is suspended.
+   *
+   * The USB spec requires that devices actually enter a suspend state within
+   * 10ms, and draw no more than the suspend current.  The suspend current
+   * is:
+   * - 500 uA for low-power devices
+   * - 2.5 mA for high-power devices that support remote-wakeup
+   */
+  virtual void on_suspend() = 0;
+
+  /**
+   * on_wakeup() will be called once activity is resumed on the bus after as
+   * suspend event.
+   */
+  virtual void on_wakeup() {}
+
+  /**
+   * on_configured() will be called once the host selects a device
+   * configuration to use.
+   *
+   * The implementation should return true on success, or false if this is an
+   * invalid configuration ID.
+   */
+  virtual bool on_configured(uint8_t config_id) = 0;
+  virtual void on_unconfigured() {}
 
 #if 0
-    // Handle a Class or Vendor request to the device on endpoint 0
-    virtual void handle_device_in_request(SetupPacket& packet) = 0;
-    virtual void handle_device_out_request(SetupPacket& packet) = 0;
+  // Handle a Class or Vendor request to the device on endpoint 0
+  virtual void handle_device_in_request(SetupPacket& packet) = 0;
+  virtual void handle_device_out_request(SetupPacket& packet) = 0;
 #endif
-  };
+};
 
-  constexpr UsbDevice() = default;
+class UsbDevice {
+public:
+  explicit constexpr UsbDevice(UsbDeviceImpl* impl) : impl_{impl} {}
 
 protected:
   // Figure 9-1 in the USB 2.0 spec lists the various device states.
@@ -84,7 +145,8 @@ protected:
 
   // Event handler functions to be invoked by subclasses.
   // These must not be invoked from within an interrupt.
-  void on_bus_reset(uint16_t max_ep0_packet_size);
+  void on_bus_reset();
+  void on_enum_done(uint16_t max_ep0_packet_size);
   void on_suspend();
   void on_resume();
   void on_setup_received(const SetupPacket& packet);
@@ -159,8 +221,7 @@ private:
   // All state is only accessed from within the USB task,
   // so we do not need any synchronization.
   State state_{State::Uninit};
-  StateCallback *state_callback_{nullptr};
-  UsbDescriptorMap descriptors_;
+  UsbDeviceImpl *impl_{nullptr};
 
   // Endpoint 0 status
   ControlTransfer ctrl_transfer_;

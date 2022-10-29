@@ -25,7 +25,8 @@ public:
     External,
   };
 
-  constexpr Esp32UsbDevice(usb_dev_t* usb = &USB0) : usb_{usb} {}
+  explicit constexpr Esp32UsbDevice(UsbDeviceImpl *impl, usb_dev_t *usb = &USB0)
+      : UsbDevice(impl), usb_{usb} {}
   ~Esp32UsbDevice();
 
   [[nodiscard]] esp_err_t init(PhyType phy_type = PhyType::Internal);
@@ -34,8 +35,9 @@ public:
 
 private:
   struct UninitializedEvent {};
-  struct BusResetEvent {
-    explicit BusResetEvent(uint8_t max_pkt_size)
+  struct BusResetEvent {};
+  struct BusEnumDone {
+    explicit BusEnumDone(uint8_t max_pkt_size)
         : max_ep0_packet_size{max_pkt_size} {}
 
     uint16_t max_ep0_packet_size{0};
@@ -63,6 +65,7 @@ private:
   };
   using Event = std::variant<UninitializedEvent,
                              BusResetEvent,
+                             BusEnumDone,
                              SuspendEvent,
                              ResumeEvent,
                              SetupPacket,

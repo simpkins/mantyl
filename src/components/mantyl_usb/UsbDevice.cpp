@@ -9,30 +9,31 @@ const char *LogTag = "mantyl.usb.device";
 
 namespace mantyl {
 
-void UsbDevice::on_bus_reset(uint16_t max_ep0_packet_size) {
+void UsbDevice::on_bus_reset() {
+  ESP_EARLY_LOGI(LogTag, "onbus_reset");
+  impl_->on_reset();
+}
+
+void UsbDevice::on_enum_done(uint16_t max_ep0_packet_size) {
   ESP_EARLY_LOGI(
-      LogTag, "on_bus_reset: max_ep0_packet_size=%d", max_ep0_packet_size);
+      LogTag, "on_enum_done: max_ep0_packet_size=%d", max_ep0_packet_size);
 
   ctrl_transfer_.reset(max_ep0_packet_size);
   state_ = State::Default;
   config_id_ = 0;
   remote_wakeup_enabled_ = false;
-  if (state_callback_) {
-    state_callback_->on_reset();
-  }
+  impl_->on_enumerated(max_ep0_packet_size);
 }
 
 void UsbDevice::on_suspend() {
   ESP_EARLY_LOGI(LogTag, "on_suspend");
   state_ |= StateFlag::Suspended;
-  if (state_callback_) {
-    // Do not invoke the callback for suspend events that occur before the
-    // first reset has been seen.  The bus suspend state can be seen when first
-    // attached to the bus, but this generally isn't really relevant or worth
-    // distinguishing from the normal uninitialized state.
-    if ((state_ & StateMask::Mask) != State::Uninit) {
-      state_callback_->on_suspend();
-    }
+  // Do not invoke the on_suspend() callback for suspend events that occur
+  // before the first reset has been seen.  The bus suspend state can be seen
+  // when first attached to the bus, but this generally isn't really relevant
+  // or worth distinguishing from the normal uninitialized state.
+  if ((state_ & StateMask::Mask) != State::Uninit) {
+    impl_->on_suspend();
   }
 }
 
@@ -42,10 +43,8 @@ void UsbDevice::on_resume() {
   }
   ESP_EARLY_LOGI(LogTag, "on_resume");
   state_ &= ~StateFlag::Suspended;
-  if (state_callback_) {
-    if ((state_ & StateMask::Mask) != State::Uninit) {
-      state_callback_->on_wakeup();
-    }
+  if ((state_ & StateMask::Mask) != State::Uninit) {
+    impl_->on_wakeup();
   }
 }
 
@@ -163,8 +162,7 @@ bool UsbDevice::process_std_device_in_request(const SetupPacket &packet) {
     ESP_EARLY_LOGW(LogTag, "USB: GetStatus");
     // TODO: this response buffer must be stored inside ctrl_transfer_
     std::array<uint8_t, 2> response;
-    const bool is_self_powered =
-        state_callback_ ? state_callback_->is_self_powered() : false;
+    const bool is_self_powered = impl_->is_self_powered();
     response[0] =
         (remote_wakeup_enabled_ ? 0x02 : 0x00) | (self_powered ? 0x01 : 0x00);
     response[1] = 0;
@@ -180,7 +178,7 @@ bool UsbDevice::process_std_device_in_request(const SetupPacket &packet) {
 bool UsbDevice::process_non_std_device_out_request(const SetupPacket &packet) {
   const auto req_type = packet.get_request_type();
   if (req_type == SetupReqType::Class) {
-    // TODO: let state_callback_ handle this.
+    // TODO: let impl_ handle this.
     // For now just hack this up to support HID
 
     if (packet.request == 0x0a) {
@@ -195,7 +193,7 @@ bool UsbDevice::process_non_std_device_out_request(const SetupPacket &packet) {
 bool UsbDevice::process_non_std_device_in_request(const SetupPacket &packet) {
   const auto req_type = packet.get_request_type();
   if (req_type == SetupReqType::Class) {
-    // TODO: let state_callback_ handle this.
+    // TODO: let impl_ handle this.
   }
 
   // TODO
@@ -213,26 +211,22 @@ bool UsbDevice::process_set_configuration(const SetupPacket &packet) {
   } else if (config_id == 0) {
     config_id_ = 0;
     state_ = State::Address;
-    if (state_callback_) {
-      state_callback_->on_unconfigured();
-    }
+    impl_->on_unconfigured();
   } else {
     config_id_ = config_id;
     state_ = State::Configured;
-    if (state_callback_) {
-      if (!state_callback_->on_configured(config_id)) {
-        // If a SetConfiguration request is received with an invalid config
-        // ID, the USB spec does not really indicates we should generate a
-        // Request Error, but doesn't really say what state we should be in
-        // afterwards if we were previously in the Configured state.
-        // We choose to reset back to the Address state here.  Most likely
-        // something has gone wrong and the host will probably reset us
-        // anyway.
-        config_id_ = 0;
-        state_ = State::Address;
-        ctrl_transfer_.send_request_error(*this);
-        return true;
-      }
+    if (!impl_->on_configured(config_id)) {
+      // If a SetConfiguration request is received with an invalid config
+      // ID, the USB spec does not really indicates we should generate a
+      // Request Error, but doesn't really say what state we should be in
+      // afterwards if we were previously in the Configured state.
+      // We choose to reset back to the Address state here.  Most likely
+      // something has gone wrong and the host will probably reset us
+      // anyway.
+      config_id_ = 0;
+      state_ = State::Address;
+      ctrl_transfer_.send_request_error(*this);
+      return true;
     }
   }
   return ctrl_transfer_.ack_out_transfer(*this);
@@ -285,7 +279,7 @@ bool UsbDevice::process_get_descriptor(const SetupPacket &packet) {
                  "USB: get descriptor: value=0x%x index=%u",
                  packet.value,
                  packet.index);
-  auto desc = descriptors_.find_descriptor(packet.value, packet.index);
+  auto desc = impl_->get_descriptor(packet.value, packet.index);
   if (!desc.has_value()) {
     // No descriptor with this ID.
     ctrl_transfer_.send_request_error(*this);

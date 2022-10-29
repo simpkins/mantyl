@@ -57,7 +57,8 @@ void Esp32UsbDevice::handle_event(Event& event) {
             // this shouldn't be possible
             ESP_EARLY_LOGE(LogTag, "unexpected USB uninitialized event");
           },
-          [this](BusResetEvent &ev) { on_bus_reset(ev.max_ep0_packet_size); },
+          [this](BusResetEvent &) { on_bus_reset(); },
+          [this](BusEnumDone &ev) { on_enum_done(ev.max_ep0_packet_size); },
           [this](SuspendEvent &) { on_suspend(); },
           [this](ResumeEvent &) { on_resume(); },
           [this](SetupPacket &packet) { on_setup_received(packet); },
@@ -315,6 +316,8 @@ void Esp32UsbDevice::bus_reset() {
   set_bits(usb_->out_ep_reg[0].doeptsiz, USB_SUPCNT0_M);
 
   set_bits(usb_->gintmsk, USB_IEPINTMSK_M | USB_OEPINTMSK_M);
+
+  send_event_from_isr<BusResetEvent>();
 }
 
 void Esp32UsbDevice::enum_done() {
@@ -338,7 +341,7 @@ void Esp32UsbDevice::enum_done() {
 
   xfer_status_[0].out.max_size = max_ep0_packet_size;
   xfer_status_[0].in.max_size = max_ep0_packet_size;
-  send_event_from_isr<BusResetEvent>(max_ep0_packet_size);
+  send_event_from_isr<BusEnumDone>(max_ep0_packet_size);
 }
 
 void Esp32UsbDevice::read_rx_fifo() {

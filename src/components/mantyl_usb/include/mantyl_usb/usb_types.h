@@ -6,10 +6,10 @@
 namespace mantyl {
 
 enum class SetupRecipient : uint8_t {
-    Device = 0,
-    Interface = 1,
-    Endpoint = 2,
-    Other = 3,
+  Device = 0,
+  Interface = 1,
+  Endpoint = 2,
+  Other = 3,
 };
 
 enum class SetupReqType : uint8_t {
@@ -20,30 +20,55 @@ enum class SetupReqType : uint8_t {
 };
 
 enum class StdRequestType : uint8_t {
-    GetStatus = 0,
-    ClearFeature = 1,
-    SetFeature = 3,
-    SetAddress = 5,
-    GetDescriptor = 6,
-    GetConfiguration = 8,
-    SetConfiguration = 9,
-    GetInterface = 10,
-    SetInterface = 11,
+  GetStatus = 0,
+  ClearFeature = 1,
+  SetFeature = 3,
+  SetAddress = 5,
+  GetDescriptor = 6,
+  GetConfiguration = 8,
+  SetConfiguration = 9,
+  GetInterface = 10,
+  SetInterface = 11,
 };
 
 enum class DescriptorType : uint8_t {
-    Device = 1,
-    Config = 2,
-    String = 3,
-    Interface = 4,
-    Endpoint = 5,
-    DeviceQualifier = 6,
-    OtherSpeedConfig = 7,
-    InterfacePower = 8,
+  Device = 1,
+  Config = 2,
+  String = 3,
+  Interface = 4,
+  Endpoint = 5,
+  DeviceQualifier = 6,
+  OtherSpeedConfig = 7,
+  InterfacePower = 8,
 
-    Hid = 0x21,
-    HidReport = 0x22,
-    HidPhyDescriptor = 0x23,
+  Hid = 0x21,
+  HidReport = 0x22,
+  HidPhyDescriptor = 0x23,
+};
+
+enum class UsbClass : uint8_t {
+  PerInterface = 0x00,
+  Audio = 0x01,
+  Cdc = 0x02,
+  Hid = 0x03,
+  Physical = 0x05,
+  Image = 0x06,
+  Printer = 0x07,
+  MassStorage = 0x08,
+  Hub = 0x09,
+  CdcData = 0x0a,
+  SmartCard = 0x0b,
+  ContentSecurity = 0xd,
+  Video = 0x0e,
+  PersonalHealthcare = 0x0f,
+  AudioVideo = 0x10,
+  Billboard = 0x11,
+  UsbCBridge = 0x12,
+  I3C = 0x3c,
+  Diagnostic = 0xdc,
+  WirelessController = 0xe0,
+  Miscellaneous = 0xef,
+  VendorSpecific = 0xff,
 };
 
 enum class FeatureSelector {
