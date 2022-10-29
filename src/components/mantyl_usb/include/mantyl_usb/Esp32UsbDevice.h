@@ -170,9 +170,9 @@ private:
     SetupPacket setup;
   } setup_packet_ = {};
 
-  StaticQueue_t queue_storage_;
-  QueueHandle_t event_queue_;
-  std::array<uint8_t, sizeof(Event) * kMaxEventQueueSize> queue_buffer_;
+  StaticQueue_t queue_storage_ = {};
+  QueueHandle_t event_queue_ = nullptr;
+  std::array<uint8_t, sizeof(Event) * kMaxEventQueueSize> queue_buffer_ = {};
 };
 
 } // namespace mantyl
