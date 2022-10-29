@@ -3,6 +3,7 @@
 
 #include "mantyl_usb/usb_types.h"
 
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string_view>
@@ -90,6 +91,16 @@ public:
   virtual bool on_configured(uint8_t config_id) = 0;
   virtual void on_unconfigured() {}
 
+  /**
+   * Returns true if the device is currently self powered.
+   *
+   * This is called when the host sends a GET_STATUS request to query the
+   * status of the device.
+   */
+  virtual bool is_self_powered() {
+    return false;
+  }
+
 #if 0
   // Handle a Class or Vendor request to the device on endpoint 0
   virtual void handle_device_in_request(SetupPacket& packet) = 0;
@@ -100,6 +111,10 @@ public:
 class UsbDevice {
 public:
   explicit constexpr UsbDevice(UsbDeviceImpl* impl) : impl_{impl} {}
+
+  bool is_remote_wakeup_enabled() const {
+    return remote_wakeup_enabled_;
+  }
 
 protected:
   // Figure 9-1 in the USB 2.0 spec lists the various device states.
@@ -185,6 +200,9 @@ private:
     uint16_t max_packet_size_{0};
     Status status_{Status::None};
     buf_view buf_;
+    // A small buffer for generating responses to some standard control
+    // transfer requests.
+    std::array<uint8_t, 2> in_place_buf_{};
   };
 
   UsbDevice(UsbDevice const &) = delete;

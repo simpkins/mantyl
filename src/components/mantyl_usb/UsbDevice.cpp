@@ -158,19 +158,15 @@ bool UsbDevice::process_std_device_in_request(const SetupPacket &packet) {
     buf_view response(&config_id_, sizeof(config_id_));
     return send_ctrl_in(packet, response);
   } else if (std_req_type == StdRequestType::GetStatus) {
-#if 0
     ESP_EARLY_LOGW(LogTag, "USB: GetStatus");
-    // TODO: this response buffer must be stored inside ctrl_transfer_
-    std::array<uint8_t, 2> response;
-    const bool is_self_powered = impl_->is_self_powered();
-    response[0] =
+    // We put the response into the ControlTransfer::in_place_buf_
+    const bool self_powered = impl_->is_self_powered();
+    ctrl_transfer_.in_place_buf_[0] =
         (remote_wakeup_enabled_ ? 0x02 : 0x00) | (self_powered ? 0x01 : 0x00);
-    response[1] = 0;
-    return send_ctrl_in(packet, response);
-#else
-    ESP_EARLY_LOGW(LogTag, "USB: TODO: GetStatus");
-    return false;
-#endif
+    ctrl_transfer_.in_place_buf_[1] = 0;
+    return send_ctrl_in(packet,
+                        buf_view(ctrl_transfer_.in_place_buf_.data(),
+                                 ctrl_transfer_.in_place_buf_.size()));
   }
   return false;
 }
