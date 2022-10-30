@@ -10,13 +10,12 @@ const char *LogTag = "mantyl.usb.device";
 namespace mantyl {
 
 void UsbDevice::on_bus_reset() {
-  ESP_EARLY_LOGI(LogTag, "onbus_reset");
+  ESP_LOGI(LogTag, "onbus_reset");
   impl_->on_reset();
 }
 
 void UsbDevice::on_enum_done(uint16_t max_ep0_packet_size) {
-  ESP_EARLY_LOGI(
-      LogTag, "on_enum_done: max_ep0_packet_size=%d", max_ep0_packet_size);
+  ESP_LOGI(LogTag, "on_enum_done: max_ep0_packet_size=%d", max_ep0_packet_size);
 
   ctrl_transfer_.reset(max_ep0_packet_size);
   state_ = State::Default;
@@ -26,7 +25,7 @@ void UsbDevice::on_enum_done(uint16_t max_ep0_packet_size) {
 }
 
 void UsbDevice::on_suspend() {
-  ESP_EARLY_LOGI(LogTag, "on_suspend");
+  ESP_LOGI(LogTag, "on_suspend");
   state_ |= StateFlag::Suspended;
   // Do not invoke the on_suspend() callback for suspend events that occur
   // before the first reset has been seen.  The bus suspend state can be seen
@@ -41,7 +40,7 @@ void UsbDevice::on_resume() {
   if ((state_ & StateFlag::Suspended) != StateFlag::Suspended) {
     return;
   }
-  ESP_EARLY_LOGI(LogTag, "on_resume");
+  ESP_LOGI(LogTag, "on_resume");
   state_ &= ~StateFlag::Suspended;
   if ((state_ & StateMask::Mask) != State::Uninit) {
     impl_->on_wakeup();
@@ -60,27 +59,27 @@ void UsbDevice::on_setup_received(const SetupPacket& packet) {
 
   // Process control request
   if (!process_setup_packet(packet)) {
-    ESP_EARLY_LOGW(LogTag,
-                   "unhandled SETUP packet: request_type=0x%04x request=0x%04x "
-                   "walue=0x%06x index=0x%06x length=0x%06x\n",
-                   packet.request_type,
-                   packet.request,
-                   packet.value,
-                   packet.index,
-                   packet.length);
+    ESP_LOGW(LogTag,
+             "unhandled SETUP packet: request_type=0x%04x request=0x%04x "
+             "walue=0x%06x index=0x%06x length=0x%06x\n",
+             packet.request_type,
+             packet.request,
+             packet.value,
+             packet.index,
+             packet.length);
     ctrl_transfer_.send_request_error(*this);
   }
 }
 
 bool UsbDevice::process_setup_packet(const SetupPacket& packet) {
-  ESP_EARLY_LOGI(LogTag,
-                 "USB: SETUP received: request_type=0x%04x request=0x%04x "
-                 "value=0x%06x index=0x%06x length=0x%06x",
-                 packet.request_type,
-                 packet.request,
-                 packet.value,
-                 packet.index,
-                 packet.length);
+  ESP_LOGI(LogTag,
+           "USB: SETUP received: request_type=0x%04x request=0x%04x "
+           "value=0x%06x index=0x%06x length=0x%06x",
+           packet.request_type,
+           packet.request,
+           packet.value,
+           packet.index,
+           packet.length);
 
   if (packet.request_type == 0) {
     // Direction: Out (host to device)
@@ -130,7 +129,7 @@ bool UsbDevice::process_std_device_out_request(const SetupPacket &packet) {
   const auto std_req_type = packet.get_std_request();
   if (std_req_type == StdRequestType::SetAddress) {
     const uint8_t address = packet.value;
-    ESP_EARLY_LOGI(LogTag, "USB: set address: %u", packet.value);
+    ESP_LOGI(LogTag, "USB: set address: %u", packet.value);
     state_ = State::Address;
     set_address(address);
     return ctrl_transfer_.ack_out_transfer(*this);
@@ -149,7 +148,7 @@ bool UsbDevice::process_std_device_in_request(const SetupPacket &packet) {
   if (std_req_type == StdRequestType::GetDescriptor) {
     return process_get_descriptor(packet);
   } else if (std_req_type == StdRequestType::GetConfiguration) {
-    ESP_EARLY_LOGI(LogTag, "USB: get configuration");
+    ESP_LOGI(LogTag, "USB: get configuration");
     // The response packet we send points at our config_id_ member variable.
     // We shouldn't be able to receive a new SetConfiguration packet while we
     // are responding to this GetConfiguration packet, so config_id_ generally
@@ -158,7 +157,7 @@ bool UsbDevice::process_std_device_in_request(const SetupPacket &packet) {
     buf_view response(&config_id_, sizeof(config_id_));
     return send_ctrl_in(packet, response);
   } else if (std_req_type == StdRequestType::GetStatus) {
-    ESP_EARLY_LOGW(LogTag, "USB: GetStatus");
+    ESP_LOGW(LogTag, "USB: GetStatus");
     // We put the response into the ControlTransfer::in_place_buf_
     const bool self_powered = impl_->is_self_powered();
     ctrl_transfer_.in_place_buf_[0] =
@@ -202,6 +201,7 @@ bool UsbDevice::process_set_configuration(const SetupPacket &packet) {
   }
 
   const auto config_id = (packet.value & 0xff);
+  ESP_LOGI(LogTag, "USB: set configuration: %u", config_id);
   if (config_id_ == config_id) {
     // nothing new to do
   } else if (config_id == 0) {
@@ -229,10 +229,10 @@ bool UsbDevice::process_set_configuration(const SetupPacket &packet) {
 }
 
 bool UsbDevice::process_device_set_feature(const SetupPacket &packet) {
-  ESP_EARLY_LOGI(LogTag,
-                 "USB: SetFeature for device, feature=%u, index=%u",
-                 packet.value,
-                 packet.index);
+  ESP_LOGI(LogTag,
+           "USB: SetFeature for device, feature=%u, index=%u",
+           packet.value,
+           packet.index);
   const auto feature = static_cast<FeatureSelector>(packet.value);
   if (feature == FeatureSelector::TestMode) {
     // We don't currently support test mode.
@@ -255,8 +255,7 @@ bool UsbDevice::process_device_set_feature(const SetupPacket &packet) {
 }
 
 bool UsbDevice::process_device_clear_feature(const SetupPacket &packet) {
-  ESP_EARLY_LOGI(
-      LogTag, "USB: ClearFeature for device, feature=%u", packet.value);
+  ESP_LOGI(LogTag, "USB: ClearFeature for device, feature=%u", packet.value);
   if (state_ != State::Address && state_ != State::Configured) {
     return false;
   }
@@ -271,10 +270,10 @@ bool UsbDevice::process_device_clear_feature(const SetupPacket &packet) {
 }
 
 bool UsbDevice::process_get_descriptor(const SetupPacket &packet) {
-  ESP_EARLY_LOGI(LogTag,
-                 "USB: get descriptor: value=0x%x index=%u",
-                 packet.value,
-                 packet.index);
+  ESP_LOGI(LogTag,
+           "USB: get descriptor: value=0x%x index=%u",
+           packet.value,
+           packet.index);
   auto desc = impl_->get_descriptor(packet.value, packet.index);
   if (!desc.has_value()) {
     // No descriptor with this ID.
@@ -299,9 +298,9 @@ void UsbDevice::ControlTransfer::send_request_error(UsbDevice& usb) {
 
 bool UsbDevice::ControlTransfer::ack_out_transfer(UsbDevice& usb) {
   if (status_ != Status::None) {
-    ESP_EARLY_LOGE(LogTag,
-                   "cannot ack control out: "
-                   "an EP0 transfer is already in progress!");
+    ESP_LOGE(LogTag,
+             "cannot ack control out: "
+             "an EP0 transfer is already in progress!");
     return false;
   }
 
@@ -314,7 +313,7 @@ bool UsbDevice::ControlTransfer::ack_out_transfer(UsbDevice& usb) {
 
 bool UsbDevice::ControlTransfer::start_transfer(UsbDevice& usb, buf_view buf) {
   if (status_ != Status::None) {
-    ESP_EARLY_LOGE(LogTag, "an EP0 control transfer is already in progress!");
+    ESP_LOGE(LogTag, "an EP0 control transfer is already in progress!");
     return false;
   }
   buf_ = buf;
@@ -328,15 +327,15 @@ void UsbDevice::ControlTransfer::send_next_in_packet(UsbDevice& usb) {
     // Send next data packet
     const auto len =
         std::min(static_cast<size_t>(max_packet_size_), buf_.size());
-    ESP_EARLY_LOGI(LogTag,
-                   "USB: send control data len=%lu",
-                   static_cast<unsigned long>(len));
+    ESP_LOGI(LogTag,
+             "USB: send control data len=%lu",
+             static_cast<unsigned long>(len));
     const auto next_packet = buf_.substr(0, len);
     buf_ = buf_.substr(len);
     usb.start_in_send(0, next_packet.data(), next_packet.size());
   } else {
     // No data left.  Send the final zero-length OUT packet.
-    ESP_EARLY_LOGI(LogTag, "USB: send control status packet");
+    ESP_LOGI(LogTag, "USB: send control status packet");
     status_ = Status::InStatus;
     usb.start_out_read(0, nullptr, 0);
   }
@@ -349,7 +348,7 @@ void UsbDevice::ControlTransfer::in_transfer_complete(UsbDevice& usb) {
   } else if (status_ == Status::InData) {
     send_next_in_packet(usb);
   } else {
-    ESP_EARLY_LOGE(
+    ESP_LOGE(
         LogTag,
         "in_transfer_complete() called when no control transfer in progress");
   }
@@ -360,10 +359,10 @@ void UsbDevice::ControlTransfer::out_transfer_complete(UsbDevice& usb) {
     buf_ = buf_view{};
     status_ = Status::None;
   } else {
-    ESP_EARLY_LOGE(LogTag,
-                   "out_transfer_complete() called in unexpected control "
-                   "transfer state %u",
-                   static_cast<int>(status_));
+    ESP_LOGE(LogTag,
+             "out_transfer_complete() called in unexpected control "
+             "transfer state %u",
+             static_cast<int>(status_));
   }
 }
 

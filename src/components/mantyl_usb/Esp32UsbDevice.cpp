@@ -55,7 +55,7 @@ void Esp32UsbDevice::handle_event(Event& event) {
       overloaded{
           [this](UninitializedEvent &) {
             // this shouldn't be possible
-            ESP_EARLY_LOGE(LogTag, "unexpected USB uninitialized event");
+            ESP_LOGE(LogTag, "unexpected USB uninitialized event");
           },
           [this](BusResetEvent &) { on_bus_reset(); },
           [this](BusEnumDone &ev) { on_enum_done(ev.max_ep0_packet_size); },
