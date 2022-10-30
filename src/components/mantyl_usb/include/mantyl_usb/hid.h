@@ -5,6 +5,17 @@
 
 namespace mantyl::hid {
 
+enum class HidSubclass : uint8_t {
+    None = 0,
+    Boot = 1,
+};
+
+enum class HidProtocol : uint8_t {
+    None = 0,
+    Keyboard = 1,
+    Mouse = 2,
+};
+
 /*
  * Keyboard code definitions:
  * https://usb.org/sites/default/files/hut1_3_0.pdf
