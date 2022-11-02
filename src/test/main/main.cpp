@@ -28,11 +28,10 @@ constexpr auto make_descriptor_map() {
   dev.serial_str_index = serial_index;
 
   return StaticDescriptorMap<0, 0>()
-      .add_descriptor(0x100, 0, dev.serialize())
+      .add_device_descriptor(dev)
       .add_string(mfgr_index, "Adam Simpkins")
       .add_string(product_index, "Mantyl Keyboard")
-      .add_string(serial_index, "00:00:00::00:00:00")
-      .add_descriptor(0x200, 0, std::array<uint8_t, 12>{});
+      .add_string(serial_index, "00:00:00::00:00:00");
 }
 
 constinit auto map = make_descriptor_map();
@@ -43,6 +42,7 @@ public:
   constexpr TestDevice() = default;
 
   esp_err_t init() {
+    // TODO: Update the serial number
     return usb_.init();
   }
   void loop() {

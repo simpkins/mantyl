@@ -1,8 +1,9 @@
 // Copyright (c) 2022, Adam Simpkins
 #pragma once
 
-#include "mantyl_usb/usb_types.h"
+#include "mantyl_usb/Descriptors.h"
 #include "mantyl_usb/StaticDescriptorUtils.h"
+#include "mantyl_usb/usb_types.h"
 
 #include <array>
 #include <cstdint>
@@ -36,12 +37,30 @@ public:
       std::enable_if_t<NumDescriptors == 0 && DataLength == 0, T> = 0) {}
 
   /**
+   * Add the device descriptor.
+   */
+  constexpr StaticDescriptorMap<NumDescriptors + 1,
+                                DataLength + DeviceDescriptor::kSize>
+  add_device_descriptor(const DeviceDescriptor &dev) {
+    return add_descriptor(DescriptorType::Device, dev.serialize());
+  }
+
+  /**
    * Create a new StaticDescriptorMap composed of this map plus a new
    * descriptor.
    */
   template <size_t DescLen>
   constexpr StaticDescriptorMap<NumDescriptors + 1, DataLength + DescLen>
-  add_descriptor(uint16_t value,
+  add_descriptor(DescriptorType type,
+                 const std::array<uint8_t, DescLen>& desc,
+                 uint8_t desc_index = 0) {
+    return add_descriptor_raw(
+        (static_cast<uint16_t>(type) << 8) | desc_index, 0, desc);
+  }
+
+  template <size_t DescLen>
+  constexpr StaticDescriptorMap<NumDescriptors + 1, DataLength + DescLen>
+  add_descriptor_raw(uint16_t value,
                  uint16_t index,
                  std::array<uint8_t, DescLen> desc) {
     return StaticDescriptorMap<NumDescriptors + 1, DataLength + DescLen>(*this, value, index, desc);
@@ -53,10 +72,10 @@ public:
   template <size_t N>
   constexpr StaticDescriptorMap<NumDescriptors + 1, DataLength + 2 + N * 2>
   add_string(uint8_t index, const char (&str)[N], uint16_t language = 0) {
-    return add_descriptor((static_cast<uint16_t>(DescriptorType::String) << 8) |
-                              index,
-                          language,
-                          detail::make_string_descriptor<N>(str));
+    return add_descriptor_raw(
+        (static_cast<uint16_t>(DescriptorType::String) << 8) | index,
+        language,
+        detail::make_string_descriptor<N>(str));
   }
 
   std::optional<buf_view> find_descriptor(uint16_t value, uint16_t index) {
@@ -73,7 +92,7 @@ private:
       const StaticDescriptorMap<NumDescriptors - 1, DataLength - DescLen> &other,
       uint16_t value,
       uint16_t index,
-      std::array<uint8_t, DescLen> desc) {
+      const std::array<uint8_t, DescLen>& desc) {
     // StaticDescriptorMapEntry use uint16_t to store the offset.
     // Make sure the total descriptor length fits in this data type.
     static_assert(DataLength <=

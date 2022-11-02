@@ -28,6 +28,8 @@ constexpr uint8_t bcd_encode(uint8_t x) {
  */
 class DeviceDescriptor {
 public:
+  static constexpr size_t kSize = 18;
+
   constexpr DeviceDescriptor(uint16_t vendor, uint16_t product)
       : vendor_id(vendor), product_id(product) {}
 
@@ -58,9 +60,9 @@ public:
 
   uint8_t  num_configurations{1};
 
-  constexpr std::array<uint8_t, 18> serialize() {
-    return std::array<uint8_t, 18>{{
-        18, // length
+  constexpr std::array<uint8_t, kSize> serialize() const {
+    return std::array<uint8_t, kSize>{{
+        kSize, // length
         static_cast<uint8_t>(DescriptorType::Device),
         static_cast<uint8_t>(usb_version_bcd & 0xff),
         static_cast<uint8_t>((usb_version_bcd >> 8) & 0xff),
@@ -82,13 +84,15 @@ public:
   }
 
   // Update the ep0_max_packet_size field in an existing serialized descriptor
-  static void update_ep0_max_size(std::array<uint8_t, 18> data, uint8_t max_size) {
-      data[8] = max_size;
+  static void update_ep0_max_size(std::array<uint8_t, kSize> data,
+                                  uint8_t max_size) {
+    data[8] = max_size;
   }
   // Update the serial string descriptor index in an existing serialized
   // descriptor
-  static void update_serial_index(std::array<uint8_t, 18> data, uint8_t index) {
-      data[17] = index;
+  static void update_serial_index(std::array<uint8_t, kSize> data,
+                                  uint8_t index) {
+    data[17] = index;
   }
 };
 
