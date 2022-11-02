@@ -58,6 +58,19 @@ public:
         (static_cast<uint16_t>(type) << 8) | desc_index, 0, desc);
   }
 
+  /**
+   * Add the descriptor that contains the list of supported language IDs
+   */
+  template <typename... LangIDs>
+  constexpr StaticDescriptorMap<NumDescriptors + 1,
+                                DataLength + 2 + (2 * sizeof...(LangIDs))>
+  add_language_ids(Language lang, LangIDs... rest) {
+    std::array<uint8_t, 2 + (2 * sizeof...(LangIDs))> desc;
+    detail::fill_lang_descriptor(desc.data(), lang, rest...);
+    return add_descriptor_raw(
+        (static_cast<uint16_t>(DescriptorType::String) << 8), 0, desc);
+  }
+
   template <size_t DescLen>
   constexpr StaticDescriptorMap<NumDescriptors + 1, DataLength + DescLen>
   add_descriptor_raw(uint16_t value,
@@ -71,10 +84,10 @@ public:
    */
   template <size_t N>
   constexpr StaticDescriptorMap<NumDescriptors + 1, DataLength + 2 + N * 2>
-  add_string(uint8_t index, const char (&str)[N], uint16_t language = 0) {
+  add_string(uint8_t index, const char (&str)[N], Language language) {
     return add_descriptor_raw(
         (static_cast<uint16_t>(DescriptorType::String) << 8) | index,
-        language,
+        static_cast<uint16_t>(language),
         detail::make_string_descriptor<N>(str));
   }
 

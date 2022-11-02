@@ -124,5 +124,18 @@ make_string_descriptor(const char (&str)[N]) {
   return out;
 }
 
+constexpr void fill_lang_descriptor(uint8_t* desc, Language lang) {
+  desc[0] = static_cast<uint16_t>(lang) & 0xff;
+  desc[1] = (static_cast<uint16_t>(lang) >> 8) & 0xff;
+}
+
+template <typename... LangIDs>
+constexpr void
+fill_lang_descriptor(uint8_t *desc, Language lang, LangIDs... rest) {
+  desc[0] = static_cast<uint16_t>(lang) & 0xff;
+  desc[1] = (static_cast<uint16_t>(lang) >> 8) & 0xff;
+  fill_lang_descriptor(desc + 2, rest...);
+}
+
 } // namespace detail
 } // namespace mantyl

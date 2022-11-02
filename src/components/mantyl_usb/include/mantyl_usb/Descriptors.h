@@ -30,6 +30,7 @@ class DeviceDescriptor {
 public:
   static constexpr size_t kSize = 18;
 
+  constexpr DeviceDescriptor() = default;
   constexpr DeviceDescriptor(uint16_t vendor, uint16_t product)
       : vendor_id(vendor), product_id(product) {}
 

@@ -21,7 +21,9 @@ constexpr auto make_descriptor_map() {
   const uint8_t serial_index = ++string_index;
 
  // Prototype product vendor ID
-  DeviceDescriptor dev(0x6666, 0x1234);
+  DeviceDescriptor dev;
+  dev.vendor_id = 0x6666;
+  dev.product_id = 0x1235;
   dev.set_device_version(0, 2);
   dev.manufacturer_str_index = mfgr_index;
   dev.product_str_index = product_index;
@@ -29,9 +31,10 @@ constexpr auto make_descriptor_map() {
 
   return StaticDescriptorMap<0, 0>()
       .add_device_descriptor(dev)
-      .add_string(mfgr_index, "Adam Simpkins")
-      .add_string(product_index, "Mantyl Keyboard")
-      .add_string(serial_index, "00:00:00::00:00:00");
+      .add_language_ids(Language::English_US)
+      .add_string(mfgr_index, "Adam Simpkins", Language::English_US)
+      .add_string(product_index, "Mantyl Keyboard", Language::English_US)
+      .add_string(serial_index, "00:00:00::00:00:00", Language::English_US);
 }
 
 constinit auto map = make_descriptor_map();
