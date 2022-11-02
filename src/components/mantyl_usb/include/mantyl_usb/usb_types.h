@@ -88,6 +88,20 @@ enum class EndpointType : uint8_t {
   Interrupt = 3,
 };
 
+enum class EndpointSync : uint8_t {
+  NoSync = 0,
+  Async = 1 << 2,
+  Adaptive = 2 << 2,
+  Sync = 3 << 2,
+};
+
+enum class EndpointUsage : uint8_t {
+  Data = 0,
+  Feedback = 1 << 4,
+  ImplicitFeedback = 2 << 4,
+  // (3 << 4) is reserved
+};
+
 enum class Direction : uint8_t {
   Out = 0,
   In = 0x80,
@@ -124,6 +138,38 @@ public:
 
 private:
   const uint8_t address_;
+};
+
+class EndpointAttributes {
+public:
+  explicit constexpr EndpointAttributes(EndpointType type)
+      : value_{static_cast<uint8_t>(type)} {}
+
+  explicit constexpr EndpointAttributes(EndpointType type, EndpointUsage usage)
+      : value_{static_cast<uint8_t>(static_cast<uint8_t>(type) |
+                                    static_cast<uint8_t>(usage))} {}
+
+  explicit constexpr EndpointAttributes(EndpointSync sync, EndpointUsage usage)
+      : value_{static_cast<uint8_t>(
+            static_cast<uint8_t>(EndpointType::Isochronous) |
+            static_cast<uint8_t>(sync) | static_cast<uint8_t>(usage))} {}
+
+  constexpr EndpointType type() const {
+    return EndpointType{static_cast<uint8_t>(value_ & 0x03)};
+  }
+  constexpr EndpointSync sync_type() const {
+    return EndpointSync{static_cast<uint8_t>(value_ & (0x03 << 2))};
+  }
+  constexpr EndpointUsage usage() const {
+    return EndpointUsage{static_cast<uint8_t>(value_ & (0x03 << 4))};
+  }
+
+  constexpr uint8_t value() const {
+    return value_;
+  }
+
+private:
+  uint8_t value_;
 };
 
 enum class InterfaceClass : uint8_t {

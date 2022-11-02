@@ -137,5 +137,34 @@ fill_lang_descriptor(uint8_t *desc, Language lang, LangIDs... rest) {
   fill_lang_descriptor(desc + 2, rest...);
 }
 
+template<typename Descriptor>
+constexpr bool is_interface_descriptor(const Descriptor& desc) {
+  return false;
+}
+
+template <size_t N>
+constexpr bool is_interface_descriptor(const std::array<uint8_t, N> &desc) {
+  return ((N > 1) &&
+          desc[1] == static_cast<uint8_t>(DescriptorType::Interface));
+}
+
+template <typename Descriptor>
+constexpr uint16_t descriptor_size() {
+  return Descriptor::kSize;
+}
+
+template <typename Descriptor>
+constexpr void serialize_descriptors(uint8_t *buf, const Descriptor &desc) {
+  desc.serialize_into(buf);
+}
+
+template <typename Descriptor, typename... Rest>
+constexpr void serialize_descriptors(uint8_t *buf,
+                                     const Descriptor &desc,
+                                     const Rest &... rest) {
+  desc.serialize_into(buf);
+  serialize_descriptors(buf + Descriptor::kSize, rest...);
+}
+
 } // namespace detail
 } // namespace mantyl

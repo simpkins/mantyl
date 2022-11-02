@@ -2,6 +2,7 @@
 #pragma once
 
 #include "mantyl_usb/usb_types.h"
+#include "mantyl_usb/StaticDescriptorUtils.h"
 
 #include <array>
 #include <cstdint>
@@ -94,6 +95,97 @@ public:
   static void update_serial_index(std::array<uint8_t, kSize> data,
                                   uint8_t index) {
     data[17] = index;
+  }
+};
+
+class ConfigDescriptor {
+public:
+  // This is the size of just the ConfigDescriptor by itself,
+  // without the associated interface, endpoint, and other class or vendor
+  // specific descriptors.
+  static constexpr size_t kSize = 7;
+
+  explicit constexpr ConfigDescriptor(uint8_t id) : id{id} {}
+
+  uint8_t id = 0;
+  uint8_t total_length = 0;
+  uint8_t num_interfaces = 0;
+  uint8_t string_index = 0;
+
+  constexpr void serialize_into(uint8_t* buf) const {
+    buf[0] = kSize;
+    buf[1] = static_cast<uint8_t>(DescriptorType::Config);
+    buf[2] = total_length & 0xff;
+    buf[3] = (total_length >> 8) & 0xff;
+    buf[4] = num_interfaces;
+    buf[5] = id;
+    buf[6] = string_index;
+  }
+
+  template <typename... SubDescriptors>
+  static constexpr uint16_t compute_total_size() {
+    return kSize + (detail::descriptor_size<SubDescriptors>() + ...);
+  }
+
+  template <typename SubDesc, typename... Rest>
+  static constexpr uint8_t count_num_interfaces(const SubDesc &desc,
+                                              Rest... rest) {
+    return (detail::is_interface_descriptor(desc) ? 1 : 0) +
+           count_num_interfaces(rest...);
+  }
+  static constexpr uint8_t count_num_interfaces() {
+    return 0;
+  }
+};
+
+class InterfaceDescriptor {
+public:
+  static constexpr size_t kSize = 9;
+
+  constexpr InterfaceDescriptor(uint8_t idx, UsbClass itf_class)
+      : index(idx), interface_class(itf_class) {}
+
+  uint8_t index = 0;
+  uint8_t alternate_setting = 0;
+  uint8_t num_endpoints = 0;
+  UsbClass interface_class = UsbClass::PerInterface;
+  uint8_t subclass = 0;
+  uint8_t protocol = 0;
+  uint8_t string_index = 0;
+
+  constexpr void serialize_into(uint8_t* buf) const {
+    buf[0] = kSize;
+    buf[1] = static_cast<uint8_t>(DescriptorType::Interface);
+    buf[2] = index;
+    buf[3] = alternate_setting;
+    buf[4] = num_endpoints;
+    buf[5] = static_cast<uint8_t>(interface_class);
+    buf[6] = subclass;
+    buf[7] = protocol;
+    buf[8] = string_index;
+  }
+};
+
+class EndpointDescriptor {
+public:
+  static constexpr size_t kSize = 7;
+
+  constexpr EndpointDescriptor(EndpointAddress addr, EndpointAttributes attr)
+      : address(addr), attributes(attr) {}
+
+  EndpointAddress address;
+  EndpointAttributes attributes;
+  uint16_t max_packet_size{64};
+  uint8_t interval{1};
+
+  constexpr void serialize_into(uint8_t* buf) const {
+    buf[0] = kSize;
+    buf[1] = static_cast<uint8_t>(DescriptorType::Endpoint);
+    buf[2] = address.value();
+    buf[3] = attributes.value();
+    buf[4] = max_packet_size & 0xff;
+    buf[5] = (max_packet_size >> 8) & 0xff;
+    buf[6] = interval;
   }
 };
 

@@ -20,21 +20,31 @@ constexpr auto make_descriptor_map() {
   const uint8_t product_index = ++string_index;
   const uint8_t serial_index = ++string_index;
 
- // Prototype product vendor ID
   DeviceDescriptor dev;
-  dev.vendor_id = 0x6666;
+  dev.vendor_id = 0x6666; // Prototype product vendor ID
   dev.product_id = 0x1235;
   dev.set_device_version(0, 2);
   dev.manufacturer_str_index = mfgr_index;
   dev.product_str_index = product_index;
   dev.serial_str_index = serial_index;
 
+  InterfaceDescriptor keyboard_itf(0, UsbClass::Hid);
+  keyboard_itf.num_endpoints = 1;
+  keyboard_itf.subclass = 1;
+  keyboard_itf.protocol = 1;
+
+  EndpointDescriptor ep1(EndpointAddress(EndpointNumber(1), Direction::In),
+                         EndpointAttributes(EndpointType::Interrupt));
+  ep1.interval = 10;
+  ep1.max_packet_size = 8;
+
   return StaticDescriptorMap<0, 0>()
       .add_device_descriptor(dev)
       .add_language_ids(Language::English_US)
       .add_string(mfgr_index, "Adam Simpkins", Language::English_US)
       .add_string(product_index, "Mantyl Keyboard", Language::English_US)
-      .add_string(serial_index, "00:00:00::00:00:00", Language::English_US);
+      .add_string(serial_index, "00:00:00::00:00:00", Language::English_US)
+      .add_config_descriptor(1, 0, keyboard_itf, ep1);
 }
 
 constinit auto map = make_descriptor_map();

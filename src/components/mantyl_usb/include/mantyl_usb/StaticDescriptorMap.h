@@ -71,6 +71,39 @@ public:
         (static_cast<uint16_t>(DescriptorType::String) << 8), 0, desc);
   }
 
+  /**
+   * Add a configuration descriptor, and its associated interface, endpoint,
+   * and class/vendor specific descriptors.
+   */
+  template <typename... SubDescriptors>
+  constexpr StaticDescriptorMap<
+      NumDescriptors + 1,
+      DataLength + ConfigDescriptor::compute_total_size<SubDescriptors...>()>
+  add_config_descriptor(uint8_t id,
+                        uint8_t string_index,
+                        SubDescriptors... sub) {
+    // TODO: it would be nice to do some compile-time validation of the config
+    // descriptor:
+    // - The interface numbers should be correct 0-based indexes of each
+    //   interface.
+    // - The number of endpoints listed in each interface should match the
+    //   number of endpoint descriptors.
+    std::array<uint8_t,
+               ConfigDescriptor::compute_total_size<SubDescriptors...>()>
+        full_desc;
+    ConfigDescriptor config_desc(id);
+    config_desc.total_length =
+        ConfigDescriptor::compute_total_size<SubDescriptors...>();
+    config_desc.string_index = string_index;
+    config_desc.num_interfaces =
+        ConfigDescriptor::count_num_interfaces(sub...);
+    detail::serialize_descriptors(full_desc.data(), config_desc, sub...);
+    return add_descriptor_raw(
+        (static_cast<uint16_t>(DescriptorType::Config) << 8) | id,
+        0,
+        full_desc);
+  }
+
   template <size_t DescLen>
   constexpr StaticDescriptorMap<NumDescriptors + 1, DataLength + DescLen>
   add_descriptor_raw(uint16_t value,
