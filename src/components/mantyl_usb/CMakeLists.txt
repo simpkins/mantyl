@@ -1,5 +1,6 @@
 set(component_srcs
     "Esp32UsbDevice.cpp"
+    "StaticDescriptorMap.cpp"
     "UsbDescriptorMap.cpp"
     "UsbDevice.cpp"
 )

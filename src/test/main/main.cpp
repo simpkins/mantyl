@@ -1,7 +1,9 @@
 // Copyright (c) 2022, Adam Simpkins
 
 #include "mantyl_usb/Esp32UsbDevice.h"
+#include "mantyl_usb/Descriptors.h"
 #include "mantyl_usb/UsbDescriptorMap.h"
+#include "mantyl_usb/StaticDescriptorMap.h"
 
 #include <esp_check.h>
 #include <esp_log.h>
@@ -9,6 +11,32 @@
 using namespace mantyl;
 
 namespace mantyl {
+
+namespace {
+
+constexpr auto make_descriptor_map() {
+  uint8_t string_index = 0;
+  const uint8_t mfgr_index = ++string_index;
+  const uint8_t product_index = ++string_index;
+  const uint8_t serial_index = ++string_index;
+
+ // Prototype product vendor ID
+  DeviceDescriptor dev(0x6666, 0x1234);
+  dev.set_device_version(0, 2);
+  dev.manufacturer_str_index = mfgr_index;
+  dev.product_str_index = product_index;
+  dev.serial_str_index = serial_index;
+
+  return StaticDescriptorMap<0, 0>()
+      .add_descriptor(0x100, 0, dev.serialize())
+      .add_string(mfgr_index, "Adam Simpkins")
+      .add_string(product_index, "Mantyl Keyboard")
+      .add_string(serial_index, "00:00:00::00:00:00")
+      .add_descriptor(0x200, 0, std::array<uint8_t, 12>{});
+}
+
+constinit auto map = make_descriptor_map();
+} // namespace
 
 class TestDevice : UsbDeviceImpl {
 public:
@@ -36,7 +64,7 @@ public:
 
 private:
   Esp32UsbDevice usb_{this};
-  UsbDescriptorMap descriptors_;
+  decltype(make_descriptor_map()) descriptors_ = make_descriptor_map();
 };
 
 } // namespace mantyl
