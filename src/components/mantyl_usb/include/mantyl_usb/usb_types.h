@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include <stdexcept>
 
 namespace mantyl {
 
@@ -105,6 +106,52 @@ enum class EndpointUsage : uint8_t {
 enum class Direction : uint8_t {
   Out = 0,
   In = 0x80,
+};
+
+/**
+ * Attribute bits for the bmAttributes field in the config descriptor
+ */
+enum class ConfigAttr : uint8_t {
+  None = 0x00,
+  RemoteWakeup = 0x20,
+  SelfPowered = 0x40,
+};
+
+inline constexpr ConfigAttr operator|(ConfigAttr a1, ConfigAttr a2) {
+  return static_cast<ConfigAttr>(static_cast<uint8_t>(a1) |
+                                 static_cast<uint8_t>(a2));
+}
+
+inline constexpr ConfigAttr operator&(ConfigAttr a1, ConfigAttr a2) {
+  return static_cast<ConfigAttr>(static_cast<uint8_t>(a1) &
+                                 static_cast<uint8_t>(a2));
+}
+
+inline constexpr ConfigAttr& operator|=(ConfigAttr& a1, ConfigAttr a2) {
+  a1 = a1 | a2;
+  return a1;
+}
+
+/**
+ * A helper class for the max_power field in the config descriptor.
+ *
+ * This value tracks power in units of 2 milliamps.
+ */
+class UsbMilliamps {
+public:
+  explicit constexpr UsbMilliamps(uint16_t milliamps)
+      : value_((milliamps + 1) / 2) {
+    if (milliamps >= (0xff * 2)) {
+      abort(); // "value too large to express"
+    }
+  }
+
+  constexpr uint8_t value_in_2ma() const {
+    return value_;
+  }
+
+private:
+  uint8_t value_{0};
 };
 
 class EndpointNumber {

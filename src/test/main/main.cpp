@@ -4,6 +4,7 @@
 #include "mantyl_usb/Descriptors.h"
 #include "mantyl_usb/UsbDescriptorMap.h"
 #include "mantyl_usb/StaticDescriptorMap.h"
+#include "mantyl_readline.h"
 
 #include <esp_check.h>
 #include <esp_log.h>
@@ -44,7 +45,8 @@ constexpr auto make_descriptor_map() {
       .add_string(mfgr_index, "Adam Simpkins", Language::English_US)
       .add_string(product_index, "Mantyl Keyboard", Language::English_US)
       .add_string(serial_index, "00:00:00::00:00:00", Language::English_US)
-      .add_config_descriptor(1, 0, keyboard_itf, ep1);
+      .add_config_descriptor(
+          ConfigAttr::RemoteWakeup, UsbMilliamps(50), 0, keyboard_itf, ep1);
 }
 
 constinit auto map = make_descriptor_map();
@@ -83,14 +85,14 @@ private:
 } // namespace mantyl
 
 namespace {
+
+using namespace mantyl;
+
 const char *LogTag = "mantyl.test";
 
 constinit TestDevice usb;
-}
 
-extern "C" void app_main() {
-  ESP_LOGI(LogTag, "main task starting");
-
+void run_usb() {
   const auto usb_rc = usb.init();
   if (usb_rc != ESP_OK) {
     ESP_LOGE(LogTag, "failed to initialize USB: %d", usb_rc);
@@ -98,5 +100,65 @@ extern "C" void app_main() {
   ESP_LOGI(LogTag, "USB initialization DONE");
 
   usb.loop();
-  ESP_LOGI(LogTag, "main task exiting");
+}
+
+void dump_desc(uint16_t value, uint16_t index) {
+  printf("Descriptor %#x  %#x:\n", value, index);
+  auto desc = usb.get_descriptor(value, index);
+  if (!desc.has_value()) {
+    printf("- none\n");
+    return;
+  }
+
+  printf("- size: %d\n", desc->size());
+  auto p = desc->data();
+  size_t bytes_left = desc->size();
+  while (bytes_left > 8) {
+    printf("- %02x %02x %02x %02x %02x %02x %02x %02x\n",
+           p[0],
+           p[1],
+           p[2],
+           p[3],
+           p[4],
+           p[5],
+           p[6],
+           p[7]);
+    p += 8;
+    bytes_left -= 8;
+  }
+  if (bytes_left > 0) {
+    printf("-");
+    while (bytes_left > 0) {
+      printf(" %02x", p[0]);
+      ++p;
+      --bytes_left;
+    }
+    printf("\n");
+  }
+}
+
+void run_test() {
+  printf("running tests:\n");
+  dump_desc(0x100, 0);
+  dump_desc(0x200, 0);
+  dump_desc(0x300, 0);
+  dump_desc(0x301, 0x0409);
+  dump_desc(0x302, 0x0409);
+  dump_desc(0x303, 0x0409);
+}
+
+} // namespace
+
+extern "C" void app_main() {
+  run_test();
+
+  while (true) {
+    auto value = mantyl::readline("test> ");
+    ESP_LOGI(LogTag, "line: \"%s\"", value.c_str());
+    if (value == "test") {
+      run_test();
+    } else if (value == "usb") {
+      run_usb();
+    }
+  }
 }

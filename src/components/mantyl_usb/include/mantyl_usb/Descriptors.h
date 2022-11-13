@@ -103,7 +103,7 @@ public:
   // This is the size of just the ConfigDescriptor by itself,
   // without the associated interface, endpoint, and other class or vendor
   // specific descriptors.
-  static constexpr size_t kSize = 7;
+  static constexpr size_t kSize = 9;
 
   explicit constexpr ConfigDescriptor(uint8_t id) : id{id} {}
 
@@ -111,6 +111,8 @@ public:
   uint8_t total_length = 0;
   uint8_t num_interfaces = 0;
   uint8_t string_index = 0;
+  ConfigAttr attributes = ConfigAttr::None;
+  UsbMilliamps max_power{0};
 
   constexpr void serialize_into(uint8_t* buf) const {
     buf[0] = kSize;
@@ -120,6 +122,8 @@ public:
     buf[4] = num_interfaces;
     buf[5] = id;
     buf[6] = string_index;
+    buf[7] = static_cast<uint8_t>(attributes);
+    buf[8] = max_power.value_in_2ma();
   }
 
   template <typename... SubDescriptors>

@@ -63,10 +63,12 @@ public:
    */
   template <typename... LangIDs>
   constexpr StaticDescriptorMap<NumDescriptors + 1,
-                                DataLength + 2 + (2 * sizeof...(LangIDs))>
+                                DataLength + 4 + (2 * sizeof...(LangIDs))>
   add_language_ids(Language lang, LangIDs... rest) {
-    std::array<uint8_t, 2 + (2 * sizeof...(LangIDs))> desc;
-    detail::fill_lang_descriptor(desc.data(), lang, rest...);
+    std::array<uint8_t, 4 + (2 * sizeof...(LangIDs))> desc;
+    desc[0] = 4 + (2 * sizeof...(LangIDs));
+    desc[1] = static_cast<uint8_t>(DescriptorType::String);
+    detail::fill_lang_descriptor(desc.data() + 2, lang, rest...);
     return add_descriptor_raw(
         (static_cast<uint16_t>(DescriptorType::String) << 8), 0, desc);
   }
@@ -79,7 +81,8 @@ public:
   constexpr StaticDescriptorMap<
       NumDescriptors + 1,
       DataLength + ConfigDescriptor::compute_total_size<SubDescriptors...>()>
-  add_config_descriptor(uint8_t id,
+  add_config_descriptor(ConfigAttr attributes,
+                        UsbMilliamps max_power,
                         uint8_t string_index,
                         SubDescriptors... sub) {
     // TODO: it would be nice to do some compile-time validation of the config
@@ -88,18 +91,21 @@ public:
     //   interface.
     // - The number of endpoints listed in each interface should match the
     //   number of endpoint descriptors.
+    auto cfg_index = count_num_config_descriptors();
     std::array<uint8_t,
                ConfigDescriptor::compute_total_size<SubDescriptors...>()>
         full_desc;
-    ConfigDescriptor config_desc(id);
+    ConfigDescriptor config_desc(cfg_index + 1);
     config_desc.total_length =
         ConfigDescriptor::compute_total_size<SubDescriptors...>();
     config_desc.string_index = string_index;
     config_desc.num_interfaces =
         ConfigDescriptor::count_num_interfaces(sub...);
+    config_desc.attributes = attributes;
+    config_desc.max_power = max_power;
     detail::serialize_descriptors(full_desc.data(), config_desc, sub...);
     return add_descriptor_raw(
-        (static_cast<uint16_t>(DescriptorType::Config) << 8) | id,
+        (static_cast<uint16_t>(DescriptorType::Config) << 8) | cfg_index,
         0,
         full_desc);
   }
@@ -107,16 +113,17 @@ public:
   template <size_t DescLen>
   constexpr StaticDescriptorMap<NumDescriptors + 1, DataLength + DescLen>
   add_descriptor_raw(uint16_t value,
-                 uint16_t index,
-                 std::array<uint8_t, DescLen> desc) {
-    return StaticDescriptorMap<NumDescriptors + 1, DataLength + DescLen>(*this, value, index, desc);
+                     uint16_t index,
+                     std::array<uint8_t, DescLen> desc) {
+    return StaticDescriptorMap<NumDescriptors + 1, DataLength + DescLen>(
+        *this, value, index, desc);
   }
 
   /**
    * Add a string descriptor with a specified index.
    */
   template <size_t N>
-  constexpr StaticDescriptorMap<NumDescriptors + 1, DataLength + 2 + N * 2>
+  constexpr StaticDescriptorMap<NumDescriptors + 1, DataLength + N * 2>
   add_string(uint8_t index, const char (&str)[N], Language language) {
     return add_descriptor_raw(
         (static_cast<uint16_t>(DescriptorType::String) << 8) | index,
@@ -144,6 +151,9 @@ private:
     static_assert(DataLength <=
                       std::numeric_limits<decltype(index_[0].offset)>::max(),
                   "descriptor data is to large");
+    if (desc[1] != (value >> 8)) {
+      abort(); // descriptor type mismatch
+    }
 
     for (size_t n = 0; n < other.data_.size(); ++n) {
       data_[n] = other.data_[n];
@@ -162,6 +172,16 @@ private:
     index_[other.num_descriptors].index = index;
     index_[other.num_descriptors].offset = other.data_.size();
     index_[other.num_descriptors].length = desc.size();
+  }
+
+  constexpr uint8_t count_num_config_descriptors() {
+    uint8_t count = 0;
+    for (const auto &entry : index_) {
+      if ((entry.value >> 8) == static_cast<uint8_t>(DescriptorType::Config)) {
+        ++count;
+      }
+    }
+    return count;
   }
 
   std::array<detail::StaticDescriptorMapEntry, NumDescriptors> index_;

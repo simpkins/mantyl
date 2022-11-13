@@ -10,6 +10,8 @@
 
 namespace mantyl {
 
+class InterfaceDescriptor;
+
 using buf_view = std::basic_string_view<uint8_t>;
 
 namespace detail {
@@ -117,9 +119,12 @@ fill_string_descriptor(uint8_t *buf, size_t buflen, std::string_view str) {
 }
 
 template <size_t N>
-constexpr std::array<uint8_t, 2 + N * 2>
+constexpr std::array<uint8_t, N * 2>
 make_string_descriptor(const char (&str)[N]) {
-  std::array<uint8_t, 2 + N * 2> out;
+  std::array<uint8_t, N * 2> out;
+  if (N == 0 || str[N - 1] != '\0') {
+    abort(); // the input string must be nul terminated
+  }
   fill_string_descriptor(out.data(), out.size(), str);
   return out;
 }
@@ -140,6 +145,10 @@ fill_lang_descriptor(uint8_t *desc, Language lang, LangIDs... rest) {
 template<typename Descriptor>
 constexpr bool is_interface_descriptor(const Descriptor& desc) {
   return false;
+}
+
+constexpr bool is_interface_descriptor(const mantyl::InterfaceDescriptor&) {
+  return true;
 }
 
 template <size_t N>
