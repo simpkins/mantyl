@@ -158,21 +158,39 @@ constexpr bool is_interface_descriptor(const std::array<uint8_t, N> &desc) {
 }
 
 template <typename Descriptor>
-constexpr uint16_t descriptor_size() {
-  return Descriptor::kSize;
-}
+class DescriptorTraits {
+public:
+  static constexpr uint16_t size = Descriptor::kSize;
+
+  static constexpr void serialize_into(uint8_t *buf, const Descriptor &desc) {
+    return desc.serialize_into(buf);
+  }
+};
+
+template <size_t N>
+class DescriptorTraits<std::array<uint8_t, N>> {
+public:
+  static constexpr uint16_t size = N;
+
+  static constexpr void serialize_into(uint8_t *buf,
+                                       const std::array<uint8_t, N> &desc) {
+    for (size_t n = 0; n < N; ++n) {
+      buf[n] = desc[n];
+    }
+  }
+};
 
 template <typename Descriptor>
 constexpr void serialize_descriptors(uint8_t *buf, const Descriptor &desc) {
-  desc.serialize_into(buf);
+  DescriptorTraits<Descriptor>::serialize_into(buf, desc);
 }
 
 template <typename Descriptor, typename... Rest>
 constexpr void serialize_descriptors(uint8_t *buf,
                                      const Descriptor &desc,
                                      const Rest &... rest) {
-  desc.serialize_into(buf);
-  serialize_descriptors(buf + Descriptor::kSize, rest...);
+  DescriptorTraits<Descriptor>::serialize_into(buf, desc);
+  serialize_descriptors(buf + DescriptorTraits<Descriptor>::size, rest...);
 }
 
 } // namespace detail

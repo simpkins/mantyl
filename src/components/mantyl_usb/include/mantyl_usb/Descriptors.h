@@ -122,13 +122,13 @@ public:
     buf[4] = num_interfaces;
     buf[5] = id;
     buf[6] = string_index;
-    buf[7] = static_cast<uint8_t>(attributes);
+    buf[7] = 0x80 | static_cast<uint8_t>(attributes);
     buf[8] = max_power.value_in_2ma();
   }
 
   template <typename... SubDescriptors>
   static constexpr uint16_t compute_total_size() {
-    return kSize + (detail::descriptor_size<SubDescriptors>() + ...);
+    return kSize + (detail::DescriptorTraits<SubDescriptors>::size + ...);
   }
 
   template <typename SubDesc, typename... Rest>

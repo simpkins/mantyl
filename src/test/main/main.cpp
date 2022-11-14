@@ -39,14 +39,30 @@ constexpr auto make_descriptor_map() {
   ep1.interval = 10;
   ep1.max_packet_size = 8;
 
+  std::array<uint8_t, 9> keyboard_hid_desc{
+      0x09, // length
+      0x21, // descriptor type
+      0x11, // HID minor version (BCD)
+      0x01, // HID major version (BCD)
+      0x00, // Country code
+      0x01, // Number of class descriptors
+      0x22, // Class descriptor type
+      0x3f, // Total size of report descriptor
+      0x00, // Optional descriptor type
+  };
+
   return StaticDescriptorMap<0, 0>()
       .add_device_descriptor(dev)
       .add_language_ids(Language::English_US)
       .add_string(mfgr_index, "Adam Simpkins", Language::English_US)
       .add_string(product_index, "Mantyl Keyboard", Language::English_US)
       .add_string(serial_index, "00:00:00::00:00:00", Language::English_US)
-      .add_config_descriptor(
-          ConfigAttr::RemoteWakeup, UsbMilliamps(50), 0, keyboard_itf, ep1);
+      .add_config_descriptor(ConfigAttr::RemoteWakeup,
+                             UsbMilliamps(50),
+                             0,
+                             keyboard_itf,
+                             keyboard_hid_desc,
+                             ep1);
 }
 
 constinit auto map = make_descriptor_map();
