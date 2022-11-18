@@ -136,6 +136,23 @@ public:
         value, index, data_.data(), data_.size(), index_.data(), index_.size());
   }
 
+  /**
+   * Update the endpoint 0 max packet size field in the device descriptor.
+   *
+   * This is intended to be called after the device has been enumerated,
+   * once the USB speed has been set and the maximum allowed packet size is
+   * known.
+   *
+   * Returns true on success or false if no device descriptor has been defined.
+   */
+  bool update_ep0_max_packet_size(uint8_t max_packet_size) {
+    return detail::update_ep0_max_packet_size(max_packet_size,
+                                              data_.data(),
+                                              data_.size(),
+                                              index_.data(),
+                                              index_.size());
+  }
+
 private:
   template <uint16_t X, size_t Y>
   friend class StaticDescriptorMap;

@@ -65,7 +65,6 @@ constexpr auto make_descriptor_map() {
                              ep1);
 }
 
-constinit auto map = make_descriptor_map();
 } // namespace
 
 class TestDevice : UsbDeviceImpl {
@@ -85,8 +84,8 @@ public:
     return descriptors_.find_descriptor(value, index);
   }
   uint8_t on_enumerated(uint8_t size) override {
-      // TODO: update the device descriptor
-      return size;
+    descriptors_.update_ep0_max_packet_size(size);
+    return size;
   }
   void on_suspend() override {}
   bool on_configured(uint8_t config_id) override {
