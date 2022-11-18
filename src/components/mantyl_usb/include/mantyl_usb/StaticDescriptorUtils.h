@@ -30,7 +30,13 @@ find_usb_descriptor(uint16_t value,
                     const StaticDescriptorMapEntry *entries,
                     size_t num_entries);
 
-constexpr void
+bool update_ep0_max_packet_size(uint8_t max_packet_size,
+                                uint8_t *data,
+                                size_t data_size,
+                                const StaticDescriptorMapEntry *entries,
+                                size_t num_entries);
+
+[[nodiscard]] constexpr bool
 fill_string_descriptor(uint8_t *buf, size_t buflen, std::string_view str) {
   // buf[0] will be filled at the end, once we know the output length
   buf[1] = static_cast<uint8_t>(DescriptorType::String);
@@ -38,7 +44,7 @@ fill_string_descriptor(uint8_t *buf, size_t buflen, std::string_view str) {
   size_t out_idx = 2;
   while (in_idx < str.size()) {
     if (out_idx + 1 >= buflen) {
-      abort(); // output buffer size too small
+      return false; // output buffer size too small
     }
 
     // Translate UTF-8 input to UTF-16 LE
@@ -52,23 +58,23 @@ fill_string_descriptor(uint8_t *buf, size_t buflen, std::string_view str) {
       if ((str[in_idx] & 0xe0) == 0xc0) {
         // 2-byte UTF-8 value
         if (in_idx + 1 >= str.size()) {
-          abort(); // truncated UTF-8 data
+          return false; // truncated UTF-8 data
         }
         if ((str[in_idx + 1] & 0xc0) != 0x80) {
-          abort(); // invalid UTF-8
+          return false; // invalid UTF-8
         }
         c = ((str[in_idx] & 0x1f) << 6) | (str[in_idx + 1] & 0x3f);
         in_idx += 2;
       } else if ((str[in_idx] & 0xf0) == 0xe0) {
         // 3-byte UTF-8 value
         if (in_idx + 2 >= str.size()) {
-          abort(); // truncated UTF-8 data
+          return false; // truncated UTF-8 data
         }
         if ((str[in_idx + 1] & 0xc0) != 0x80) {
-          abort(); // invalid UTF-8
+          return false; // invalid UTF-8
         }
         if ((str[in_idx + 2] & 0xc0) != 0x80) {
-          abort(); // invalid UTF-8
+          return false; // invalid UTF-8
         }
         c = ((str[in_idx] & 0x1f) << 12) |
             ((str[in_idx + 1] & 0x3f) << 6) | (str[in_idx + 2] & 0x3f);
@@ -76,22 +82,22 @@ fill_string_descriptor(uint8_t *buf, size_t buflen, std::string_view str) {
       } else if ((str[in_idx] & 0xf8) == 0xf0) {
         // 4-byte UTF-8 value
         if (in_idx + 3 >= str.size()) {
-          abort(); // truncated UTF-8 data
+          return false; // truncated UTF-8 data
         }
         if ((str[in_idx + 1] & 0xc0) != 0x80) {
-          abort(); // invalid UTF-8
+          return false; // invalid UTF-8
         }
         if ((str[in_idx + 2] & 0xc0) != 0x80) {
-          abort(); // invalid UTF-8
+          return false; // invalid UTF-8
         }
         if ((str[in_idx + 3] & 0xc0) != 0x80) {
-          abort(); // invalid UTF-8
+          return false; // invalid UTF-8
         }
         c = ((str[in_idx] & 0x1f) << 18) | ((str[in_idx + 1] & 0x3f) << 12) |
             ((str[in_idx + 2] & 0x3f) << 6) | (str[in_idx + 3] & 0x3f);
         in_idx += 4;
       } else {
-        abort(); // Invalid UTF-8 value
+        return false; // Invalid UTF-8 value
       }
 
       // Write the output char
@@ -99,7 +105,7 @@ fill_string_descriptor(uint8_t *buf, size_t buflen, std::string_view str) {
         // We do not support code points that require encoding using more than
         // 2 output bytes.  (This would make compile-time length calculation
         // trickier.)
-        abort();
+        return false;
       }
       buf[out_idx] = (c & 0xff);
       buf[out_idx] = ((c >> 8) & 0xff);
@@ -116,6 +122,8 @@ fill_string_descriptor(uint8_t *buf, size_t buflen, std::string_view str) {
   for (size_t n = out_idx; n < buflen; ++n) {
     buf[n] = 0;
   }
+
+  return true;
 }
 
 template <size_t N>
@@ -125,7 +133,9 @@ make_string_descriptor(const char (&str)[N]) {
   if (N == 0 || str[N - 1] != '\0') {
     abort(); // the input string must be nul terminated
   }
-  fill_string_descriptor(out.data(), out.size(), str);
+  if (!fill_string_descriptor(out.data(), out.size(), str)) {
+    abort();
+  }
   return out;
 }
 
