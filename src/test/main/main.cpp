@@ -91,7 +91,7 @@ public:
 
   std::optional<buf_view> get_descriptor(uint16_t value,
                                          uint16_t index) override {
-    return descriptors_.find_descriptor(value, index);
+    return descriptors_.get_descriptor(value, index);
   }
   uint8_t on_enumerated(uint8_t size) override {
     descriptors_.update_ep0_max_packet_size(size);

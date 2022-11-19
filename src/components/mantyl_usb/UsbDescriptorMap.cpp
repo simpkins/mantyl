@@ -134,8 +134,8 @@ constexpr uint16_t desc_value(DescriptorType type, uint8_t index) {
 }
 }
 
-std::optional<buf_view> UsbDescriptorMap::find_descriptor(uint16_t value,
-                                                          uint16_t index) {
+std::optional<buf_view> UsbDescriptorMap::get_descriptor(uint16_t value,
+                                                         uint16_t index) {
   const auto language_id = index;
 
   if (value == desc_value(DescriptorType::Device, 0) &&

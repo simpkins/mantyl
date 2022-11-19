@@ -135,9 +135,9 @@ public:
    * Look up a descriptor by the wValue and wIndex fields from a GET_DESCRIPTOR
    * query.
    */
-  std::optional<buf_view> find_descriptor(uint16_t value,
+  std::optional<buf_view> get_descriptor(uint16_t value,
                                           uint16_t index) const {
-    return detail::find_usb_descriptor(
+    return detail::get_usb_descriptor(
         value, index, data_.data(), data_.size(), index_.data(), index_.size());
   }
 
@@ -149,14 +149,14 @@ public:
    * during initialization, such as the serial number.
    */
   std::optional<std::pair<uint8_t *, size_t>>
-  find_descriptor_mutable(uint16_t value, uint16_t index) {
-    return detail::find_usb_descriptor_mutable(
+  get_descriptor_mutable(uint16_t value, uint16_t index) {
+    return detail::get_usb_descriptor_mutable(
         value, index, data_.data(), data_.size(), index_.data(), index_.size());
   }
 
   std::optional<StringDescriptorBuffer>
   get_string_descriptor_buffer(uint8_t index, Language language) {
-    auto desc = detail::find_usb_descriptor_mutable(
+    auto desc = detail::get_usb_descriptor_mutable(
         (static_cast<uint16_t>(DescriptorType::String) << 8) | index,
         static_cast<uint16_t>(language),
         data_.data(),

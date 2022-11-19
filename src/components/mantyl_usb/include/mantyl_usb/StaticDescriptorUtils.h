@@ -23,7 +23,7 @@ struct StaticDescriptorMapEntry {
 };
 
 std::optional<buf_view>
-find_usb_descriptor(uint16_t value,
+get_usb_descriptor(uint16_t value,
                     uint16_t index,
                     const uint8_t *data,
                     size_t data_size,
@@ -31,7 +31,7 @@ find_usb_descriptor(uint16_t value,
                     size_t num_entries);
 
 std::optional<std::pair<uint8_t *, size_t>>
-find_usb_descriptor_mutable(uint16_t value,
+get_usb_descriptor_mutable(uint16_t value,
                             uint16_t index,
                             uint8_t *data,
                             size_t data_size,

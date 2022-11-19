@@ -10,7 +10,7 @@ using buf_view = std::basic_string_view<uint8_t>;
 
 class UsbDescriptorMap {
 public:
-  std::optional<buf_view> find_descriptor(uint16_t value, uint16_t index);
+  std::optional<buf_view> get_descriptor(uint16_t value, uint16_t index);
 
 private:
 };
