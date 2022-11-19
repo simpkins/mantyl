@@ -193,4 +193,44 @@ public:
   }
 };
 
+class StringDescriptorBuffer {
+public:
+  StringDescriptorBuffer(uint8_t *data, uint16_t capacity)
+      : data_{data}, capacity_{capacity} {}
+
+  /**
+   * Return the capacity, in bytes.
+   *
+   * This includes the 2 bytes required for the descriptor size and type.
+   */
+  uint16_t capacity() const {
+    return capacity_;
+  }
+
+  /**
+   * Return the descriptor size, in bytes.
+   *
+   * Note that this return the descriptor size bytes, not the string length in
+   * Unicode characters.
+   *
+   * The return value includes the 2 bytes required for the descriptor size and
+   * type.
+   */
+  uint8_t size() const {
+    return data_[0];
+  }
+
+  const uint8_t* data() const {
+    return data_;
+  }
+
+  uint8_t* data() {
+    return data_;
+  }
+
+private:
+  uint8_t *data_{nullptr};
+  uint16_t capacity_{0};
+};
+
 } // namespace mantyl

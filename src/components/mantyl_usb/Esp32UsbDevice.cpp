@@ -1,8 +1,11 @@
 // Copyright (c) 2022, Adam Simpkins
 #include "mantyl_usb/Esp32UsbDevice.h"
 
+#include "mantyl_usb/Descriptors.h"
+
 #include <esp_check.h>
 #include <esp_log.h>
+#include <esp_mac.h>
 #include <esp_private/usb_phy.h>
 #include <soc/periph_defs.h>
 #include <soc/usb_periph.h>
@@ -22,6 +25,13 @@ inline void clear_bits(volatile uint32_t &value, uint32_t bits) {
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+char hexlify(uint8_t n) {
+  if (n < 10) {
+    return '0' + n;
+  }
+  return 'a' + (n - 10);
+}
 
 } // namespace
 
@@ -48,6 +58,46 @@ void Esp32UsbDevice::loop() {
     printf("tick %d\n", n);
     ++n;
   }
+}
+
+bool Esp32UsbDevice::update_serial_number(StringDescriptorBuffer& descriptor) {
+  if (descriptor.capacity() < kSerialDescriptorCapacity) {
+    return false;
+  }
+
+  std::array<uint8_t, 6> mac_bytes;
+  auto rc = esp_read_mac(mac_bytes.data(), ESP_MAC_WIFI_STA);
+  if (rc != ESP_OK) {
+    ESP_LOGW(LogTag, "failed to get MAC: %d", rc);
+    return false;
+  }
+
+  auto* data = descriptor.data();
+  data[0] = kSerialDescriptorCapacity;
+  data[1] = static_cast<uint8_t>(DescriptorType::String);
+  data += 2;
+
+  for (size_t n = 0; n < mac_bytes.size(); ++n) {
+    if (n >= 3) {
+      data[0] = ':';
+      data[1] = 0;
+      data += 2;
+    }
+
+    data[0] = hexlify((mac_bytes[n] >> 4) & 0xf);
+    data[1] = 0;
+    data[2] = hexlify(mac_bytes[n] & 0xf);
+    data[3] = 0;
+    data += 4;
+
+    if (n < 3) {
+      data[0] = ':';
+      data[1] = 0;
+      data += 2;
+    }
+  }
+
+  return true;
 }
 
 void Esp32UsbDevice::handle_event(Event& event) {

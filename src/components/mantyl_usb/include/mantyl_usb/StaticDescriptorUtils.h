@@ -30,6 +30,14 @@ find_usb_descriptor(uint16_t value,
                     const StaticDescriptorMapEntry *entries,
                     size_t num_entries);
 
+std::optional<std::pair<uint8_t *, size_t>>
+find_usb_descriptor_mutable(uint16_t value,
+                            uint16_t index,
+                            uint8_t *data,
+                            size_t data_size,
+                            const StaticDescriptorMapEntry *entries,
+                            size_t num_entries);
+
 bool update_ep0_max_packet_size(uint8_t max_packet_size,
                                 uint8_t *data,
                                 size_t data_size,

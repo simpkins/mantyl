@@ -18,12 +18,17 @@
 
 namespace mantyl {
 
+class StringDescriptorBuffer;
+
 class Esp32UsbDevice : public UsbDevice {
 public:
   enum class PhyType {
     Internal,
     External,
   };
+
+  static constexpr uint8_t kSerialDescriptorCapacity = 38;
+  static constexpr std::string_view kDefaultSerial = "00:00:00::00:00:00";
 
   explicit constexpr Esp32UsbDevice(UsbDeviceImpl *impl, usb_dev_t *usb = &USB0)
       : UsbDevice(impl), usb_{usb} {}
@@ -32,6 +37,15 @@ public:
   [[nodiscard]] esp_err_t init(PhyType phy_type = PhyType::Internal);
 
   void loop();
+
+  /**
+   * Fill in a string descriptor buffer using information from the ESP32
+   * MAC address.
+   *
+   * The string descriptor capacity should be at least
+   * kSerialDescriptorCapacity.
+   */
+  bool update_serial_number(StringDescriptorBuffer& descriptor);
 
 private:
   struct UninitializedEvent {};

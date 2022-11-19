@@ -15,19 +15,18 @@ namespace mantyl {
 
 namespace {
 
-constexpr auto make_descriptor_map() {
-  uint8_t string_index = 0;
-  const uint8_t mfgr_index = ++string_index;
-  const uint8_t product_index = ++string_index;
-  const uint8_t serial_index = ++string_index;
+constexpr uint8_t kManufacturerStringIndex = 1;
+constexpr uint8_t kProductStrIndex = 2;
+constexpr uint8_t kSerialStrIndex = 3;
 
+constexpr auto make_descriptor_map() {
   DeviceDescriptor dev;
   dev.vendor_id = 0x6666; // Prototype product vendor ID
   dev.product_id = 0x1235;
   dev.set_device_version(0, 2);
-  dev.manufacturer_str_index = mfgr_index;
-  dev.product_str_index = product_index;
-  dev.serial_str_index = serial_index;
+  dev.manufacturer_str_index = kManufacturerStringIndex;
+  dev.product_str_index = kProductStrIndex;
+  dev.serial_str_index = kSerialStrIndex;
 
   InterfaceDescriptor keyboard_itf(0, UsbClass::Hid);
   keyboard_itf.num_endpoints = 1;
@@ -54,9 +53,10 @@ constexpr auto make_descriptor_map() {
   return StaticDescriptorMap<0, 0>()
       .add_device_descriptor(dev)
       .add_language_ids(Language::English_US)
-      .add_string(mfgr_index, "Adam Simpkins", Language::English_US)
-      .add_string(product_index, "Mantyl Keyboard", Language::English_US)
-      .add_string(serial_index, "00:00:00::00:00:00", Language::English_US)
+      .add_string(
+          kManufacturerStringIndex, "Adam Simpkins", Language::English_US)
+      .add_string(kProductStrIndex, "Mantyl Keyboard", Language::English_US)
+      .add_string(kSerialStrIndex, "00:00:00::00:00:00", Language::English_US)
       .add_config_descriptor(ConfigAttr::RemoteWakeup,
                              UsbMilliamps(50),
                              0,
@@ -71,8 +71,18 @@ class TestDevice : UsbDeviceImpl {
 public:
   constexpr TestDevice() = default;
 
+  bool init_serial() {
+    auto serial_buffer = descriptors_.get_string_descriptor_buffer(
+        kSerialStrIndex, Language::English_US);
+    if (!serial_buffer) {
+      return false;
+    }
+
+    return usb_.update_serial_number(*serial_buffer);
+  }
+
   esp_err_t init() {
-    // TODO: Update the serial number
+    init_serial();
     return usb_.init();
   }
   void loop() {
@@ -165,6 +175,9 @@ void run_test() {
 } // namespace
 
 extern "C" void app_main() {
+  if (!usb.init_serial()) {
+    ESP_LOGE(LogTag, "failed to initialize serial number");
+  }
   run_test();
 
   while (true) {
