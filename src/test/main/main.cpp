@@ -11,6 +11,10 @@
 
 using namespace mantyl;
 
+namespace {
+const char *LogTag = "mantyl.test";
+}
+
 namespace mantyl {
 
 namespace {
@@ -102,6 +106,39 @@ public:
     return true;
   }
 
+  bool handle_ep0_interface_in(uint8_t interface,
+                               const SetupPacket &packet) override {
+    if (interface != 0) {
+      ESP_LOGW(LogTag, "control in request to unknown interface %d", interface);
+      return false;
+    }
+
+    ESP_LOGW(LogTag, "unhandled interface in request");
+    return false;
+  }
+  bool handle_ep0_interface_out(uint8_t interface,
+                                const SetupPacket &packet) override {
+    if (interface != 0) {
+      ESP_LOGW(
+          LogTag, "control out request to unknown interface %d", interface);
+      return false;
+    }
+
+    ESP_LOGW(LogTag, "unhandled interface out request");
+    return false;
+  }
+
+  bool handle_ep0_endpoint_in(uint8_t endpoint,
+                              const SetupPacket &packet) override {
+    ESP_LOGW(LogTag, "unhandled endpoint in request");
+    return false;
+  }
+  bool handle_ep0_endpoint_out(uint8_t endpoint,
+                               const SetupPacket &packet) override {
+    ESP_LOGW(LogTag, "unhandled endpoint out request");
+    return false;
+  }
+
 private:
   Esp32UsbDevice usb_{this};
   decltype(make_descriptor_map()) descriptors_ = make_descriptor_map();
@@ -110,10 +147,6 @@ private:
 } // namespace mantyl
 
 namespace {
-
-using namespace mantyl;
-
-const char *LogTag = "mantyl.test";
 
 constinit TestDevice usb;
 

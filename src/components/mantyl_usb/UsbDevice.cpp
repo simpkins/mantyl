@@ -101,25 +101,19 @@ bool UsbDevice::process_setup_packet(const SetupPacket& packet) {
       return process_non_std_device_in_request(packet);
     }
   } else if (recipient == SetupRecipient::Interface) {
-#if 0
     const uint8_t num = (packet.index & 0xff);
-    for (const auto &iface : interfaces_) {
-      if (iface && iface->get_number() == num) {
-        handled = iface->handle_setup_packet(&packet);
-        break;
-      }
+    if (packet.get_direction() == Direction::Out) {
+      return impl_->handle_ep0_interface_out(num, packet);
+    } else {
+      return impl_->handle_ep0_interface_in(num, packet);
     }
-#endif
   } else if (recipient == SetupRecipient::Endpoint) {
-#if 0
-    for (const auto &ep : endpoints_) {
-      const uint8_t num = (packet.index & 0xf);
-      if (ep && ep->get_number() == num) {
-        handled = ep->handle_setup_packet(&packet);
-        break;
-      }
+    const uint8_t num = (packet.index & 0xf);
+    if (packet.get_direction() == Direction::Out) {
+      return impl_->handle_ep0_endpoint_out(num, packet);
+    } else {
+      return impl_->handle_ep0_endpoint_in(num, packet);
     }
-#endif
   }
 
   return false;
@@ -173,15 +167,20 @@ bool UsbDevice::process_std_device_in_request(const SetupPacket &packet) {
 bool UsbDevice::process_non_std_device_out_request(const SetupPacket &packet) {
   const auto req_type = packet.get_request_type();
   if (req_type == SetupReqType::Class) {
-    // TODO: let impl_ handle this.
-    // For now just hack this up to support HID
-
-    if (packet.request == 0x0a) {
-        // HID SetIdle
-      return ctrl_transfer_.ack_out_transfer(*this);
+    if (packet.get_direction() == Direction::Out) {
+      return impl_->handle_ep0_class_out(packet);
+    } else {
+      return impl_->handle_ep0_class_in(packet);
+    }
+  } else if (req_type == SetupReqType::Vendor) {
+    if (packet.get_direction() == Direction::Out) {
+      return impl_->handle_ep0_vendor_out(packet);
+    } else {
+      return impl_->handle_ep0_vendor_in(packet);
     }
   }
 
+  ESP_LOGW(LogTag, "unknown request type in device setup request");
   return false;
 }
 
@@ -189,6 +188,7 @@ bool UsbDevice::process_non_std_device_in_request(const SetupPacket &packet) {
   const auto req_type = packet.get_request_type();
   if (req_type == SetupReqType::Class) {
     // TODO: let impl_ handle this.
+    ESP_LOGW(LogTag, "unhandled device class in request");
   }
 
   // TODO
@@ -277,6 +277,10 @@ bool UsbDevice::process_get_descriptor(const SetupPacket &packet) {
   auto desc = impl_->get_descriptor(packet.value, packet.index);
   if (!desc.has_value()) {
     // No descriptor with this ID.
+    ESP_LOGW(LogTag,
+             "USB: query for unknown descriptor: value=0x%x index=%u",
+             packet.value,
+             packet.index);
     ctrl_transfer_.send_request_error(*this);
     return true;
   }

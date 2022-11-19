@@ -101,11 +101,27 @@ public:
     return false;
   }
 
-#if 0
-  // Handle a Class or Vendor request to the device on endpoint 0
-  virtual void handle_device_in_request(SetupPacket& packet) = 0;
-  virtual void handle_device_out_request(SetupPacket& packet) = 0;
-#endif
+  virtual bool handle_ep0_interface_in(uint8_t interface,
+                                       const SetupPacket &packet) = 0;
+  virtual bool handle_ep0_interface_out(uint8_t interface,
+                                        const SetupPacket &packet) = 0;
+  virtual bool handle_ep0_endpoint_in(uint8_t endpoint,
+                                      const SetupPacket &packet) = 0;
+  virtual bool handle_ep0_endpoint_out(uint8_t endpoint,
+                                       const SetupPacket &packet) = 0;
+
+  virtual bool handle_ep0_class_in(const SetupPacket &packet) {
+    return false;
+  }
+  virtual bool handle_ep0_class_out(const SetupPacket &packet) {
+    return false;
+  }
+  virtual bool handle_ep0_vendor_in(const SetupPacket &packet) {
+    return false;
+  }
+  virtual bool handle_ep0_vendor_out(const SetupPacket &packet) {
+    return false;
+  }
 };
 
 class UsbDevice {
