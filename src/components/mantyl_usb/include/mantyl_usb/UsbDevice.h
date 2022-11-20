@@ -109,21 +109,20 @@ public:
                                         CtrlOutTransfer &&xfer) = 0;
   virtual bool handle_ep0_endpoint_in(uint8_t endpoint,
                                       const SetupPacket &packet) = 0;
-  virtual bool handle_ep0_endpoint_out(uint8_t endpoint,
-                                       const SetupPacket &packet) = 0;
+  virtual void handle_ep0_endpoint_out(uint8_t endpoint,
+                                       const SetupPacket &packet,
+                                       CtrlOutTransfer &&xfer) = 0;
 
   virtual bool handle_ep0_class_in(const SetupPacket &packet) {
     return false;
   }
-  virtual bool handle_ep0_class_out(const SetupPacket &packet) {
-    return false;
-  }
+  virtual void handle_ep0_class_out(const SetupPacket &packet,
+                                    CtrlOutTransfer &&xfer) {}
   virtual bool handle_ep0_vendor_in(const SetupPacket &packet) {
     return false;
   }
-  virtual bool handle_ep0_vendor_out(const SetupPacket &packet) {
-    return false;
-  }
+  virtual void handle_ep0_vendor_out(const SetupPacket &packet,
+                                     CtrlOutTransfer &&xfer) {}
 };
 
 class UsbDevice {
@@ -245,14 +244,15 @@ private:
 
   [[nodiscard]] bool process_setup_packet(const SetupPacket &packet);
   [[nodiscard]] bool process_std_device_in_request(const SetupPacket &packet);
-  [[nodiscard]] bool process_std_device_out_request(const SetupPacket &packet);
+  void process_std_device_out_request(const SetupPacket &packet,
+                                      CtrlOutTransfer &&xfer);
   [[nodiscard]] bool
   process_non_std_device_in_request(const SetupPacket &packet);
-  [[nodiscard]] bool
-  process_non_std_device_out_request(const SetupPacket &packet);
-  [[nodiscard]] bool process_set_configuration(const SetupPacket &packet);
-  [[nodiscard]] bool process_device_set_feature(const SetupPacket &packet);
-  [[nodiscard]] bool process_device_clear_feature(const SetupPacket &packet);
+  void process_non_std_device_out_request(const SetupPacket &packet,
+                                          CtrlOutTransfer &&xfer);
+  void process_set_configuration(const SetupPacket &packet, CtrlOutTransfer&& xfer);
+  void process_device_set_feature(const SetupPacket &packet, CtrlOutTransfer&& xfer);
+  void process_device_clear_feature(const SetupPacket &packet, CtrlOutTransfer&& xfer);
   [[nodiscard]] bool process_get_descriptor(const SetupPacket &packet);
   [[nodiscard]] bool send_ctrl_in(const SetupPacket &packet, buf_view buf);
 

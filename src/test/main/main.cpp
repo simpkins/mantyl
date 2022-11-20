@@ -178,10 +178,11 @@ public:
     ESP_LOGW(LogTag, "unhandled endpoint IN request");
     return false;
   }
-  bool handle_ep0_endpoint_out(uint8_t endpoint,
-                               const SetupPacket &packet) override {
+  void handle_ep0_endpoint_out(uint8_t endpoint,
+                               const SetupPacket &packet,
+                               CtrlOutTransfer &&xfer) override {
     ESP_LOGW(LogTag, "unhandled endpoint OUT request");
-    return false;
+    xfer.stall();
   }
 
 private:

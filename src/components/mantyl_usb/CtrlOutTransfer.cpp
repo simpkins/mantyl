@@ -18,6 +18,7 @@ void CtrlOutTransfer::ack() {
 }
 
 void CtrlOutTransfer::stall() {
+  ESP_LOGW(LogTag, "unhandled USB Setup OUT transfer");
   usb_->ctrl_transfer_.send_request_error(*usb_);
   usb_ = nullptr;
 }
@@ -27,7 +28,7 @@ void CtrlOutTransfer::destroy() {
     ESP_LOGW(LogTag,
              "no response generated for to USB Setup OUT transfer: generating "
              "STALL condition");
-    stall();
+    usb_->ctrl_transfer_.send_request_error(*usb_);
   }
 }
 

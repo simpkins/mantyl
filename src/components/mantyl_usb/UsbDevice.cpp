@@ -87,7 +87,8 @@ bool UsbDevice::process_setup_packet(const SetupPacket& packet) {
     // Direction: Out (host to device)
     // Type: Standard request type
     // Recipient: Device
-    return process_std_device_out_request(packet);
+    process_std_device_out_request(packet, CtrlOutTransfer(this));
+    return true;
   } else if (packet.request_type == 0x80) {
     // Direction: In (device to host)
     // Type: Standard request type
@@ -96,26 +97,28 @@ bool UsbDevice::process_setup_packet(const SetupPacket& packet) {
   }
 
   const auto recipient = packet.get_recipient();
-  if (recipient == SetupRecipient::Device) {
-    if (packet.get_direction() == Direction::Out) {
-      return process_non_std_device_out_request(packet);
-    } else {
-      return process_non_std_device_in_request(packet);
-    }
-  } else if (recipient == SetupRecipient::Interface) {
-    const uint8_t num = (packet.index & 0xff);
-    if (packet.get_direction() == Direction::Out) {
-      CtrlOutTransfer xfer(this);
+  if (packet.get_direction() == Direction::Out) {
+    CtrlOutTransfer xfer(this);
+    if (recipient == SetupRecipient::Device) {
+      process_non_std_device_out_request(packet, std::move(xfer));
+    } else if (recipient == SetupRecipient::Interface) {
+      const uint8_t num = (packet.index & 0xf);
       impl_->handle_ep0_interface_out(num, packet, std::move(xfer));
-      return true;
+    } else if (recipient == SetupRecipient::Endpoint) {
+      const uint8_t num = (packet.index & 0xf);
+      impl_->handle_ep0_endpoint_out(num, packet, std::move(xfer));
     } else {
-      return impl_->handle_ep0_interface_in(num, packet);
+      xfer.stall();
     }
-  } else if (recipient == SetupRecipient::Endpoint) {
-    const uint8_t num = (packet.index & 0xf);
-    if (packet.get_direction() == Direction::Out) {
-      return impl_->handle_ep0_endpoint_out(num, packet);
-    } else {
+    return true;
+  } else {
+    if (recipient == SetupRecipient::Device) {
+      return process_non_std_device_in_request(packet);
+    } else if (recipient == SetupRecipient::Interface) {
+      const uint8_t num = (packet.index & 0xff);
+      return impl_->handle_ep0_interface_in(num, packet);
+    } else if (recipient == SetupRecipient::Endpoint) {
+      const uint8_t num = (packet.index & 0xf);
       return impl_->handle_ep0_endpoint_in(num, packet);
     }
   }
@@ -123,22 +126,22 @@ bool UsbDevice::process_setup_packet(const SetupPacket& packet) {
   return false;
 }
 
-bool UsbDevice::process_std_device_out_request(const SetupPacket &packet) {
+void UsbDevice::process_std_device_out_request(const SetupPacket &packet,
+                                               CtrlOutTransfer &&xfer) {
   const auto std_req_type = packet.get_std_request();
   if (std_req_type == StdRequestType::SetAddress) {
     const uint8_t address = packet.value;
     ESP_LOGI(LogTag, "USB: set address: %u", packet.value);
     state_ = State::Address;
     set_address(address);
-    return ctrl_transfer_.ack_out_transfer(*this);
+    xfer.ack();
   } else if (std_req_type == StdRequestType::SetConfiguration) {
-    return process_set_configuration(packet);
+    process_set_configuration(packet, std::move(xfer));
   } else if (std_req_type == StdRequestType::SetFeature) {
-    return process_device_set_feature(packet);
+    process_device_set_feature(packet, std::move(xfer));
   } else if (std_req_type == StdRequestType::ClearFeature) {
-    return process_device_clear_feature(packet);
+    process_device_clear_feature(packet, std::move(xfer));
   }
-  return false;
 }
 
 bool UsbDevice::process_std_device_in_request(const SetupPacket &packet) {
@@ -168,24 +171,17 @@ bool UsbDevice::process_std_device_in_request(const SetupPacket &packet) {
   return false;
 }
 
-bool UsbDevice::process_non_std_device_out_request(const SetupPacket &packet) {
+void UsbDevice::process_non_std_device_out_request(const SetupPacket &packet,
+                                                   CtrlOutTransfer &&xfer) {
   const auto req_type = packet.get_request_type();
   if (req_type == SetupReqType::Class) {
-    if (packet.get_direction() == Direction::Out) {
-      return impl_->handle_ep0_class_out(packet);
-    } else {
-      return impl_->handle_ep0_class_in(packet);
-    }
+    impl_->handle_ep0_class_out(packet, std::move(xfer));
   } else if (req_type == SetupReqType::Vendor) {
-    if (packet.get_direction() == Direction::Out) {
-      return impl_->handle_ep0_vendor_out(packet);
-    } else {
-      return impl_->handle_ep0_vendor_in(packet);
-    }
+    impl_->handle_ep0_vendor_out(packet, std::move(xfer));
+  } else {
+    ESP_LOGW(LogTag, "unknown request type in device setup request");
+    xfer.stall();
   }
-
-  ESP_LOGW(LogTag, "unknown request type in device setup request");
-  return false;
 }
 
 bool UsbDevice::process_non_std_device_in_request(const SetupPacket &packet) {
@@ -199,9 +195,10 @@ bool UsbDevice::process_non_std_device_in_request(const SetupPacket &packet) {
   return false;
 }
 
-bool UsbDevice::process_set_configuration(const SetupPacket &packet) {
+void UsbDevice::process_set_configuration(const SetupPacket &packet, CtrlOutTransfer&& xfer) {
   if (state_ != State::Address && state_ != State::Configured) {
-    return false;
+    xfer.stall();
+    return;
   }
 
   const auto config_id = (packet.value & 0xff);
@@ -225,14 +222,15 @@ bool UsbDevice::process_set_configuration(const SetupPacket &packet) {
       // anyway.
       config_id_ = 0;
       state_ = State::Address;
-      ctrl_transfer_.send_request_error(*this);
-      return true;
+      xfer.stall();
+      return;
     }
   }
-  return ctrl_transfer_.ack_out_transfer(*this);
+  xfer.ack();
 }
 
-bool UsbDevice::process_device_set_feature(const SetupPacket &packet) {
+void UsbDevice::process_device_set_feature(const SetupPacket &packet,
+                                           CtrlOutTransfer &&xfer) {
   ESP_LOGI(LogTag,
            "USB: SetFeature for device, feature=%u, index=%u",
            packet.value,
@@ -243,34 +241,41 @@ bool UsbDevice::process_device_set_feature(const SetupPacket &packet) {
     // The USB spec requires this support for high speed devices.
     // Currently we only run on ESP32S2/S3 devices, which are full speed,
     // and do not support high speed.
-    return false;
+    xfer.stall();
+    return;
   }
 
   if (state_ != State::Address && state_ != State::Configured) {
-    return false;
+    xfer.stall();
+    return;
   }
 
   if (feature == FeatureSelector::RemoteWakeup) {
     remote_wakeup_enabled_ = true;
-    return ctrl_transfer_.ack_out_transfer(*this);
+    xfer.ack();
+    return;
   }
 
-  return false;
+  xfer.stall();
+  return;
 }
 
-bool UsbDevice::process_device_clear_feature(const SetupPacket &packet) {
+void UsbDevice::process_device_clear_feature(const SetupPacket &packet,
+                                             CtrlOutTransfer &&xfer) {
   ESP_LOGI(LogTag, "USB: ClearFeature for device, feature=%u", packet.value);
   if (state_ != State::Address && state_ != State::Configured) {
-    return false;
+    xfer.stall();
+    return;
   }
   const auto feature = static_cast<FeatureSelector>(packet.value);
   if (feature == FeatureSelector::RemoteWakeup) {
     remote_wakeup_enabled_ = false;
-    return ctrl_transfer_.ack_out_transfer(*this);
+    xfer.stall();
+    return;
   }
   // No other feature type is supported for devices
   // FeatureSelector::TestMode cannot be cleared using ClearFeature
-  return false;
+  xfer.stall();
 }
 
 bool UsbDevice::process_get_descriptor(const SetupPacket &packet) {
