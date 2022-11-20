@@ -1,6 +1,8 @@
 // Copyright (c) 2022, Adam Simpkins
 #include "mantyl_usb/UsbDevice.h"
 
+#include "mantyl_usb/CtrlOutTransfer.h"
+
 #include <esp_log.h>
 
 namespace {
@@ -103,7 +105,9 @@ bool UsbDevice::process_setup_packet(const SetupPacket& packet) {
   } else if (recipient == SetupRecipient::Interface) {
     const uint8_t num = (packet.index & 0xff);
     if (packet.get_direction() == Direction::Out) {
-      return impl_->handle_ep0_interface_out(num, packet);
+      CtrlOutTransfer xfer(this);
+      impl_->handle_ep0_interface_out(num, packet, std::move(xfer));
+      return true;
     } else {
       return impl_->handle_ep0_interface_in(num, packet);
     }

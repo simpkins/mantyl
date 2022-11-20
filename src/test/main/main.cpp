@@ -1,10 +1,12 @@
 // Copyright (c) 2022, Adam Simpkins
 
-#include "mantyl_usb/Esp32UsbDevice.h"
-#include "mantyl_usb/Descriptors.h"
-#include "mantyl_usb/UsbDescriptorMap.h"
-#include "mantyl_usb/StaticDescriptorMap.h"
 #include "mantyl_readline.h"
+#include "mantyl_usb/CtrlOutTransfer.h"
+#include "mantyl_usb/Descriptors.h"
+#include "mantyl_usb/Esp32UsbDevice.h"
+#include "mantyl_usb/StaticDescriptorMap.h"
+#include "mantyl_usb/UsbDescriptorMap.h"
+#include "mantyl_usb/hid.h"
 
 #include <esp_check.h>
 #include <esp_log.h>
@@ -108,34 +110,77 @@ public:
 
   bool handle_ep0_interface_in(uint8_t interface,
                                const SetupPacket &packet) override {
-    if (interface != 0) {
-      ESP_LOGW(LogTag, "control in request to unknown interface %d", interface);
-      return false;
+    if (interface == 0) {
+      if (packet.get_request_type() == SetupReqType::Standard) {
+        return handle_std_in_request(packet);
+      } else if (packet.get_request_type() == SetupReqType::Class) {
+        return handle_hid_in_request(packet);
+      } else {
+        ESP_LOGW(
+            LogTag,
+            "unsupported setup request type for IN request to interface %d",
+            interface);
+        return false;
+      }
     }
 
-    ESP_LOGW(LogTag, "unhandled interface in request");
+    ESP_LOGW(LogTag, "control IN request to unknown interface %d", interface);
     return false;
   }
-  bool handle_ep0_interface_out(uint8_t interface,
-                                const SetupPacket &packet) override {
-    if (interface != 0) {
-      ESP_LOGW(
-          LogTag, "control out request to unknown interface %d", interface);
-      return false;
-    }
 
-    ESP_LOGW(LogTag, "unhandled interface out request");
+  void handle_ep0_interface_out(uint8_t interface,
+                                const SetupPacket &packet,
+                                CtrlOutTransfer &&xfer) override {
+    if (interface == 0) {
+      if (packet.get_request_type() == SetupReqType::Class) {
+        handle_hid_out_request(packet, std::move(xfer));
+      } else {
+        ESP_LOGW(
+            LogTag,
+            "unsupported setup request type for OUT request to interface %d",
+            interface);
+      }
+    } else {
+      ESP_LOGW(
+          LogTag, "control OUT request to unknown interface %d", interface);
+    }
+  }
+
+  bool handle_std_in_request(const SetupPacket& packet) {
+    ESP_LOGW(LogTag, "unhandled standard interface IN request");
     return false;
+  }
+
+  bool handle_hid_in_request(const SetupPacket& packet) {
+    ESP_LOGW(LogTag, "unhandled HID interface IN request");
+    return false;
+  }
+
+  void handle_hid_out_request(const SetupPacket &packet,
+                              CtrlOutTransfer &&xfer) {
+    auto request = static_cast<HidRequest>(packet.request);
+
+    if (request == HidRequest::SetIdle) {
+      const uint8_t duration = (packet.request >> 8) & 0xff;
+      const uint8_t report_id = packet.request & 0xff;
+      ESP_LOGI(LogTag,
+               "Set HID Idle period for report %d to %d",
+               report_id,
+               duration);
+      xfer.ack();
+    } else {
+      ESP_LOGW(LogTag, "unhandled HID interface OUT request");
+    }
   }
 
   bool handle_ep0_endpoint_in(uint8_t endpoint,
                               const SetupPacket &packet) override {
-    ESP_LOGW(LogTag, "unhandled endpoint in request");
+    ESP_LOGW(LogTag, "unhandled endpoint IN request");
     return false;
   }
   bool handle_ep0_endpoint_out(uint8_t endpoint,
                                const SetupPacket &packet) override {
-    ESP_LOGW(LogTag, "unhandled endpoint out request");
+    ESP_LOGW(LogTag, "unhandled endpoint OUT request");
     return false;
   }
 

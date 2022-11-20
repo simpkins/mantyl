@@ -11,6 +11,7 @@
 namespace mantyl {
 
 using buf_view = std::basic_string_view<uint8_t>;
+class CtrlOutTransfer;
 
 /**
  * UsbDeviceImpl defines the API that USB devices implement.
@@ -103,8 +104,9 @@ public:
 
   virtual bool handle_ep0_interface_in(uint8_t interface,
                                        const SetupPacket &packet) = 0;
-  virtual bool handle_ep0_interface_out(uint8_t interface,
-                                        const SetupPacket &packet) = 0;
+  virtual void handle_ep0_interface_out(uint8_t interface,
+                                        const SetupPacket &packet,
+                                        CtrlOutTransfer &&xfer) = 0;
   virtual bool handle_ep0_endpoint_in(uint8_t endpoint,
                                       const SetupPacket &packet) = 0;
   virtual bool handle_ep0_endpoint_out(uint8_t endpoint,
@@ -193,7 +195,9 @@ protected:
   virtual void close_all_endpoints() = 0;
 
 private:
+  friend class CtrlOutTransfer;
   using buf_view = std::basic_string_view<uint8_t>;
+
   class ControlTransfer {
   public:
     enum Status {

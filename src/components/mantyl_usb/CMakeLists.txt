@@ -1,4 +1,5 @@
 set(component_srcs
+    "CtrlOutTransfer.cpp"
     "Esp32UsbDevice.cpp"
     "StaticDescriptorMap.cpp"
     "UsbDescriptorMap.cpp"

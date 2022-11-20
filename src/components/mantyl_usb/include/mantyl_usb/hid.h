@@ -3,11 +3,20 @@
 
 #include <cstdint>
 
-namespace mantyl::hid {
+namespace mantyl {
 
 enum class HidSubclass : uint8_t {
     None = 0,
     Boot = 1,
+};
+
+enum class HidRequest : uint8_t {
+  GetReport = 0x01,
+  GetIdle = 0x02,
+  GetProtocol = 0x03,
+  SetReport = 0x09,
+  SetIdle = 0x0a,
+  SetProtocol = 0x0b,
 };
 
 enum class HidProtocol : uint8_t {
@@ -15,6 +24,8 @@ enum class HidProtocol : uint8_t {
     Keyboard = 1,
     Mouse = 2,
 };
+
+namespace hid {
 
 /*
  * Keyboard code definitions:
@@ -273,4 +284,5 @@ enum class Led : uint8_t {
   Kana = 0x10,
 };
 
-} // namespace mantyl::hid
+} // namespace hid
+} // namespace mantyl
