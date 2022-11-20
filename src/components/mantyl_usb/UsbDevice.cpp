@@ -2,6 +2,7 @@
 #include "mantyl_usb/UsbDevice.h"
 
 #include "mantyl_usb/CtrlOutTransfer.h"
+#include "mantyl_usb/CtrlInTransfer.h"
 
 #include <esp_log.h>
 
@@ -56,24 +57,11 @@ void UsbDevice::on_setup_received(const SetupPacket& packet) {
     return;
   }
 
-  ESP_LOGI(LogTag, "on_setup_received");
-  ESP_LOGI(LogTag, "on_setup_received2");
-
   // Process control request
-  if (!process_setup_packet(packet)) {
-    ESP_LOGW(LogTag,
-             "unhandled SETUP packet: request_type=0x%04x request=0x%04x "
-             "walue=0x%06x index=0x%06x length=0x%06x\n",
-             packet.request_type,
-             packet.request,
-             packet.value,
-             packet.index,
-             packet.length);
-    ctrl_transfer_.send_request_error(*this);
-  }
+  process_setup_packet(packet);
 }
 
-bool UsbDevice::process_setup_packet(const SetupPacket& packet) {
+void UsbDevice::process_setup_packet(const SetupPacket& packet) {
   ESP_LOGI(LogTag,
            "USB: SETUP received: request_type=0x%04x request=0x%04x "
            "value=0x%06x index=0x%06x length=0x%06x",
@@ -88,12 +76,13 @@ bool UsbDevice::process_setup_packet(const SetupPacket& packet) {
     // Type: Standard request type
     // Recipient: Device
     process_std_device_out_request(packet, CtrlOutTransfer(this));
-    return true;
+    return;
   } else if (packet.request_type == 0x80) {
     // Direction: In (device to host)
     // Type: Standard request type
     // Recipient: Device
-    return process_std_device_in_request(packet);
+    process_std_device_in_request(packet, CtrlInTransfer(this, packet.length));
+    return;
   }
 
   const auto recipient = packet.get_recipient();
@@ -110,20 +99,20 @@ bool UsbDevice::process_setup_packet(const SetupPacket& packet) {
     } else {
       xfer.stall();
     }
-    return true;
   } else {
+    CtrlInTransfer xfer(this, packet.length);
     if (recipient == SetupRecipient::Device) {
-      return process_non_std_device_in_request(packet);
+      process_non_std_device_in_request(packet, std::move(xfer));
     } else if (recipient == SetupRecipient::Interface) {
       const uint8_t num = (packet.index & 0xff);
-      return impl_->handle_ep0_interface_in(num, packet);
+      impl_->handle_ep0_interface_in(num, packet, std::move(xfer));
     } else if (recipient == SetupRecipient::Endpoint) {
       const uint8_t num = (packet.index & 0xf);
-      return impl_->handle_ep0_endpoint_in(num, packet);
+      impl_->handle_ep0_endpoint_in(num, packet, std::move(xfer));
+    } else {
+      xfer.stall();
     }
   }
-
-  return false;
 }
 
 void UsbDevice::process_std_device_out_request(const SetupPacket &packet,
@@ -144,10 +133,11 @@ void UsbDevice::process_std_device_out_request(const SetupPacket &packet,
   }
 }
 
-bool UsbDevice::process_std_device_in_request(const SetupPacket &packet) {
+void UsbDevice::process_std_device_in_request(const SetupPacket &packet,
+                                              CtrlInTransfer &&xfer) {
   const auto std_req_type = packet.get_std_request();
   if (std_req_type == StdRequestType::GetDescriptor) {
-    return process_get_descriptor(packet);
+    return process_get_descriptor(packet, std::move(xfer));
   } else if (std_req_type == StdRequestType::GetConfiguration) {
     ESP_LOGI(LogTag, "USB: get configuration");
     // The response packet we send points at our config_id_ member variable.
@@ -155,20 +145,20 @@ bool UsbDevice::process_std_device_in_request(const SetupPacket &packet) {
     // are responding to this GetConfiguration packet, so config_id_ generally
     // should not be able to change while we are trying to transmit this
     // response.
-    buf_view response(&config_id_, sizeof(config_id_));
-    return send_ctrl_in(packet, response);
+    return xfer.send_response_async(&config_id_, sizeof(config_id_));
   } else if (std_req_type == StdRequestType::GetStatus) {
-    ESP_LOGW(LogTag, "USB: GetStatus");
+    ESP_LOGI(LogTag, "USB: GetStatus");
     // We put the response into the ControlTransfer::in_place_buf_
     const bool self_powered = impl_->is_self_powered();
     ctrl_transfer_.in_place_buf_[0] =
         (remote_wakeup_enabled_ ? 0x02 : 0x00) | (self_powered ? 0x01 : 0x00);
     ctrl_transfer_.in_place_buf_[1] = 0;
-    return send_ctrl_in(packet,
-                        buf_view(ctrl_transfer_.in_place_buf_.data(),
-                                 ctrl_transfer_.in_place_buf_.size()));
+    return xfer.send_response_async(ctrl_transfer_.in_place_buf_.data(),
+                                    ctrl_transfer_.in_place_buf_.size());
+  } else {
+    ESP_LOGW(LogTag, "USB: unhandled standard device request");
+    xfer.stall();
   }
-  return false;
 }
 
 void UsbDevice::process_non_std_device_out_request(const SetupPacket &packet,
@@ -179,20 +169,22 @@ void UsbDevice::process_non_std_device_out_request(const SetupPacket &packet,
   } else if (req_type == SetupReqType::Vendor) {
     impl_->handle_ep0_vendor_out(packet, std::move(xfer));
   } else {
-    ESP_LOGW(LogTag, "unknown request type in device setup request");
+    ESP_LOGW(LogTag, "unknown request type in device setup OUT request");
     xfer.stall();
   }
 }
 
-bool UsbDevice::process_non_std_device_in_request(const SetupPacket &packet) {
+void UsbDevice::process_non_std_device_in_request(const SetupPacket &packet,
+                                                  CtrlInTransfer &&xfer) {
   const auto req_type = packet.get_request_type();
   if (req_type == SetupReqType::Class) {
-    // TODO: let impl_ handle this.
-    ESP_LOGW(LogTag, "unhandled device class in request");
+    impl_->handle_ep0_class_in(packet, std::move(xfer));
+  } else if (req_type == SetupReqType::Vendor) {
+    impl_->handle_ep0_vendor_in(packet, std::move(xfer));
+  } else {
+    ESP_LOGW(LogTag, "unknown request type in device setup IN request");
+    xfer.stall();
   }
-
-  // TODO
-  return false;
 }
 
 void UsbDevice::process_set_configuration(const SetupPacket &packet, CtrlOutTransfer&& xfer) {
@@ -278,7 +270,8 @@ void UsbDevice::process_device_clear_feature(const SetupPacket &packet,
   xfer.stall();
 }
 
-bool UsbDevice::process_get_descriptor(const SetupPacket &packet) {
+void UsbDevice::process_get_descriptor(const SetupPacket &packet,
+                                       CtrlInTransfer &&xfer) {
   ESP_LOGI(LogTag,
            "USB: get descriptor: value=0x%x index=%u",
            packet.value,
@@ -290,18 +283,10 @@ bool UsbDevice::process_get_descriptor(const SetupPacket &packet) {
              "USB: query for unknown descriptor: value=0x%x index=%u",
              packet.value,
              packet.index);
-    ctrl_transfer_.send_request_error(*this);
-    return true;
+    return xfer.stall();
   }
 
-  return send_ctrl_in(packet, *desc);
-}
-
-bool UsbDevice::send_ctrl_in(const SetupPacket& setup, buf_view buf) {
-  auto response_len =
-      std::min(setup.length, static_cast<uint16_t>(buf.size()));
-  buf = buf.substr(0, response_len);
-  return ctrl_transfer_.start_transfer(*this, buf);
+  return xfer.send_response_async(*desc);
 }
 
 void UsbDevice::ControlTransfer::send_request_error(UsbDevice& usb) {

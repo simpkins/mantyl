@@ -1,6 +1,7 @@
 // Copyright (c) 2022, Adam Simpkins
 
 #include "mantyl_readline.h"
+#include "mantyl_usb/CtrlInTransfer.h"
 #include "mantyl_usb/CtrlOutTransfer.h"
 #include "mantyl_usb/Descriptors.h"
 #include "mantyl_usb/Esp32UsbDevice.h"
@@ -108,24 +109,25 @@ public:
     return true;
   }
 
-  bool handle_ep0_interface_in(uint8_t interface,
-                               const SetupPacket &packet) override {
+  void handle_ep0_interface_in(uint8_t interface,
+                               const SetupPacket &packet,
+                               CtrlInTransfer &&xfer) override {
     if (interface == 0) {
       if (packet.get_request_type() == SetupReqType::Standard) {
-        return handle_std_in_request(packet);
+        return handle_std_in_request(packet, std::move(xfer));
       } else if (packet.get_request_type() == SetupReqType::Class) {
-        return handle_hid_in_request(packet);
+        return handle_hid_in_request(packet, std::move(xfer));
       } else {
         ESP_LOGW(
             LogTag,
             "unsupported setup request type for IN request to interface %d",
             interface);
-        return false;
+        return xfer.stall();
       }
     }
 
     ESP_LOGW(LogTag, "control IN request to unknown interface %d", interface);
-    return false;
+    return xfer.stall();
   }
 
   void handle_ep0_interface_out(uint8_t interface,
@@ -146,14 +148,14 @@ public:
     }
   }
 
-  bool handle_std_in_request(const SetupPacket& packet) {
+  void handle_std_in_request(const SetupPacket &packet, CtrlInTransfer &&xfer) {
     ESP_LOGW(LogTag, "unhandled standard interface IN request");
-    return false;
+    xfer.stall();
   }
 
-  bool handle_hid_in_request(const SetupPacket& packet) {
+  void handle_hid_in_request(const SetupPacket &packet, CtrlInTransfer &&xfer) {
     ESP_LOGW(LogTag, "unhandled HID interface IN request");
-    return false;
+    xfer.stall();
   }
 
   void handle_hid_out_request(const SetupPacket &packet,
@@ -173,10 +175,11 @@ public:
     }
   }
 
-  bool handle_ep0_endpoint_in(uint8_t endpoint,
-                              const SetupPacket &packet) override {
+  void handle_ep0_endpoint_in(uint8_t endpoint,
+                              const SetupPacket &packet,
+                              CtrlInTransfer &&xfer) override {
     ESP_LOGW(LogTag, "unhandled endpoint IN request");
-    return false;
+    xfer.stall();
   }
   void handle_ep0_endpoint_out(uint8_t endpoint,
                                const SetupPacket &packet,

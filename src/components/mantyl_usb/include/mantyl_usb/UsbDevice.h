@@ -11,6 +11,7 @@
 namespace mantyl {
 
 using buf_view = std::basic_string_view<uint8_t>;
+class CtrlInTransfer;
 class CtrlOutTransfer;
 
 /**
@@ -102,25 +103,25 @@ public:
     return false;
   }
 
-  virtual bool handle_ep0_interface_in(uint8_t interface,
-                                       const SetupPacket &packet) = 0;
+  virtual void handle_ep0_interface_in(uint8_t interface,
+                                       const SetupPacket &packet,
+                                       CtrlInTransfer &&xfer) = 0;
   virtual void handle_ep0_interface_out(uint8_t interface,
                                         const SetupPacket &packet,
                                         CtrlOutTransfer &&xfer) = 0;
-  virtual bool handle_ep0_endpoint_in(uint8_t endpoint,
-                                      const SetupPacket &packet) = 0;
+  virtual void handle_ep0_endpoint_in(uint8_t endpoint,
+                                      const SetupPacket &packet,
+                                      CtrlInTransfer &&xfer) = 0;
   virtual void handle_ep0_endpoint_out(uint8_t endpoint,
                                        const SetupPacket &packet,
                                        CtrlOutTransfer &&xfer) = 0;
 
-  virtual bool handle_ep0_class_in(const SetupPacket &packet) {
-    return false;
-  }
+  virtual void handle_ep0_class_in(const SetupPacket &packet,
+                                   CtrlInTransfer &&xfer) {}
   virtual void handle_ep0_class_out(const SetupPacket &packet,
                                     CtrlOutTransfer &&xfer) {}
-  virtual bool handle_ep0_vendor_in(const SetupPacket &packet) {
-    return false;
-  }
+  virtual void handle_ep0_vendor_in(const SetupPacket &packet,
+                                    CtrlInTransfer &&xfer) {}
   virtual void handle_ep0_vendor_out(const SetupPacket &packet,
                                      CtrlOutTransfer &&xfer) {}
 };
@@ -194,6 +195,7 @@ protected:
   virtual void close_all_endpoints() = 0;
 
 private:
+  friend class CtrlInTransfer;
   friend class CtrlOutTransfer;
   using buf_view = std::basic_string_view<uint8_t>;
 
@@ -242,18 +244,22 @@ private:
                               uint8_t *buffer,
                               uint16_t buffer_size) = 0;
 
-  [[nodiscard]] bool process_setup_packet(const SetupPacket &packet);
-  [[nodiscard]] bool process_std_device_in_request(const SetupPacket &packet);
+  void process_setup_packet(const SetupPacket &packet);
+  void process_std_device_in_request(const SetupPacket &packet,
+                                     CtrlInTransfer &&xfer);
   void process_std_device_out_request(const SetupPacket &packet,
                                       CtrlOutTransfer &&xfer);
-  [[nodiscard]] bool
-  process_non_std_device_in_request(const SetupPacket &packet);
+  void process_non_std_device_in_request(const SetupPacket &packet,
+                                         CtrlInTransfer &&xfer);
   void process_non_std_device_out_request(const SetupPacket &packet,
                                           CtrlOutTransfer &&xfer);
-  void process_set_configuration(const SetupPacket &packet, CtrlOutTransfer&& xfer);
-  void process_device_set_feature(const SetupPacket &packet, CtrlOutTransfer&& xfer);
-  void process_device_clear_feature(const SetupPacket &packet, CtrlOutTransfer&& xfer);
-  [[nodiscard]] bool process_get_descriptor(const SetupPacket &packet);
+  void process_set_configuration(const SetupPacket &packet,
+                                 CtrlOutTransfer &&xfer);
+  void process_device_set_feature(const SetupPacket &packet,
+                                  CtrlOutTransfer &&xfer);
+  void process_device_clear_feature(const SetupPacket &packet,
+                                    CtrlOutTransfer &&xfer);
+  void process_get_descriptor(const SetupPacket &packet, CtrlInTransfer &&xfer);
   [[nodiscard]] bool send_ctrl_in(const SetupPacket &packet, buf_view buf);
 
   // All state is only accessed from within the USB task,

@@ -24,12 +24,14 @@ void CtrlOutTransfer::stall() {
 }
 
 void CtrlOutTransfer::destroy() {
-  if (usb_) {
-    ESP_LOGW(LogTag,
-             "no response generated for to USB Setup OUT transfer: generating "
-             "STALL condition");
-    usb_->ctrl_transfer_.send_request_error(*usb_);
+  if (!usb_) {
+      return;
   }
+
+  ESP_LOGW(LogTag,
+           "no response generated for to USB Setup OUT transfer: generating "
+           "STALL condition");
+  usb_->ctrl_transfer_.send_request_error(*usb_);
 }
 
 } // namespace mantyl
