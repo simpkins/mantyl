@@ -223,7 +223,7 @@ enum class InterfaceClass : uint8_t {
   Hid = 3,
 };
 
-struct SetupPacket{
+struct SetupPacket {
   SetupReqType get_request_type() const {
     static constexpr uint8_t kSetupReqTypeMask = 0x60;
     return static_cast<SetupReqType>(request_type & kSetupReqTypeMask);

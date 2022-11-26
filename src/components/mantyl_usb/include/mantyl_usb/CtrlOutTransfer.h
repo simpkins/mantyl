@@ -7,7 +7,7 @@ class UsbDevice;
 
 class CtrlOutTransfer {
 public:
-  explicit CtrlOutTransfer(UsbDevice *usb = nullptr) : usb_{usb} {}
+  constexpr explicit CtrlOutTransfer(UsbDevice *usb = nullptr) : usb_{usb} {}
   ~CtrlOutTransfer() {
     destroy();
   }
@@ -24,6 +24,11 @@ public:
 
   void ack();
   void stall();
+
+  void reset() {
+    destroy();
+    usb_ = nullptr;
+  }
 
 private:
   void destroy();

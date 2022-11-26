@@ -201,9 +201,6 @@ private:
     static_assert(DataLength <=
                       std::numeric_limits<decltype(index_[0].offset)>::max(),
                   "descriptor data is to large");
-    if (desc[1] != (value >> 8)) {
-      abort(); // descriptor type mismatch
-    }
 
     for (size_t n = 0; n < other.data_.size(); ++n) {
       data_[n] = other.data_[n];
