@@ -126,9 +126,53 @@ public:
                                      CtrlOutTransfer &&xfer) {}
 };
 
+enum UsbError : uint8_t {
+  Reset,
+  Timeout,
+};
+
+class UsbCtrlInCallback {
+public:
+  constexpr UsbCtrlInCallback() {}
+  virtual ~UsbCtrlInCallback() = default;
+
+  virtual void in_send_successful(CtrlInTransfer&& transfer) = 0;
+  virtual void in_send_error(UsbError err) = 0;
+};
+
+class UsbCtrlOutCallback {
+public:
+  constexpr UsbCtrlOutCallback() {}
+  virtual ~UsbCtrlOutCallback() = default;
+
+  virtual void
+  out_recv_successful(size_t bytes, bool is_last, CtrlOutTransfer &&transfer) = 0;
+  virtual void out_recv_error(UsbError err) = 0;
+};
+
 class UsbDevice {
 public:
   explicit constexpr UsbDevice(UsbDeviceImpl* impl) : impl_{impl} {}
+
+  /**
+   * Create a UsbDevice without setting the UsbDeviceImpl yet.
+   *
+   * setImpl() must be called before using any other methods on the device.
+   */
+  explicit constexpr UsbDevice() = default;
+
+  constexpr void setImpl(UsbDeviceImpl* impl) {
+    // assert(impl != nullptr);
+    // assert(impl_ == nullptr);
+    impl_ = impl;
+  }
+
+  /**
+   * Initialize the USB device, and make it visible on the bus.
+   */
+  [[nodiscard]] virtual bool init() = 0;
+
+  virtual void loop() = 0;
 
   bool is_remote_wakeup_enabled() const {
     return remote_wakeup_enabled_;
@@ -199,31 +243,36 @@ private:
   friend class CtrlOutTransfer;
   using buf_view = std::basic_string_view<uint8_t>;
 
-  class ControlTransfer {
-  public:
-    enum Status {
-      None,
-      InData,
-      InStatus,
-      OutData,
-      OutStatus,
-    };
+  // The current control transfer status on endpoint 0
+  enum CtrlStatus : uint8_t {
+    None,
+    InData,
+    InStatus,
+    OutData,
+    OutStatus,
+  };
 
-    void reset(uint16_t max_packet_size);
+  struct CtrlInState {
+    void reset() {
+      buf = buf_view();
+      callback = nullptr;
+    }
 
-    void send_request_error(UsbDevice& usb);
-    [[nodiscard]] bool ack_out_transfer(UsbDevice& usb);
-    [[nodiscard]] bool start_transfer(UsbDevice& usb, buf_view buf);
-    void send_next_in_packet(UsbDevice& usb);
-    void in_transfer_complete(UsbDevice& usb);
-    void out_transfer_complete(UsbDevice& usb);
+    buf_view buf;
+    UsbCtrlInCallback* callback{nullptr};
+  };
+  struct CtrlOutState {
+    void reset() {
+      callback = nullptr;
+    }
 
-    uint16_t max_packet_size_{0};
-    Status status_{Status::None};
-    buf_view buf_;
-    // A small buffer for generating responses to some standard control
-    // transfer requests.
-    std::array<uint8_t, 2> in_place_buf_{};
+    UsbCtrlOutCallback* callback{nullptr};
+  };
+  union CtrlState {
+    constexpr CtrlState() : out{} {}
+
+    CtrlOutState out; // When ctrl_status_ == OutData
+    CtrlInState in; // When ctrl_status_ == InData
   };
 
   UsbDevice(UsbDevice const &) = delete;
@@ -262,15 +311,31 @@ private:
   void process_get_descriptor(const SetupPacket &packet, CtrlInTransfer &&xfer);
   [[nodiscard]] bool send_ctrl_in(const SetupPacket &packet, buf_view buf);
 
+  void fail_control_transfer();
+  [[nodiscard]] CtrlOutTransfer start_ctrl_out();
+  [[nodiscard]] CtrlInTransfer start_ctrl_in(uint16_t length);
+  void stall_ctrl_transfer();
+  void ctrl_out_ack();
+  [[nodiscard]] bool start_ctrl_in_transfer(buf_view buf);
+  void send_next_ctrl_in_packet();
+  void ctrl_in_transfer_complete();
+  void ctrl_out_transfer_complete();
+
+  UsbDeviceImpl *impl_{nullptr};
+
   // All state is only accessed from within the USB task,
   // so we do not need any synchronization.
   State state_{State::Uninit};
-  UsbDeviceImpl *impl_{nullptr};
-
-  // Endpoint 0 status
-  ControlTransfer ctrl_transfer_;
   uint8_t config_id_{0};
+  uint16_t max_packet_size_{0};
+
+  // A small buffer for generating responses to some standard control
+  // transfer requests.
+  std::array<uint8_t, 2> in_place_buf_{};
   bool remote_wakeup_enabled_{false};
+  CtrlStatus ctrl_status_{CtrlStatus::None};
+  uint8_t ctrl_transfer_generation_{0};
+  CtrlState ctrl_state_;
 };
 
 } // namespace mantyl

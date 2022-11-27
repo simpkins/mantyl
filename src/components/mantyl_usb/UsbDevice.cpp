@@ -20,10 +20,12 @@ void UsbDevice::on_bus_reset() {
 void UsbDevice::on_enum_done(uint16_t max_ep0_packet_size) {
   ESP_LOGI(LogTag, "on_enum_done: max_ep0_packet_size=%d", max_ep0_packet_size);
 
-  ctrl_transfer_.reset(max_ep0_packet_size);
   state_ = State::Default;
   config_id_ = 0;
   remote_wakeup_enabled_ = false;
+  max_packet_size_ = max_ep0_packet_size;
+  fail_control_transfer();
+
   impl_->on_enumerated(max_ep0_packet_size);
 }
 
@@ -61,6 +63,33 @@ void UsbDevice::on_setup_received(const SetupPacket& packet) {
   process_setup_packet(packet);
 }
 
+void UsbDevice::fail_control_transfer() {
+  auto old_ctrl_status = ctrl_status_;
+  ctrl_status_ = CtrlStatus::None;
+
+  // Increment ctrl_transfer_generation_, to ensure that any future attempts to
+  // use an outstanding CtrlOutTransfer or CtrlInTransfer object will fail.
+  // This is needed in case we are in a pending transaction waiting on the
+  // device implementation to initiate the next phase of send or receive.
+  // (It's possible that the generation number could loop around and become
+  // valid again, but this seems unlikely to be an issue in practice.)
+  ++ctrl_transfer_generation_;
+
+  if (old_ctrl_status == CtrlStatus::InData) {
+    auto *cb = ctrl_state_.in.callback;
+    ctrl_state_.in.reset();
+    if (cb) {
+      cb->in_send_error(UsbError::Reset);
+    }
+  } else if (old_ctrl_status == CtrlStatus::OutData) {
+    auto *cb = ctrl_state_.out.callback;
+    ctrl_state_.out.reset();
+    if (cb) {
+      cb->out_recv_error(UsbError::Reset);
+    }
+  }
+}
+
 void UsbDevice::process_setup_packet(const SetupPacket& packet) {
   ESP_LOGI(LogTag,
            "USB: SETUP received: request_type=0x%04x request=0x%04x "
@@ -71,23 +100,31 @@ void UsbDevice::process_setup_packet(const SetupPacket& packet) {
            packet.index,
            packet.length);
 
+  if (ctrl_status_ != CtrlStatus::None) {
+    // It's unexpected to receive a new SETUP packet if we think there is
+    // a control transfer still in progress.  Terminate the control transfer
+    // we think is still in progress.
+    fail_control_transfer();
+    // Continue through and process this SETUP packet.
+  }
+
   if (packet.request_type == 0) {
     // Direction: Out (host to device)
     // Type: Standard request type
     // Recipient: Device
-    process_std_device_out_request(packet, CtrlOutTransfer(this));
+    process_std_device_out_request(packet, start_ctrl_out());
     return;
   } else if (packet.request_type == 0x80) {
     // Direction: In (device to host)
     // Type: Standard request type
     // Recipient: Device
-    process_std_device_in_request(packet, CtrlInTransfer(this, packet.length));
+    process_std_device_in_request(packet, start_ctrl_in(packet.length));
     return;
   }
 
   const auto recipient = packet.get_recipient();
   if (packet.get_direction() == Direction::Out) {
-    CtrlOutTransfer xfer(this);
+    auto xfer = start_ctrl_out();
     if (recipient == SetupRecipient::Device) {
       process_non_std_device_out_request(packet, std::move(xfer));
     } else if (recipient == SetupRecipient::Interface) {
@@ -100,7 +137,7 @@ void UsbDevice::process_setup_packet(const SetupPacket& packet) {
       xfer.stall();
     }
   } else {
-    CtrlInTransfer xfer(this, packet.length);
+    auto xfer = start_ctrl_in(packet.length);
     if (recipient == SetupRecipient::Device) {
       process_non_std_device_in_request(packet, std::move(xfer));
     } else if (recipient == SetupRecipient::Interface) {
@@ -148,13 +185,12 @@ void UsbDevice::process_std_device_in_request(const SetupPacket &packet,
     return xfer.send_response_async(&config_id_, sizeof(config_id_));
   } else if (std_req_type == StdRequestType::GetStatus) {
     ESP_LOGI(LogTag, "USB: GetStatus");
-    // We put the response into the ControlTransfer::in_place_buf_
+    // We put the response into in_place_buf_
     const bool self_powered = impl_->is_self_powered();
-    ctrl_transfer_.in_place_buf_[0] =
+    in_place_buf_[0] =
         (remote_wakeup_enabled_ ? 0x02 : 0x00) | (self_powered ? 0x01 : 0x00);
-    ctrl_transfer_.in_place_buf_[1] = 0;
-    return xfer.send_response_async(ctrl_transfer_.in_place_buf_.data(),
-                                    ctrl_transfer_.in_place_buf_.size());
+    in_place_buf_[1] = 0;
+    return xfer.send_response_async(in_place_buf_.data(), in_place_buf_.size());
   } else {
     ESP_LOGW(LogTag, "USB: unhandled standard device request");
     xfer.stall();
@@ -289,62 +325,95 @@ void UsbDevice::process_get_descriptor(const SetupPacket &packet,
   return xfer.send_response_async(*desc);
 }
 
-void UsbDevice::ControlTransfer::send_request_error(UsbDevice& usb) {
-  usb.stall_in_endpoint(0);
-  usb.stall_out_endpoint(0);
+CtrlOutTransfer UsbDevice::start_ctrl_out() {
+  assert(ctrl_status_ == CtrlStatus::None);
+  ctrl_status_ = CtrlStatus::OutData;
+  return CtrlOutTransfer(this);
 }
 
-bool UsbDevice::ControlTransfer::ack_out_transfer(UsbDevice& usb) {
-  if (status_ != Status::None) {
+CtrlInTransfer UsbDevice::start_ctrl_in(uint16_t length) {
+  assert(ctrl_status_ == CtrlStatus::None);
+  ctrl_status_ = CtrlStatus::InData;
+  return CtrlInTransfer(this, length);
+}
+
+void UsbDevice::stall_ctrl_transfer() {
+  if (ctrl_status_ == CtrlStatus::InData) {
+    ctrl_state_.in.reset();
+  } else if (ctrl_status_ == CtrlStatus::OutData) {
+    ctrl_state_.out.reset();
+  }
+  ctrl_status_ = CtrlStatus::None;
+  stall_in_endpoint(0);
+  stall_out_endpoint(0);
+}
+
+void UsbDevice::ctrl_out_ack() {
+  if (ctrl_status_ != CtrlStatus::OutData) {
     ESP_LOGE(LogTag,
-             "cannot ack control out: "
-             "an EP0 transfer is already in progress!");
-    return false;
+             "unexpected state when attempting to ack control OUT transfer: %d",
+             static_cast<int>(ctrl_status_));
+    return;
   }
 
   // Perform the status phase of an OUT transfer by sending a 0-length IN
   // packet.
-  status_ = Status::OutStatus;
-  usb.start_in_send(0, nullptr, 0);
-  return true;
+  ctrl_status_ = CtrlStatus::OutStatus;
+  start_in_send(0, nullptr, 0);
 }
 
-bool UsbDevice::ControlTransfer::start_transfer(UsbDevice& usb, buf_view buf) {
-  if (status_ != Status::None) {
-    ESP_LOGE(LogTag, "an EP0 control transfer is already in progress!");
+bool UsbDevice::start_ctrl_in_transfer(buf_view buf) {
+  if (ctrl_status_ != CtrlStatus::InData) {
+    ESP_LOGE(LogTag,
+             "unexpected state when starting control IN transfer: %d",
+             static_cast<int>(ctrl_status_));
     return false;
   }
-  buf_ = buf;
-  status_ = Status::InData;
-  send_next_in_packet(usb);
+  ctrl_state_.in.buf = buf;
+  send_next_ctrl_in_packet();
   return true;
 }
 
-void UsbDevice::ControlTransfer::send_next_in_packet(UsbDevice& usb) {
-  if (buf_.size() > 0) {
+void UsbDevice::send_next_ctrl_in_packet() {
+  auto &buf = ctrl_state_.in.buf;
+  if (buf.size() > 0) {
     // Send next data packet
     const auto len =
-        std::min(static_cast<size_t>(max_packet_size_), buf_.size());
+        std::min(static_cast<size_t>(max_packet_size_), buf.size());
     ESP_LOGI(LogTag,
              "USB: send control data len=%lu",
              static_cast<unsigned long>(len));
-    const auto next_packet = buf_.substr(0, len);
-    buf_ = buf_.substr(len);
-    usb.start_in_send(0, next_packet.data(), next_packet.size());
+    const auto next_packet = buf.substr(0, len);
+    buf = buf.substr(len);
+    start_in_send(0, next_packet.data(), next_packet.size());
   } else {
-    // No data left.  Send the final zero-length OUT packet.
-    ESP_LOGI(LogTag, "USB: send control status packet");
-    status_ = Status::InStatus;
-    usb.start_out_read(0, nullptr, 0);
+    // No data left to send.
+    // Inform the callback that we have sent all data.
+    ctrl_state_.in.buf = buf_view{};
+    auto* cb = ctrl_state_.in.callback;
+    ctrl_state_.in.callback = nullptr;
+    if (cb) {
+      // TODO: refactor how we handle the max length for IN transfers,
+      // so that we can track this properly even if the device performs
+      // multiple separate sends.
+      uint16_t max_length_remaining = 0;
+      cb->in_send_successful(CtrlInTransfer(this, max_length_remaining));
+    } else {
+      // If there is no callback, automatically send the final zero-length OUT
+      // packet to indicate that the full IN transfer is complete.
+      ESP_LOGI(LogTag, "USB: send control status packet");
+      ctrl_status_ = CtrlStatus::InStatus;
+      start_out_read(0, nullptr, 0);
+    }
   }
 }
 
-void UsbDevice::ControlTransfer::in_transfer_complete(UsbDevice& usb) {
-  if (status_ == Status::OutStatus) {
+void UsbDevice::ctrl_in_transfer_complete() {
+  if (ctrl_status_ == CtrlStatus::OutStatus) {
     // We finished sending the STATUS packet of an OUT transfer.
-    status_ = Status::None;
-  } else if (status_ == Status::InData) {
-    send_next_in_packet(usb);
+    ctrl_status_ = CtrlStatus::None;
+  } else if (ctrl_status_ == CtrlStatus::InData) {
+    send_next_ctrl_in_packet();
   } else {
     ESP_LOGE(
         LogTag,
@@ -352,28 +421,21 @@ void UsbDevice::ControlTransfer::in_transfer_complete(UsbDevice& usb) {
   }
 }
 
-void UsbDevice::ControlTransfer::out_transfer_complete(UsbDevice& usb) {
-  if (status_ == Status::InStatus) {
-    buf_ = buf_view{};
-    status_ = Status::None;
+void UsbDevice::ctrl_out_transfer_complete() {
+  if (ctrl_status_ == CtrlStatus::InStatus) {
+    ctrl_status_ = CtrlStatus::None;
   } else {
     ESP_LOGE(LogTag,
              "out_transfer_complete() called in unexpected control "
              "transfer state %u",
-             static_cast<int>(status_));
+             static_cast<int>(ctrl_status_));
   }
-}
-
-void UsbDevice::ControlTransfer::reset(uint16_t max_packet_size) {
-  max_packet_size_ = max_packet_size;
-  buf_ = buf_view{};
-  status_ = Status::None;
 }
 
 void UsbDevice::on_in_transfer_complete(uint8_t endpoint_num,
                                         uint32_t xferred_bytes) {
   if (endpoint_num == 0) {
-    ctrl_transfer_.in_transfer_complete(*this);
+    ctrl_in_transfer_complete();
     return;
   }
 
@@ -383,7 +445,7 @@ void UsbDevice::on_in_transfer_complete(uint8_t endpoint_num,
 void UsbDevice::on_out_transfer_complete(uint8_t endpoint_num,
                                          uint32_t xferred_bytes) {
   if (endpoint_num == 0) {
-    ctrl_transfer_.out_transfer_complete(*this);
+    ctrl_out_transfer_complete();
     return;
   }
 

@@ -12,6 +12,8 @@
 #include <esp_check.h>
 #include <esp_log.h>
 
+#include <memory>
+
 using namespace mantyl;
 
 namespace {
@@ -72,11 +74,26 @@ constexpr auto make_descriptor_map() {
                              ep1);
 }
 
+constexpr auto make_intf0_descriptor_map() {
+  std::array<uint8_t, 63> keyboard_hid_report_desc{
+      0x05, 0x01, 0x09, 0x06, 0xa1, 0x01, 0x75, 0x01, 0x95, 0x08, 0x05,
+      0x07, 0x19, 0xe0, 0x29, 0xe7, 0x15, 0x00, 0x25, 0x01, 0x81, 0x02,
+      0x95, 0x01, 0x75, 0x08, 0x81, 0x03, 0x95, 0x05, 0x75, 0x01, 0x05,
+      0x08, 0x19, 0x01, 0x29, 0x05, 0x91, 0x02, 0x95, 0x01, 0x75, 0x03,
+      0x91, 0x03, 0x95, 0x06, 0x75, 0x08, 0x15, 0x00, 0x25, 0x91, 0x05,
+      0x07, 0x19, 0x00, 0x29, 0x91, 0x81, 0x00, 0xc0,
+  };
+  return StaticDescriptorMap<0, 0>().add_descriptor_raw(
+      0x2200, 0, keyboard_hid_report_desc);
+}
+
 } // namespace
 
-class TestDevice : UsbDeviceImpl {
+class TestDevice : protected UsbDeviceImpl {
 public:
-  constexpr TestDevice() = default;
+  constexpr explicit TestDevice(UsbDevice* usb) : usb_{usb} {
+    usb_->setImpl(this);
+  }
 
   bool init_serial() {
     auto serial_buffer = descriptors_.get_string_descriptor_buffer(
@@ -85,15 +102,15 @@ public:
       return false;
     }
 
-    return usb_.update_serial_number(*serial_buffer);
+    return Esp32UsbDevice::update_serial_number(*serial_buffer);
   }
 
   esp_err_t init() {
     init_serial();
-    return usb_.init();
+    return usb_->init();
   }
   void loop() {
-    return usb_.loop();
+    return usb_->loop();
   }
 
   std::optional<buf_view> get_descriptor(uint16_t value,
@@ -149,8 +166,34 @@ public:
   }
 
   void handle_std_in_request(const SetupPacket &packet, CtrlInTransfer &&xfer) {
-    ESP_LOGW(LogTag, "unhandled standard interface IN request");
-    xfer.stall();
+    const auto std_req_type = packet.get_std_request();
+    if (std_req_type == StdRequestType::GetDescriptor) {
+      handle_intf0_get_descriptor(packet, std::move(xfer));
+    } else {
+      ESP_LOGW(LogTag, "unhandled standard interface IN request");
+      xfer.stall();
+    }
+  }
+
+  void handle_intf0_get_descriptor(const SetupPacket &packet,
+                                   CtrlInTransfer &&xfer) {
+    ESP_LOGI(LogTag,
+             "USB: get interface descriptor: value=0x%x index=%u",
+             packet.value,
+             packet.index);
+    auto desc =
+        interface0_descriptors_.get_descriptor(packet.value, packet.index);
+    if (!desc.has_value()) {
+      // No descriptor with this ID.
+      ESP_LOGW(
+          LogTag,
+          "USB: query for unknown interface descriptor: value=0x%x index=%u",
+          packet.value,
+          packet.index);
+      return xfer.stall();
+    }
+
+    return xfer.send_response_async(*desc);
   }
 
   void handle_hid_in_request(const SetupPacket &packet, CtrlInTransfer &&xfer) {
@@ -170,6 +213,10 @@ public:
                report_id,
                duration);
       xfer.ack();
+    } else if (request == HidRequest::SetReport) {
+      // Start reading the SET_REPORT data.
+      set_report_xfer_.start(std::move(xfer));
+      return;
     } else {
       ESP_LOGW(LogTag, "unhandled HID interface OUT request");
     }
@@ -189,15 +236,109 @@ public:
   }
 
 private:
-  Esp32UsbDevice usb_{this};
+  class SetReportTransfer {
+  public:
+    constexpr explicit SetReportTransfer(TestDevice *device)
+        : device_{device} {}
+
+    void start(CtrlOutTransfer&& xfer) {
+      // TODO
+      ESP_LOGE(LogTag, "todo: implement SET_REPORT code");
+      xfer.stall();
+    }
+
+    void reset();
+
+#if 0
+  void on_set_report_complete(CtrlOutTransfer &&xfer, size_t size_read) {
+    ESP_LOGI(LogTag, "received SET_REPORT data");
+    xfer.ack();
+    set_report_xfer_.reset();
+  }
+#endif
+
+#if 0
+      // For keyboards, the report is generally to set the LEDs.
+      if (packet.length > set_report_buffer_.size()) {
+        ESP_LOGE(
+            LogTag, "too large HID SET_REPORT received: %d", request.length);
+        xfer.stall();
+        return;
+      }
+
+      std::move(xfer).recv(set_report_buffer_.data(),
+                           set_report_buffer_.size(),
+                           on_set_report_complete);
+#endif
+
+  private:
+    CtrlOutTransfer xfer_;
+    TestDevice* device_;
+  };
+
+  UsbDevice *usb_{nullptr};
   decltype(make_descriptor_map()) descriptors_ = make_descriptor_map();
+  decltype(make_intf0_descriptor_map()) interface0_descriptors_ =
+      make_intf0_descriptor_map();
+
+  SetReportTransfer set_report_xfer_{this};
+};
+
+class Esp32TestDevice : public TestDevice {
+public:
+  constexpr Esp32TestDevice() : TestDevice(&esp32_usb_) {}
+
+private:
+  Esp32UsbDevice esp32_usb_{this};
+};
+
+class MockUsbDevice : public UsbDevice {
+public:
+  [[nodiscard]] bool init() override {
+    // TODO
+    return true;
+  }
+
+  void loop() override {
+    // TODO
+  }
+
+private:
+  void set_address(uint8_t address) override {
+    // TODO
+  }
+  void stall_in_endpoint(uint8_t endpoint_num) override {
+    // TODO
+  }
+  void stall_out_endpoint(uint8_t endpoint_num) override {
+    // TODO
+  }
+  void clear_in_stall(uint8_t endpoint_num) override {
+    // TODO
+  }
+  void clear_out_stall(uint8_t endpoint_num) override {
+    // TODO
+  }
+  void start_in_send(uint8_t endpoint_num,
+                     const uint8_t *buffer,
+                     uint16_t size) override {
+    // TODO
+  }
+  void start_out_read(uint8_t endpoint_num,
+                      uint8_t *buffer,
+                      uint16_t buffer_size) override {
+    // TODO
+  }
+  void close_all_endpoints() override {
+    // TODO
+  }
 };
 
 } // namespace mantyl
 
 namespace {
 
-constinit TestDevice usb;
+constinit Esp32TestDevice usb;
 
 void run_usb() {
   const auto usb_rc = usb.init();
@@ -244,8 +385,8 @@ void dump_desc(uint16_t value, uint16_t index) {
   }
 }
 
-void run_test() {
-  printf("running tests:\n");
+void dump_descriptors() {
+  printf("USB Descriptors:\n");
   dump_desc(0x100, 0);
   dump_desc(0x200, 0);
   dump_desc(0x300, 0);
@@ -254,12 +395,24 @@ void run_test() {
   dump_desc(0x303, 0x0409);
 }
 
+void run_test() {
+  printf("Running tests:\n");
+
+  auto mock_usb = std::make_unique<MockUsbDevice>();
+  auto usb = std::make_unique<TestDevice>(mock_usb.get());
+
+  usb->init();
+
+  printf("Tests done\n");
+}
+
 } // namespace
 
 extern "C" void app_main() {
   if (!usb.init_serial()) {
     ESP_LOGE(LogTag, "failed to initialize serial number");
   }
+  dump_descriptors();
   run_test();
 
   while (true) {
@@ -267,6 +420,8 @@ extern "C" void app_main() {
     ESP_LOGI(LogTag, "line: \"%s\"", value.c_str());
     if (value == "test") {
       run_test();
+    } else if (value == "desc") {
+      dump_descriptors();
     } else if (value == "usb") {
       run_usb();
     }

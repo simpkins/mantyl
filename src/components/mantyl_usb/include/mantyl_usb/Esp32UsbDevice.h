@@ -32,11 +32,18 @@ public:
 
   explicit constexpr Esp32UsbDevice(UsbDeviceImpl *impl, usb_dev_t *usb = &USB0)
       : UsbDevice(impl), usb_{usb} {}
+  explicit constexpr Esp32UsbDevice(usb_dev_t *usb = &USB0)
+      : UsbDevice(), usb_{usb} {}
   ~Esp32UsbDevice();
 
-  [[nodiscard]] esp_err_t init(PhyType phy_type = PhyType::Internal);
+  [[nodiscard]] bool init() override {
+    auto rc = esp32_init();
+    return rc == ESP_OK;
+  }
 
-  void loop();
+  [[nodiscard]] esp_err_t esp32_init(PhyType phy_type = PhyType::Internal);
+
+  void loop() override;
 
   /**
    * Fill in a string descriptor buffer using information from the ESP32
@@ -45,7 +52,7 @@ public:
    * The string descriptor capacity should be at least
    * kSerialDescriptorCapacity.
    */
-  bool update_serial_number(StringDescriptorBuffer& descriptor);
+  static bool update_serial_number(StringDescriptorBuffer& descriptor);
 
 private:
   struct UninitializedEvent {};

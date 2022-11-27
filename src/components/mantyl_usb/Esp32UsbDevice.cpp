@@ -138,7 +138,7 @@ void Esp32UsbDevice::send_event_from_isr(const Event& event) {
   }
 }
 
-esp_err_t Esp32UsbDevice::init(PhyType phy_type) {
+esp_err_t Esp32UsbDevice::esp32_init(PhyType phy_type) {
   ESP_LOGI(LogTag, "USB device init");
 
   event_queue_ = xQueueCreateStatic(

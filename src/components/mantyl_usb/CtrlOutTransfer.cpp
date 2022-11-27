@@ -12,14 +12,13 @@ const char *LogTag = "mantyl.usb.ctrl_out_xfer";
 namespace mantyl {
 
 void CtrlOutTransfer::ack() {
-  auto result = usb_->ctrl_transfer_.ack_out_transfer(*usb_);
-  static_cast<void>(result);
+  usb_->ctrl_out_ack();
   usb_ = nullptr;
 }
 
 void CtrlOutTransfer::stall() {
   ESP_LOGW(LogTag, "unhandled USB Setup OUT transfer");
-  usb_->ctrl_transfer_.send_request_error(*usb_);
+  usb_->stall_ctrl_transfer();
   usb_ = nullptr;
 }
 
@@ -31,7 +30,7 @@ void CtrlOutTransfer::destroy() {
   ESP_LOGW(LogTag,
            "no response generated for to USB Setup OUT transfer: generating "
            "STALL condition");
-  usb_->ctrl_transfer_.send_request_error(*usb_);
+  usb_->stall_ctrl_transfer();
 }
 
 } // namespace mantyl
