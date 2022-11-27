@@ -36,11 +36,7 @@ public:
       : UsbDevice(), usb_{usb} {}
   ~Esp32UsbDevice();
 
-  [[nodiscard]] bool init() override {
-    auto rc = esp32_init();
-    return rc == ESP_OK;
-  }
-
+  [[nodiscard]] bool init() override;
   [[nodiscard]] esp_err_t esp32_init(PhyType phy_type = PhyType::Internal);
 
   void loop() override;

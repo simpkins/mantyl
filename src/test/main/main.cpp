@@ -1,5 +1,7 @@
 // Copyright (c) 2022, Adam Simpkins
 
+#include "MockUsbDevice.h"
+
 #include "mantyl_readline.h"
 #include "mantyl_usb/CtrlInTransfer.h"
 #include "mantyl_usb/CtrlOutTransfer.h"
@@ -12,7 +14,10 @@
 #include <esp_check.h>
 #include <esp_log.h>
 
+#include <optional>
 #include <memory>
+#include <vector>
+#include <type_traits>
 
 using namespace mantyl;
 
@@ -27,6 +32,33 @@ namespace {
 constexpr uint8_t kManufacturerStringIndex = 1;
 constexpr uint8_t kProductStrIndex = 2;
 constexpr uint8_t kSerialStrIndex = 3;
+
+void dump_hex(const uint8_t* buf, uint16_t size) {
+  auto p = buf;
+  size_t bytes_left = size;
+  while (bytes_left > 8) {
+    printf("- %02x %02x %02x %02x %02x %02x %02x %02x\n",
+           p[0],
+           p[1],
+           p[2],
+           p[3],
+           p[4],
+           p[5],
+           p[6],
+           p[7]);
+    p += 8;
+    bytes_left -= 8;
+  }
+  if (bytes_left > 0) {
+    printf("-");
+    while (bytes_left > 0) {
+      printf(" %02x", p[0]);
+      ++p;
+      --bytes_left;
+    }
+    printf("\n");
+  }
+}
 
 constexpr auto make_descriptor_map() {
   DeviceDescriptor dev;
@@ -105,7 +137,7 @@ public:
     return Esp32UsbDevice::update_serial_number(*serial_buffer);
   }
 
-  esp_err_t init() {
+  bool init() {
     init_serial();
     return usb_->init();
   }
@@ -292,48 +324,6 @@ private:
   Esp32UsbDevice esp32_usb_{this};
 };
 
-class MockUsbDevice : public UsbDevice {
-public:
-  [[nodiscard]] bool init() override {
-    // TODO
-    return true;
-  }
-
-  void loop() override {
-    // TODO
-  }
-
-private:
-  void set_address(uint8_t address) override {
-    // TODO
-  }
-  void stall_in_endpoint(uint8_t endpoint_num) override {
-    // TODO
-  }
-  void stall_out_endpoint(uint8_t endpoint_num) override {
-    // TODO
-  }
-  void clear_in_stall(uint8_t endpoint_num) override {
-    // TODO
-  }
-  void clear_out_stall(uint8_t endpoint_num) override {
-    // TODO
-  }
-  void start_in_send(uint8_t endpoint_num,
-                     const uint8_t *buffer,
-                     uint16_t size) override {
-    // TODO
-  }
-  void start_out_read(uint8_t endpoint_num,
-                      uint8_t *buffer,
-                      uint16_t buffer_size) override {
-    // TODO
-  }
-  void close_all_endpoints() override {
-    // TODO
-  }
-};
-
 } // namespace mantyl
 
 namespace {
@@ -341,9 +331,9 @@ namespace {
 constinit Esp32TestDevice usb;
 
 void run_usb() {
-  const auto usb_rc = usb.init();
-  if (usb_rc != ESP_OK) {
-    ESP_LOGE(LogTag, "failed to initialize USB: %d", usb_rc);
+  if (!usb.init()) {
+    ESP_LOGE(LogTag, "failed to initialize USB");
+    return;
   }
   ESP_LOGI(LogTag, "USB initialization DONE");
 
@@ -359,30 +349,7 @@ void dump_desc(uint16_t value, uint16_t index) {
   }
 
   printf("- size: %d\n", desc->size());
-  auto p = desc->data();
-  size_t bytes_left = desc->size();
-  while (bytes_left > 8) {
-    printf("- %02x %02x %02x %02x %02x %02x %02x %02x\n",
-           p[0],
-           p[1],
-           p[2],
-           p[3],
-           p[4],
-           p[5],
-           p[6],
-           p[7]);
-    p += 8;
-    bytes_left -= 8;
-  }
-  if (bytes_left > 0) {
-    printf("-");
-    while (bytes_left > 0) {
-      printf(" %02x", p[0]);
-      ++p;
-      --bytes_left;
-    }
-    printf("\n");
-  }
+  dump_hex(desc->data(), desc->size());
 }
 
 void dump_descriptors() {
@@ -395,7 +362,7 @@ void dump_descriptors() {
   dump_desc(0x303, 0x0409);
 }
 
-void run_test() {
+bool run_test() {
   printf("Running tests:\n");
 
   auto mock_usb = std::make_unique<MockUsbDevice>();
@@ -403,7 +370,86 @@ void run_test() {
 
   usb->init();
 
-  printf("Tests done\n");
+  // Get the device descriptor
+  SetupPacket get_config_desc;
+  get_config_desc.request_type = 0x80;
+  get_config_desc.request = 6; // StdRequestType::GetDescriptor
+  get_config_desc.value = 0x0100; // Device
+  get_config_desc.index = 0;
+  get_config_desc.length = 64;
+  mock_usb->on_setup_received(get_config_desc);
+
+  // The GetDescriptor packet should trigger the device to send the response
+  if (!mock_usb->check_events(
+          __FILE__, __LINE__, [&mock_usb](const MockUsbDevice::InSend &event) {
+            if (event.endpoint != 0) {
+              return false;
+            }
+
+            if (event.size != 18) {
+              ESP_LOGE(LogTag,
+                       "unexpected device descriptor buffer size: %u",
+                       event.size);
+              return false;
+            }
+            const auto* buf = event.buffer;
+            if (buf[0] != 18) {
+              ESP_LOGE(
+                  LogTag, "unexpected device descriptor size: %u", buf[0]);
+              return false;
+            }
+            if (buf[1] != static_cast<uint8_t>(DescriptorType::Device)) {
+              ESP_LOGE(
+                  LogTag, "unexpected device descriptor type: %u", buf[1]);
+              dump_hex(event.buffer, event.size);
+              return false;
+            }
+
+            mock_usb->on_in_transfer_complete(0, event.size);
+            return true;
+          })) {
+    return false;
+  }
+
+  if (!mock_usb->check_events(
+          __FILE__, __LINE__, [&mock_usb](const MockUsbDevice::OutRecv &event) {
+            if (event.endpoint != 0 || event.size != 0) {
+              return false;
+            }
+            mock_usb->on_out_transfer_complete(0, 0);
+            return true;
+          })) {
+    return false;
+  }
+
+  if (!mock_usb->check_no_events(__FILE__, __LINE__)) {
+    return false;
+  }
+
+  // Linux seems to perform another reset and enumeration after getting the
+  // device descriptor.
+
+  // Set the address
+  SetupPacket set_addr;
+  set_addr.request_type = 0x00;
+  set_addr.request = 5; // StdRequestType::SetAddress
+  set_addr.value = 123; // Address
+  set_addr.index = 0;
+  set_addr.length = 0;
+  mock_usb->on_setup_received(set_addr);
+
+  if (!mock_usb->check_events(__FILE__,
+                              __LINE__,
+                              [](const MockUsbDevice::SetAddress &set_addr,
+                                 const MockUsbDevice::InSend &ack) {
+                                return set_addr.address == 123 &&
+                                       ack.endpoint == 0 && ack.size == 0;
+                              })) {
+    return false;
+  }
+
+  printf("Tests successful\n");
+  return true;
 }
 
 } // namespace

@@ -138,6 +138,18 @@ void Esp32UsbDevice::send_event_from_isr(const Event& event) {
   }
 }
 
+bool Esp32UsbDevice::init() {
+  const auto err = esp32_init();
+  if (err != ESP_OK) {
+    ESP_LOGE(LogTag,
+             "failed to initialize USB device: %s (%d)",
+             esp_err_to_name(err),
+             err);
+    return false;
+  }
+  return true;
+}
+
 esp_err_t Esp32UsbDevice::esp32_init(PhyType phy_type) {
   ESP_LOGI(LogTag, "USB device init");
 

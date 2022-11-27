@@ -73,6 +73,9 @@ void UsbDevice::fail_control_transfer() {
   // device implementation to initiate the next phase of send or receive.
   // (It's possible that the generation number could loop around and become
   // valid again, but this seems unlikely to be an issue in practice.)
+  //
+  // We only really need to increment the generation number if ctrl_status_ is
+  // not None, but to minimize branches we always do it for now.
   ++ctrl_transfer_generation_;
 
   if (old_ctrl_status == CtrlStatus::InData) {
@@ -92,8 +95,8 @@ void UsbDevice::fail_control_transfer() {
 
 void UsbDevice::process_setup_packet(const SetupPacket& packet) {
   ESP_LOGI(LogTag,
-           "USB: SETUP received: request_type=0x%04x request=0x%04x "
-           "value=0x%06x index=0x%06x length=0x%06x",
+           "USB: SETUP received: request_type=0x%02x request=0x%02x "
+           "value=0x%04x index=0x%04x length=0x%04x",
            packet.request_type,
            packet.request,
            packet.value,
