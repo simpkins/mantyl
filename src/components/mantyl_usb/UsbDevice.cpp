@@ -13,7 +13,7 @@ const char *LogTag = "mantyl.usb.device";
 namespace mantyl {
 
 void UsbDevice::on_bus_reset() {
-  ESP_LOGI(LogTag, "onbus_reset");
+  ESP_LOGI(LogTag, "on_bus_reset");
   impl_->on_reset();
 }
 

@@ -150,6 +150,15 @@ public:
   virtual void out_recv_error(UsbError err) = 0;
 };
 
+/**
+ * UsbDevice contains the core hardware-independent logic for a USB device.
+ *
+ * It is intended to be used as a base class for hardware-specific
+ * implementations.
+ *
+ * As UsbDeviceImpl object must be passed in to implement the
+ * application-specific device behavior.
+ */
 class UsbDevice {
 public:
   explicit constexpr UsbDevice(UsbDeviceImpl* impl) : impl_{impl} {}
