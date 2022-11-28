@@ -4,6 +4,7 @@
 #include "mantyl_usb/UsbDevice.h"
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -112,6 +113,37 @@ public:
    * Check that no events have been received.
    */
   bool check_no_events(const char* file, int line);
+
+  /**
+   * Check an IN transfer.
+   *
+   * This ensures that IN data packets are seen, followed by a 0-length OUT
+   * status packet.  The check function is then called with the data that was
+   * received.
+   *
+   * This function handles making the on_in_transfer_complete() calls after
+   * each transfer from the device.
+   */
+  bool check_in_transfer(
+      const char *file,
+      int line,
+      uint8_t endpoint_num,
+      const std::function<bool(const uint8_t* buf, uint16_t size)> &check_fn);
+
+  /**
+   * Drive the events to send data to the device in an OUT transfer.
+   *
+   * Returns false if the device does not make the expected calls to receive
+   * the data.
+   */
+  bool drive_out_transfer(
+      const char *file,
+      int line,
+      uint8_t endpoint_num,
+      const uint8_t* buffer,
+      uint16_t size);
+
+  static void dump_hex(const uint8_t *buf, uint16_t size);
 
   static bool
   dump_unexpected_events(const char *file,

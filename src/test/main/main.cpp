@@ -33,31 +33,20 @@ constexpr uint8_t kManufacturerStringIndex = 1;
 constexpr uint8_t kProductStrIndex = 2;
 constexpr uint8_t kSerialStrIndex = 3;
 
-void dump_hex(const uint8_t* buf, uint16_t size) {
-  auto p = buf;
-  size_t bytes_left = size;
-  while (bytes_left > 8) {
-    printf("- %02x %02x %02x %02x %02x %02x %02x %02x\n",
-           p[0],
-           p[1],
-           p[2],
-           p[3],
-           p[4],
-           p[5],
-           p[6],
-           p[7]);
-    p += 8;
-    bytes_left -= 8;
-  }
-  if (bytes_left > 0) {
-    printf("-");
-    while (bytes_left > 0) {
-      printf(" %02x", p[0]);
-      ++p;
-      --bytes_left;
-    }
-    printf("\n");
-  }
+constexpr auto make_keyboard_hid_report_desc() {
+  return std::array<uint8_t, 63>{
+      0x05, 0x01, 0x09, 0x06, 0xa1, 0x01, 0x75, 0x01, 0x95, 0x08, 0x05,
+      0x07, 0x19, 0xe0, 0x29, 0xe7, 0x15, 0x00, 0x25, 0x01, 0x81, 0x02,
+      0x95, 0x01, 0x75, 0x08, 0x81, 0x03, 0x95, 0x05, 0x75, 0x01, 0x05,
+      0x08, 0x19, 0x01, 0x29, 0x05, 0x91, 0x02, 0x95, 0x01, 0x75, 0x03,
+      0x91, 0x03, 0x95, 0x06, 0x75, 0x08, 0x15, 0x00, 0x25, 0x91, 0x05,
+      0x07, 0x19, 0x00, 0x29, 0x91, 0x81, 0x00, 0xc0,
+  };
+}
+
+constexpr auto make_intf0_descriptor_map() {
+  return StaticDescriptorMap<0, 0>().add_descriptor_raw(
+      0x2200, 0, make_keyboard_hid_report_desc());
 }
 
 constexpr auto make_descriptor_map() {
@@ -86,9 +75,9 @@ constexpr auto make_descriptor_map() {
       0x01, // HID major version (BCD)
       0x00, // Country code
       0x01, // Number of class descriptors
-      0x22, // Class descriptor type
-      0x3f, // Total size of report descriptor
-      0x00, // Optional descriptor type
+      static_cast<uint8_t>(DescriptorType::HidReport), // Class descriptor type
+      make_keyboard_hid_report_desc().size(), // Total size of report descriptor
+      0x00,                                   // Optional descriptor type
   };
 
   return StaticDescriptorMap<0, 0>()
@@ -104,19 +93,6 @@ constexpr auto make_descriptor_map() {
                              keyboard_itf,
                              keyboard_hid_desc,
                              ep1);
-}
-
-constexpr auto make_intf0_descriptor_map() {
-  std::array<uint8_t, 63> keyboard_hid_report_desc{
-      0x05, 0x01, 0x09, 0x06, 0xa1, 0x01, 0x75, 0x01, 0x95, 0x08, 0x05,
-      0x07, 0x19, 0xe0, 0x29, 0xe7, 0x15, 0x00, 0x25, 0x01, 0x81, 0x02,
-      0x95, 0x01, 0x75, 0x08, 0x81, 0x03, 0x95, 0x05, 0x75, 0x01, 0x05,
-      0x08, 0x19, 0x01, 0x29, 0x05, 0x91, 0x02, 0x95, 0x01, 0x75, 0x03,
-      0x91, 0x03, 0x95, 0x06, 0x75, 0x08, 0x15, 0x00, 0x25, 0x91, 0x05,
-      0x07, 0x19, 0x00, 0x29, 0x91, 0x81, 0x00, 0xc0,
-  };
-  return StaticDescriptorMap<0, 0>().add_descriptor_raw(
-      0x2200, 0, keyboard_hid_report_desc);
 }
 
 } // namespace
@@ -349,7 +325,7 @@ void dump_desc(uint16_t value, uint16_t index) {
   }
 
   printf("- size: %d\n", desc->size());
-  dump_hex(desc->data(), desc->size());
+  MockUsbDevice::dump_hex(desc->data(), desc->size());
 }
 
 void dump_descriptors() {
@@ -362,8 +338,8 @@ void dump_descriptors() {
   dump_desc(0x303, 0x0409);
 }
 
-bool run_test() {
-  printf("Running tests:\n");
+bool test_hid_init() {
+  printf("Testing HID device initialization:\n");
 
   auto mock_usb = std::make_unique<MockUsbDevice>();
   auto usb = std::make_unique<TestDevice>(mock_usb.get());
@@ -385,7 +361,6 @@ bool run_test() {
             if (event.endpoint != 0) {
               return false;
             }
-
             if (event.size != 18) {
               ESP_LOGE(LogTag,
                        "unexpected device descriptor buffer size: %u",
@@ -401,7 +376,7 @@ bool run_test() {
             if (buf[1] != static_cast<uint8_t>(DescriptorType::Device)) {
               ESP_LOGE(
                   LogTag, "unexpected device descriptor type: %u", buf[1]);
-              dump_hex(event.buffer, event.size);
+              MockUsbDevice::dump_hex(event.buffer, event.size);
               return false;
             }
 
@@ -448,7 +423,141 @@ bool run_test() {
     return false;
   }
 
-  printf("Tests successful\n");
+  // Linux also sends here:
+  // - get device descriptor again
+  // - get descriptor; value = 0x600 (DeviceQualifier)
+  // - get descriptor; value = 0x600 (DeviceQualifier)
+  // - get descriptor; value = 0x600 (DeviceQualifier)  (repeated 3x)
+
+  // Get the configuration descriptor.
+  // Initially only get the first 9 bytes (the length of just the config
+  // descriptor itself).
+  SetupPacket get_conf_desc;
+  get_conf_desc.request_type = 0x80;
+  get_conf_desc.request = 6; // StdRequestType::GetDescriptor
+  get_conf_desc.value = 0x0200; // Configuration
+  get_conf_desc.index = 0;
+  get_conf_desc.length = 9; // ConfigDescriptor::kSize;
+  mock_usb->on_setup_received(get_conf_desc);
+
+  uint16_t total_conf_desc_size = 0;
+  if (!mock_usb->check_in_transfer(
+          __FILE__,
+          __LINE__,
+          0,
+          [&total_conf_desc_size](const uint8_t *buf, uint16_t size) {
+            if (size != 9 || buf[0] != 9 || buf[1] != 2) {
+              return false;
+            }
+            total_conf_desc_size =
+                buf[2] | (static_cast<uint16_t>(buf[3]) << 8);
+            return true;
+          })) {
+    return false;
+  }
+  printf("config descriptor length: %u\n", total_conf_desc_size);
+
+  // Now get the full config descriptor
+  get_conf_desc.length = total_conf_desc_size;
+  mock_usb->on_setup_received(get_conf_desc);
+  uint16_t hid_report_desc_size = 0;
+  if (!mock_usb->check_in_transfer(
+          __FILE__, __LINE__, 0, [&](const uint8_t *buf, uint16_t size) {
+            if (size != total_conf_desc_size || buf[0] != 9 || buf[1] != 2) {
+              return false;
+            }
+
+            // TODO: parse the HID report descriptor out of the config
+            // descriptor
+            hid_report_desc_size = make_keyboard_hid_report_desc().size();
+
+            return true;
+          })) {
+    return false;
+  }
+
+  // Linux host now gets the string descriptors:
+  // the language IDs, followed by the product, vendor, and serial string
+  // descriptors listed in the config descriptor.
+  // - get descriptor: value = 0x300, index=0, length=0xff
+  // - get descriptor: value = 0x302, index=0x0409, length=0xff
+  // - get descriptor: value = 0x301, index=0x0409, length=0xff
+  // - get descriptor: value = 0x303, index=0x0409, length=0xff
+
+  // Set the configuration
+  SetupPacket set_conf;
+  set_conf.request_type = 0x00;
+  set_conf.request = 9; // StdRequestType::SetConfiguration
+  set_conf.value = 1;
+  set_conf.index = 0;
+  set_conf.length = 0;
+  mock_usb->on_setup_received(set_conf);
+  if (!mock_usb->check_events(
+          __FILE__, __LINE__, [](const MockUsbDevice::InSend &ack) {
+            return ack.endpoint == 0 && ack.size == 0;
+          })) {
+    return false;
+  }
+
+  // Linux appears to get the serial number again here.
+  // - get descriptor: value = 0x303, index=0x0409, length=0xff
+
+  // HID set idle: req_type=0x21, req=0x0a, value=0, index=0, len=0
+  SetupPacket set_idle;
+  set_idle.request_type = 0x21;
+  set_idle.request = 0x0a; // HidRequest::SetIdle
+  set_idle.value = 0;
+  set_idle.index = 0;
+  set_idle.length = 0;
+  mock_usb->on_setup_received(set_idle);
+  if (!mock_usb->check_events(
+          __FILE__, __LINE__, [](const MockUsbDevice::InSend &ack) {
+            return ack.endpoint == 0 && ack.size == 0;
+          })) {
+    return false;
+  }
+
+  // Now a GetDescriptor request to the HID interface to get the HID descriptor
+  SetupPacket get_hid_desc;
+  get_hid_desc.request_type = 0x81;
+  get_hid_desc.request = 6; // StdRequestType::GetDescriptor
+  get_hid_desc.value = 0x2200; // HidReport
+  get_hid_desc.index = 0;
+  get_hid_desc.length = hid_report_desc_size;
+  mock_usb->on_setup_received(get_hid_desc);
+  if (!mock_usb->check_in_transfer(
+          __FILE__, __LINE__, 0, [&](const uint8_t *buf, uint16_t size) {
+            return size == hid_report_desc_size;
+          })) {
+    return false;
+  }
+
+  // Now a SetReport request to send the keyboard LED states
+  SetupPacket set_leds;
+  set_leds.request_type = 0x21;
+  set_leds.request = 0x09; // HidRequest::SetReport
+  set_leds.value = 0x0200;
+  set_leds.index = 0;
+  set_leds.length = 1;
+  mock_usb->on_setup_received(set_leds);
+  uint8_t led_state = 0;
+  if (!mock_usb->drive_out_transfer(
+          __FILE__, __LINE__, 0, &led_state, sizeof(led_state))) {
+    return false;
+  }
+
+  printf("HID Device Initialization test successful\n");
+  return true;
+}
+
+bool run_tests() {
+  printf("Running tests:\n");
+
+  if (!test_hid_init()) {
+    ESP_LOGE(LogTag, "failed HID device initialization test");
+  }
+
+  printf("Tests finished\n");
   return true;
 }
 
@@ -459,13 +568,13 @@ extern "C" void app_main() {
     ESP_LOGE(LogTag, "failed to initialize serial number");
   }
   dump_descriptors();
-  run_test();
+  run_tests();
 
   while (true) {
     auto value = mantyl::readline("test> ");
     ESP_LOGI(LogTag, "line: \"%s\"", value.c_str());
     if (value == "test") {
-      run_test();
+      run_tests();
     } else if (value == "desc") {
       dump_descriptors();
     } else if (value == "usb") {

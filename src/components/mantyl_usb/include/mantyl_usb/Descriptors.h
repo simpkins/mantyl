@@ -107,8 +107,8 @@ public:
 
   explicit constexpr ConfigDescriptor(uint8_t id) : id{id} {}
 
+  uint16_t total_length = 0;
   uint8_t id = 0;
-  uint8_t total_length = 0;
   uint8_t num_interfaces = 0;
   uint8_t string_index = 0;
   ConfigAttr attributes = ConfigAttr::None;
