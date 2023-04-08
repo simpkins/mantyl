@@ -8,6 +8,7 @@ import bpy
 from . import i2c_conn
 from . import foot
 from . import kbd_halves
+from . import kbd_middle
 from . import keyboard
 from . import key_socket_holder
 from . import oled_holder
@@ -17,6 +18,8 @@ from . import wrist_rest
 
 
 def test() -> None:
+    kbd_middle.middle()
+
     # kbd_halves.right_full()
     # kbd_halves.right_shell()
     # kbd_halves.right_socket_underlay()
@@ -35,7 +38,7 @@ def test() -> None:
     # oled_holder.test()
     # usb_cutout.test()
     # i2c_conn.cable_cap_test()
-    foot.test()
+    #foot.test()
 
     bpy.ops.object.mode_set(mode="EDIT")
     # blender_util.set_shading_mode("WIREFRAME")

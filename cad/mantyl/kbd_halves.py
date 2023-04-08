@@ -20,6 +20,19 @@ from . import usb_cutout
 from . import wrist_rest
 
 
+def right_shell_simple() -> bpy.types.Object:
+    kbd = Keyboard()
+    kbd.gen_mesh()
+    return gen_keyboard(kbd)
+
+
+def left_shell_simple() -> bpy.types.Object:
+    kbd_obj = right_shell_simple()
+    with blender_util.TransformContext(kbd_obj) as ctx:
+        ctx.mirror_x()
+    return kbd_obj
+
+
 def right_shell() -> bpy.types.Object:
     kbd = Keyboard()
     kbd.gen_mesh()
