@@ -10,7 +10,7 @@ from . import foot
 from . import kbd_halves
 from . import kbd_middle
 from . import keyboard
-from . import key_socket_holder
+from . import numpad
 from . import oled_holder
 from . import sx1509_holder
 from . import usb_cutout
@@ -18,7 +18,8 @@ from . import wrist_rest
 
 
 def test() -> None:
-    kbd_middle.middle()
+    #kbd_middle.middle()
+    numpad.test()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()

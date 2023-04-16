@@ -46,6 +46,7 @@ _DEPENDENCIES: List[Tuple[Path, str]] = [
     (Path("mantyl/usb_cutout.py"), "mantyl.usb_cutout"),
     (Path("mantyl/wrist_rest.py"), "mantyl.wrist_rest"),
     (Path("mantyl/key_socket_holder.py"), "mantyl.key_socket_holder"),
+    (Path("mantyl/numpad.py"), "mantyl.numpad"),
     (Path("mantyl/kbd_halves.py"), "mantyl.kbd_halves"),
     (Path("mantyl/kbd_middle.py"), "mantyl.kbd_middle"),
     (Path("mantyl/testing.py"), "mantyl.testing"),
