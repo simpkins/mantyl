@@ -17,7 +17,7 @@ from .cad import Mesh, MeshPoint, Point, Transform
 
 
 class Keyboard:
-    def __init__(self):
+    def __init__(self) -> None:
         self.wall_thickness = 4.0
 
         self._main_thumb_transform = (

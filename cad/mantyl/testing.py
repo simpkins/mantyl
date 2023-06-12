@@ -17,9 +17,30 @@ from . import usb_cutout
 from . import wrist_rest
 
 
+def test_numpad() -> None:
+    from . import blender_util
+
+    half_offset = 140
+
+    right = kbd_halves.right_shell_simple()
+    with blender_util.TransformContext(right) as ctx:
+        ctx.translate(half_offset, 0.0, 0.0)
+
+    left = kbd_halves.left_shell_simple()
+    with blender_util.TransformContext(left) as ctx:
+        ctx.translate(-half_offset, 0.0, 0.0)
+
+    np = numpad.test()
+    with blender_util.TransformContext(np) as ctx:
+        ctx.rotate(12.0, "X")
+        ctx.translate(-9.5, 15.0, 70.0)
+
+
 def test() -> None:
     #kbd_middle.middle()
-    numpad.test()
+
+    test_numpad()
+    #numpad.test()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()
