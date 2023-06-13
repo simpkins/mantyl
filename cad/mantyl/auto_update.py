@@ -20,7 +20,7 @@ import importlib
 import sys
 import traceback
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Tuple
 
 
 _instance: Optional[MonitorOperatorBase] = None
@@ -62,7 +62,8 @@ class MonitorOperatorBase(bpy.types.Operator):
     _timer = None
     stop: bool = False
 
-    _timestamps: Dict[Path, Optional[float]]
+    _timestamps: Dict[Path, Optional[float]] = {}
+    _monitor_modules: List[Tuple[Path, Optional[str]]] = []
     _name: str = ""
 
     @classmethod
@@ -102,6 +103,9 @@ class MonitorOperatorBase(bpy.types.Operator):
         self._timer = wm.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
         return {"RUNNING_MODAL"}
+
+    def _init_monitor_modules(self) -> List[Tuple[Path, Optional[str]]]:
+        raise NotImplementedError()
 
     def cancel(self, context):
         wm = context.window_manager
@@ -189,23 +193,24 @@ class ScriptMonitorOperator(MonitorOperatorBase):
     bl_idname = "script.external_script_monitor"
     bl_label = "Monitor External Script"
 
-    _local_dir: Path
-    _abs_path: Path
+    _local_dir: Path = Path()
+    _abs_path: Path = Path()
+    # pyre-fixme[31]: bpy property types aren't really types
     path: bpy.props.StringProperty(name="path")
 
-    def _init_monitor_modules(self):
+    def _init_monitor_modules(self) -> List[Tuple[Path, Optional[str]]]:
         self._local_dir = Path(bpy.data.filepath).parent.resolve()
         if self.path:
             self._abs_path = self._local_dir / self.path
         else:
             self._abs_path = self._local_dir / MONITOR_PATH
-        self._name = self._abs_path
+        self._name = str(self._abs_path)
 
-        monitor_modules = [
+        monitor_modules: List[Tuple[Path, Optional[str]]] = [
             (self._local_dir / path, mod_name)
             for path, mod_name in _DEPENDENCIES
         ]
-        monitor_modules[self._abs_path] = None
+        monitor_modules.append((self._abs_path, None))
 
         return monitor_modules
 
@@ -222,14 +227,16 @@ class FunctionMonitorOperator(MonitorOperatorBase):
     bl_idname = "script.external_function_monitor"
     bl_label = "Monitor External Function"
 
+    # pyre-fixme[31]: bpy property types aren't really types
     function: bpy.props.StringProperty(name="function")
+    # pyre-fixme[31]: bpy property types aren't really types
     delete_all: bpy.props.BoolProperty(name="delete_all", default=True)
 
-    _local_dir: Path
-    _mod_name: str
-    _fn_name: str
+    _local_dir: Path = Path()
+    _mod_name: str = ""
+    _fn_name: str = ""
 
-    def _init_monitor_modules(self):
+    def _init_monitor_modules(self) -> List[Tuple[Path, Optional[str]]]:
         self._name = self.function
 
         parts = self.function.rsplit(".", 1)
@@ -242,7 +249,7 @@ class FunctionMonitorOperator(MonitorOperatorBase):
         importlib.import_module(self._mod_name)
 
         self._local_dir = Path(bpy.data.filepath).parent.resolve()
-        monitor_modules = [
+        monitor_modules: List[Tuple[Path, Optional[str]]] = [
             (self._local_dir / path, mod_name)
             for path, mod_name in _DEPENDENCIES
         ]
@@ -288,6 +295,7 @@ def unregister():
 def main(fn_name: str) -> None:
     try:
         register()
+        # pyre-fixme[16]: external_function_monitor is dynamically registered
         bpy.ops.script.external_function_monitor(function=fn_name)
     except Exception as ex:
         import logging
