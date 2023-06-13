@@ -20,7 +20,7 @@ import importlib
 import sys
 import traceback
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 
 _instance: Optional[MonitorOperatorBase] = None
@@ -59,7 +59,7 @@ class MonitorOperatorBase(bpy.types.Operator):
     # The REGISTER option allows our messages to be logged to the info console
     bl_options = {"REGISTER"}
 
-    _timer = None
+    _timer: Optional[bpy.types.Timer] = None
     stop: bool = False
 
     _timestamps: Dict[Path, Optional[float]] = {}
@@ -67,11 +67,13 @@ class MonitorOperatorBase(bpy.types.Operator):
     _name: str = ""
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         global _instance
         return _instance is None
 
-    def modal(self, context, event):
+    def modal(
+        self, context: bpy.types.Context, event: bpy.types.Event
+    ) -> Set[str]:
         if event.type != "TIMER":
             return {"PASS_THROUGH"}
 
@@ -85,7 +87,7 @@ class MonitorOperatorBase(bpy.types.Operator):
         self.check_for_updates()
         return {"PASS_THROUGH"}
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> Set[str]:
         global _instance
         if _instance is not None:
             self.report({"Error"}, f"Script monitor is already running")
@@ -107,11 +109,13 @@ class MonitorOperatorBase(bpy.types.Operator):
     def _init_monitor_modules(self) -> List[Tuple[Path, Optional[str]]]:
         raise NotImplementedError()
 
-    def cancel(self, context):
+    def cancel(self, context: bpy.types.Context) -> None:
         wm = context.window_manager
-        wm.event_timer_remove(self._timer)
+        timer = self._timer
+        assert timer is not None
+        wm.event_timer_remove(timer)
 
-    def check_for_updates(self):
+    def check_for_updates(self) -> None:
         current = self._get_timestamps()
         if current == self._timestamps:
             return
@@ -151,7 +155,7 @@ class MonitorOperatorBase(bpy.types.Operator):
             return None
         return s.st_mtime
 
-    def on_change(self):
+    def on_change(self) -> None:
         print("=" * 60, file=sys.stderr)
         print(f"Running {self._name}...", file=sys.stderr)
         self.report({"INFO"}, f"running {self._name}")
@@ -161,7 +165,7 @@ class MonitorOperatorBase(bpy.types.Operator):
         except Exception as ex:
             self._report_error(f"error running {self._name}")
 
-    def _run(self):
+    def _run(self) -> None:
         raise NotImplementedError("must be implemented by a subclass")
 
     def _report_error(self, msg: str) -> None:
@@ -177,11 +181,11 @@ class CancelMonitorOperator(bpy.types.Operator):
     bl_label = "Cancel External Script Monitor"
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         global _instance
         return _instance is not None
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context) -> Set[str]:
         global _instance
         if _instance is not None:
             _instance.stop = True
@@ -214,7 +218,7 @@ class ScriptMonitorOperator(MonitorOperatorBase):
 
         return monitor_modules
 
-    def _run(self):
+    def _run(self) -> None:
         global_namespace = {
             "__file__": str(self._abs_path),
             "__name__": "__main__",
@@ -256,7 +260,7 @@ class FunctionMonitorOperator(MonitorOperatorBase):
 
         return monitor_modules
 
-    def _run(self):
+    def _run(self) -> None:
         if self.delete_all:
             if bpy.context.object is not None:
                 bpy.ops.object.mode_set(mode="OBJECT")
@@ -268,7 +272,7 @@ class FunctionMonitorOperator(MonitorOperatorBase):
         fn()
 
 
-def menu_func(self, context):
+def menu_func(self: bpy.types.Menu, context: bpy.types.Context) -> None:
     self.layout.operator(
         ScriptMonitorOperator.bl_idname, text=ScriptMonitorOperator.bl_label
     )
@@ -277,18 +281,20 @@ def menu_func(self, context):
     )
 
 
-def register():
+def register() -> None:
     bpy.utils.register_class(ScriptMonitorOperator)
     bpy.utils.register_class(FunctionMonitorOperator)
     bpy.utils.register_class(CancelMonitorOperator)
+    # pyre-fixme[16]: incomplete bpy type annotations
     bpy.types.TOPBAR_MT_edit.append(menu_func)
 
 
 # Register and add to the "view" menu (required to also use F3 search "Modal Timer Operator" for quick access)
-def unregister():
+def unregister() -> None:
     bpy.utils.unregister_class(ScriptMonitorOperator)
     bpy.utils.unregister_class(FunctionMonitorOperator)
     bpy.utils.unregister_class(CancelMonitorOperator)
+    # pyre-fixme[16]: incomplete bpy type annotations
     bpy.types.TOPBAR_MT_edit.remove(menu_func)
 
 

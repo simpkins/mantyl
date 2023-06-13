@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os, sys
 
-base_dir = os.path.dirname(__file__)
+base_dir: str = os.path.dirname(__file__)
 sys.path.insert(0, base_dir)
 
 from mantyl import (
@@ -30,7 +30,7 @@ import bpy
 from pathlib import Path
 from typing import Callable
 
-out_dir = Path(base_dir) / "_out"
+out_dir: Path = Path(base_dir) / "_out"
 
 
 def export_stl(name: str, obj_fn: Callable[[], bpy.types.Object]) -> None:

@@ -15,7 +15,9 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Sequence,
     Tuple,
+    Type,
     TypeVar,
     Union,
 )
@@ -71,7 +73,7 @@ class Keyboard:
     def __init__(self) -> None:
         self.wall_thickness = 4.0
 
-        self._main_thumb_transform = (
+        self._main_thumb_transform: Transform = (
             Transform()
             .rotate(0, 0, 40)
             .rotate(0, 25, 0)
@@ -128,7 +130,7 @@ class Keyboard:
             raise IndexError(f"invalid {msg} position {name}")
         return value
 
-    def __getattr__(self, name) -> Any:
+    def __getattr__(self, name: str) -> Any:
         # Allow the keys to be accessed as kXY.  e.g., k12 is self._keys[1][2]
         if name.startswith("k") and len(name) == 3:
             return self._get_key_variable(name, self._keys, "key")
@@ -1266,8 +1268,8 @@ class Keyboard:
         )
 
     def gen_thumb_wall(self) -> List[ThumbColumn]:
-        offset = 7.0
-        KH = KeyHole
+        offset: float = 7.0
+        KH: Type[KeyHole] = KeyHole
 
         # Compute the outer corners
         br = ThumbColumn()
@@ -1311,17 +1313,21 @@ class Keyboard:
         # thickness of self.wall_thickness.
         front_dx = br.out2.x - bl.out2.x
         front_dy = br.out2.y - bl.out2.y
-        front_delta = (
-            Point(-front_dy, front_dx, 0.0).unit() * self.wall_thickness
-        )
+        front_delta: Point = Point(
+            -front_dy, front_dx, 0.0
+        ).unit() * self.wall_thickness
 
         left_dx = bl.out2.x - tl.out2.x
         left_dy = bl.out2.y - tl.out2.y
-        left_delta = Point(-left_dy, left_dx, 0.0).unit() * self.wall_thickness
+        left_delta: Point = Point(
+            -left_dy, left_dx, 0.0
+        ).unit() * self.wall_thickness
 
         back_dx = tl.out2.x - tr.out2.x
         back_dy = tl.out2.y - tr.out2.y
-        back_delta = Point(-back_dy, back_dx, 0.0).unit() * self.wall_thickness
+        back_delta: Point = Point(
+            -back_dy, back_dx, 0.0
+        ).unit() * self.wall_thickness
 
         # Compute the inner ground corners now that we have
         # the inner wall offsets
@@ -1742,7 +1748,9 @@ class Keyboard:
             (c0_out2, c1_out2, c2_out2, c3_out2),
         )
 
-    def get_bevel_weights(self, edges) -> Dict[int, float]:
+    def get_bevel_weights(
+        self, edges: Sequence[bpy.types.MeshEdge]
+    ) -> Dict[int, float]:
         results: Dict[int, float] = {}
         for idx, e in enumerate(edges):
             v0 = e.vertices[0]
@@ -1762,17 +1770,17 @@ class Keyboard:
 class KeyHole:
     keyswitch_width: float = 14.4
     keyswitch_height: float = 14.4
-    keywell_wall_width = 1.5
-    web_thickness = 3.5
+    keywell_wall_width: float = 1.5
+    web_thickness: float = 3.5
 
     height: float = 4.0
     inner_w: float = keyswitch_width * 0.5
     outer_w: float = inner_w + keywell_wall_width
-    inner_h = keyswitch_height * 0.5
-    outer_h = inner_h + keywell_wall_width
+    inner_h: float = keyswitch_height * 0.5
+    outer_h: float = inner_h + keywell_wall_width
 
     # The height of the connecting mesh between key holes
-    mid_height = height - web_thickness
+    mid_height: float = height - web_thickness
 
     def __init__(self, mesh: Mesh, transform: Transform) -> None:
         self.mesh = mesh
@@ -1783,18 +1791,26 @@ class KeyHole:
 
         # Upper outer points.
         # These are the main connection points used externally for the walls
-        self.u_bl = self.add_point(-outer_w, -outer_h, self.height)
-        self.u_br = self.add_point(outer_w, -outer_h, self.height)
-        self.u_tr = self.add_point(outer_w, outer_h, self.height)
-        self.u_tl = self.add_point(-outer_w, outer_h, self.height)
+        self.u_bl: MeshPoint = self.add_point(-outer_w, -outer_h, self.height)
+        self.u_br: MeshPoint = self.add_point(outer_w, -outer_h, self.height)
+        self.u_tr: MeshPoint = self.add_point(outer_w, outer_h, self.height)
+        self.u_tl: MeshPoint = self.add_point(-outer_w, outer_h, self.height)
 
         # Lower outer points.
         # These are also connection points used externally,
         # for the underside of the walls
-        self.l_bl = self.add_point(-outer_w, -outer_h, self.mid_height)
-        self.l_br = self.add_point(outer_w, -outer_h, self.mid_height)
-        self.l_tr = self.add_point(outer_w, outer_h, self.mid_height)
-        self.l_tl = self.add_point(-outer_w, outer_h, self.mid_height)
+        self.l_bl: MeshPoint = self.add_point(
+            -outer_w, -outer_h, self.mid_height
+        )
+        self.l_br: MeshPoint = self.add_point(
+            outer_w, -outer_h, self.mid_height
+        )
+        self.l_tr: MeshPoint = self.add_point(
+            outer_w, outer_h, self.mid_height
+        )
+        self.l_tl: MeshPoint = self.add_point(
+            -outer_w, outer_h, self.mid_height
+        )
 
     @property
     def tl(self) -> Tuple[MeshPoint, MeshPoint]:
@@ -2052,12 +2068,12 @@ def dsa_keycap(
         # another key along the key's path of travel.
         z0 = z_offset - switch_height
 
-    mesh = Mesh()
+    mesh: Mesh = Mesh()
 
     if transform is None:
-        xtransform = Transform()
+        xtransform: Transform = Transform()
     else:
-        xtransform = transform
+        xtransform: Transform = transform
 
     def add_xyz(x: float, y: float, z: float) -> MeshPoint:
         p = Point(x, y, z).transform(xtransform)
@@ -2164,6 +2180,7 @@ def gen_keyboard(kbd: Keyboard) -> bpy.types.Object:
     bpy.ops.object.mode_set(mode="OBJECT")
 
     # Set bevel weights on the edges
+    # pyre-fixme[6]: inaccurate bpy type annotations
     edge_weights = kbd.get_bevel_weights(mesh.edges)
     mesh.use_customdata_edge_bevel = True
     for edge_idx, weight in edge_weights.items():

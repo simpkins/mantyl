@@ -20,8 +20,8 @@ class I2cCutout:
     wall_thickness = 4.0
     # Make the front and back stick out 1mm past the wall, just to avoid
     # coincident faces when doing the boolean difference with the wall.
-    back_y = wall_thickness + 1.0
-    face_y = -1.0
+    back_y: float = wall_thickness + 1.0
+    face_y: float = -1.0
 
     # If printing the holder face down, h = 4.5 is a good value.
     # However, if printing vertically with support needed to hold up the top
@@ -33,7 +33,7 @@ class I2cCutout:
     flange_d = 2.25
     flange_offset = 0.90
 
-    nub_y = wall_thickness - (flange_d + flange_offset)
+    nub_y: float = wall_thickness - (flange_d + flange_offset)
     nub_z = 0.75
     nub_x = 0.55
 
@@ -248,7 +248,7 @@ class CableCap:
 
     # The depth of the back wall of the inner cavity.
     cavity_d = 7.00
-    flange_back_d = flange_d + flange_thickness
+    flange_back_d: float = flange_d + flange_thickness
     conn_back_d = 4.0
     bulge_d = 4.0
     back_d = 8.5

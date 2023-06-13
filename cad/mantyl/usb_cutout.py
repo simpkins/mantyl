@@ -29,8 +29,8 @@ class Cutout:
 
     z_tolerance = 0.45
     xy_tolerance = 0.2
-    cutout_h = 11.67 + z_tolerance
-    cutout_w = 6.3 + xy_tolerance
+    cutout_h: float = 11.67 + z_tolerance
+    cutout_w: float = 6.3 + xy_tolerance
 
     wall_thickness = 4.0
     stem_depth = 8.4
@@ -113,10 +113,10 @@ class Cutout:
         return pos
 
     def add_feather_supports(self, pos: bpy.types.Object, flip: bool) -> None:
-        left_end = (self.cutout_w * -0.5) + self.total_len
-        right_end = left_end - self.feather_l
-        top = self.feather_h * 0.5
-        bottom = -top
+        left_end: float = (self.cutout_w * -0.5) + self.total_len
+        right_end: float = left_end - self.feather_l
+        top: float = self.feather_h * 0.5
+        bottom: float = -top
 
         screw_overlap_x = 4.0
         screw_overlap_z = 4.0

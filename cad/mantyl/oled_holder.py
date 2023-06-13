@@ -10,7 +10,7 @@ from . import blender_util
 from . import screw_holes
 
 import bpy
-from typing import Tuple
+from typing import List, Tuple
 
 
 def oled_cutout(wall_thickness: float = 4.0) -> bpy.types.Object:
@@ -179,47 +179,47 @@ def apply_oled_holder(
 
 
 class Backplate:
-    standoff_d = 4.25
-    standoff_h = 6
+    standoff_d: float = 4.25
+    standoff_h: float = 6
 
-    y_front = standoff_h - 0.1
-    y_back = standoff_h + 2.0
-    base_y_range = (y_front, y_back)
+    y_front: float = standoff_h - 0.1
+    y_back: float = standoff_h + 2.0
+    base_y_range: Tuple[float, float] = (y_front, y_back)
 
-    display_offset = 2.5 * 0.5
-    base_w = 33
+    display_offset: float = 2.5 * 0.5
+    base_w: float = 33
 
-    stud_positions = [
+    stud_positions: List[Tuple[float, float]] = [
         (-14.0, -8.325),
         (14.0, -8.325),
         (14.0, 8.175),
         (-14.0, 8.175),
     ]
 
-    screw_hole_r = 4.25 * 0.5
-    screw_plate_r = 4.5
+    screw_hole_r: float = 4.25 * 0.5
+    screw_plate_r: float = 4.5
 
     # The OLED display is centered at Z=0
     # The directional hat button is centered at Z=hat_z
-    hat_z = 9.0 - 27.0
+    hat_z: float = 9.0 - 27.0
 
-    z_top = 11.0
+    z_top: float = 11.0
 
-    bottom_screw_x = (-12.0, 12.0)
+    bottom_screw_x: Tuple[float, float] = (-12.0, 12.0)
 
     def __init__(self, left: bool) -> None:
         self.left = left
 
-        self.x_left = self.base_w * -0.5
-        self.x_right = (self.base_w * 0.5) + self.display_offset
+        self.x_left: float = self.base_w * -0.5
+        self.x_right: float = (self.base_w * 0.5) + self.display_offset
 
         if left:
-            self.top_screw_x = self.x_right - self.screw_plate_r
+            self.top_screw_x: float = self.x_right - self.screw_plate_r
         else:
-            self.top_screw_x = self.x_left + self.screw_plate_r
-        self.top_screw_z = self.z_top + 3.25
+            self.top_screw_x: float = self.x_left + self.screw_plate_r
+        self.top_screw_z: float = self.z_top + 3.25
 
-        self.screw_positions = [
+        self.screw_positions: List[Tuple[float, float]] = [
             (self.top_screw_x, self.top_screw_z),
             (self.bottom_screw_x[0], self.hat_z),
             (self.bottom_screw_x[1], self.hat_z),

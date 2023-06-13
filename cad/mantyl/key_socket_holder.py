@@ -95,8 +95,8 @@ class TopClip(SocketParams):
         self.b_arc_points: List[MeshPoint] = []
         self.t_arc_points: List[MeshPoint] = []
 
-        self.top_z = self.z_clip_top
-        self.bottom_z = self.z_clip_bottom
+        self.top_z: float = self.z_clip_top
+        self.bottom_z: float = self.z_clip_bottom
 
     def gen(self) -> None:
         self.gen_arc()
@@ -280,8 +280,8 @@ class TopClip(SocketParams):
 # pyre-fixme[13]: pyre complains that various members are uninitialized, since
 #   they are initialized in a helper method and not directly in __init__()
 class BottomClip(SocketParams):
-    l_y = -7.0
-    r_y = -8.5
+    l_y: float = -7.0
+    r_y: float = -8.5
 
     m_bl: MeshPoint
     m_br: MeshPoint
@@ -307,12 +307,12 @@ class BottomClip(SocketParams):
     l_lip2: MeshPoint
 
     def __init__(self, mesh: cad.Mesh) -> None:
-        self.mesh = mesh
+        self.mesh: cad.Mesh = mesh
         self.b_arc_points: List[MeshPoint] = []
         self.t_arc_points: List[MeshPoint] = []
 
-        self.top_z = self.z_clip_top
-        self.bottom_z = self.z_clip_bottom
+        self.top_z: float = self.z_clip_top
+        self.bottom_z: float = self.z_clip_bottom
 
     def gen(self) -> None:
         self.gen_arc()
@@ -475,15 +475,15 @@ class DiodeClip(SocketParams):
     def __init__(self, mesh: cad.Mesh) -> None:
         self.mesh = mesh
 
-        self.top_wall_thickness = 0.75
-        self.diode_x = -6.35
-        self.diode_y = 0.5
-        self.top_y = (
+        self.top_wall_thickness: float = 0.75
+        self.diode_x: float = -6.35
+        self.diode_y: float = 0.5
+        self.top_y: float = (
             self.diode_y - (self.diode_h * 0.5) - self.top_wall_thickness
         )
-        self.right_x = self.diode_x + 1.9
-        self.top_z = self.z_clip_top
-        self.bottom_z = self.z_clip_bottom
+        self.right_x: float = self.diode_x + 1.9
+        self.top_z: float = self.z_clip_top
+        self.bottom_z: float = self.z_clip_bottom
 
     def gen(self) -> None:
         m1_y = self.diode_y - (self.diode_h * 0.5)

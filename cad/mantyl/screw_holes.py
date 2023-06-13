@@ -40,7 +40,7 @@ def screw_standoff(
 
 
 def unc6_32_screw_standoff(
-    h: float = 4.5, hole_h=4.2, outer_d: float = 6.0
+    h: float = 4.5, hole_h: float = 4.2, outer_d: float = 6.0
 ) -> bpy.types.Object:
     """
     A stand-off designed to fit a 1/4" #6-32 UNC screw.

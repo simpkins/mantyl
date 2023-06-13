@@ -15,11 +15,11 @@ class Transform:
     # pyre-fixme[11]: numpy.array is unknown without the numpy stubs
     def __init__(self, data: Optional[numpy.array] = None) -> None:
         if data is None:
-            self._data = numpy.array(
+            self._data: numpy.array = numpy.array(
                 ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
             )
         else:
-            self._data = data
+            self._data: numpy.array = data
 
     def __str__(self) -> str:
         row_strs = []
@@ -158,9 +158,9 @@ class Plane:
     __slots__ = ["p0", "p1", "p2"]
 
     def __init__(self, p0: Point, p1: Point, p2: Point) -> None:
-        self.p0 = p0
-        self.p1 = p1
-        self.p2 = p2
+        self.p0: Point = p0
+        self.p1: Point = p1
+        self.p2: Point = p2
 
     def normal(self) -> Point:
         """Compute the unit normal vector of the plane."""

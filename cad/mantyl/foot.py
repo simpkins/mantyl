@@ -17,7 +17,7 @@ from mantyl.keyboard import Keyboard
 
 class Foot:
     inner_r = 6.5
-    outer_r = inner_r + 2.0
+    outer_r: float = inner_r + 2.0
     recess_h = 1.75
     base_h = 3.0
     top_h = 15.0

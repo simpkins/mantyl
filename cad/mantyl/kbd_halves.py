@@ -191,10 +191,10 @@ def socket_underlay(kbd: Keyboard, mirror: bool = False) -> bpy.types.Object:
 
 
 def thumb_underlay(kbd: Keyboard, mirror: bool = False) -> bpy.types.Object:
-    builder = SocketHolderBuilder(mirror=mirror)
-    mesh = cad.Mesh()
+    builder: SocketHolderBuilder = SocketHolderBuilder(mirror=mirror)
+    mesh: cad.Mesh = cad.Mesh()
 
-    base_transform = cad.Transform().translate(0.0, 0.0, -0.5)
+    base_transform: cad.Transform = cad.Transform().translate(0.0, 0.0, -0.5)
 
     def make_holder(builder: SocketHolderBuilder, k: KeyHole) -> SocketHolder:
         tf = base_transform.transform(k.transform)

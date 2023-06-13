@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import bpy
-from typing import Dict, Tuple
+from typing import Dict, Sequence, Tuple
 
 from . import cad
 from . import blender_util
@@ -36,6 +36,7 @@ class WristRest:
         blend_mesh = blender_util.blender_mesh("wrist_rest_mesh", self.mesh)
 
         # Set bevel weights on the edges
+        # pyre-fixme[6]: blender type stubs are inaccurate
         edge_weights = self._get_bevel_weights(blend_mesh.edges)
         blend_mesh.use_customdata_edge_bevel = True
         for edge_idx, weight in edge_weights.items():
@@ -70,7 +71,9 @@ class WristRest:
         self.add_screw_holes(obj)
         return obj
 
-    def _get_bevel_weights(self, edges) -> Dict[int, float]:
+    def _get_bevel_weights(
+        self, edges: Sequence[bpy.types.MeshEdge]
+    ) -> Dict[int, float]:
         results: Dict[int, float] = {}
         for idx, e in enumerate(edges):
             v0 = e.vertices[0]
