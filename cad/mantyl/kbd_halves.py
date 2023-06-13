@@ -12,7 +12,7 @@ from . import blender_util
 from . import cad
 from .foot import add_feet
 from .i2c_conn import add_i2c_connector
-from .keyboard import Keyboard, KeyHole, gen_keyboard
+from .keyboard import Grid2D, Keyboard, KeyHole, gen_keyboard
 from .key_socket_holder import SocketHolder, SocketHolderBuilder, SocketType
 from .screw_holes import add_screw_holes
 from . import oled_holder
@@ -125,9 +125,7 @@ def socket_underlay(kbd: Keyboard, mirror: bool = False) -> bpy.types.Object:
 
     base_transform = cad.Transform().translate(0.0, 0.0, -0.5)
 
-    holders: List[List[Optional[SocketHolder]]] = []
-    for col in range(7):
-        holders.append([cast(Optional[SocketHolder], None)] * 6)
+    holders: Grid2D[SocketHolder] = Grid2D(7, 6)
 
     # Add all of the socket holders
     for col, row, key in kbd.enumerate_keys():

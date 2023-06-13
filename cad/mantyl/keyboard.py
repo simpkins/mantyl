@@ -6,7 +6,19 @@
 from __future__ import annotations
 
 import math
-from typing import Any, cast, Dict, Generator, List, Optional, Tuple, Union
+from typing import (
+    Any,
+    cast,
+    Dict,
+    Generator,
+    Generic,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import bpy
 
@@ -14,6 +26,45 @@ from . import blender_util
 from . import cad
 from .blender_util import blender_mesh, new_mesh_obj
 from .cad import Mesh, MeshPoint, Point, Transform
+
+
+T = TypeVar("T")
+
+
+class Grid1D(Generic[T]):
+    def __init__(self, length: int) -> None:
+        self._data: List[Optional[T]] = [cast(Optional[T], None)] * length
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def __iter__(self) -> Iterator[Optional[T]]:
+        return iter(self._data)
+
+    def __getitem__(self, idx: int) -> T:
+        item = self._data[idx]
+        if item is None:
+            raise IndexError(f"no item present at index {idx}")
+        return item
+
+    def __setitem__(self, idx: int, item: T) -> None:
+        self._data[idx] = item
+
+
+class Grid2D(Generic[T]):
+    def __init__(self, cols: int, rows: int) -> None:
+        self._data: List[Grid1D[T]] = []
+        for col in range(cols):
+            self._data.append(Grid1D(6))
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def __iter__(self) -> Iterator[Grid1D[T]]:
+        return iter(self._data)
+
+    def __getitem__(self, idx: int) -> Grid1D[T]:
+        return self._data[idx]
 
 
 class Keyboard:
@@ -61,7 +112,7 @@ class Keyboard:
 
     @staticmethod
     def _get_key_variable(
-        name: str, keys: List[List[Optional[KeyHole]]], msg: str
+        name: str, keys: Grid2D[KeyHole], msg: str
     ) -> KeyHole:
         try:
             col = int(name[1])
@@ -98,11 +149,11 @@ class Keyboard:
             for row in range(6):
                 yield (col, row)
 
-    def enumerate_keys(self) -> Generator[Tuple[int, int, KeyHole], None, None]:
+    def enumerate_keys(
+        self
+    ) -> Generator[Tuple[int, int, KeyHole], None, None]:
         for col, row in self.key_indices():
-            key = self._keys[col][row]
-            assert key is not None
-            yield col, row, key
+            yield col, row, self._keys[col][row]
 
     def thumb_indices(self) -> Generator[Tuple[int, int], None, None]:
         for col in range(2):
@@ -112,15 +163,11 @@ class Keyboard:
         yield (2, 1)
 
     def _define_keys(self) -> None:
-        self._keys: List[List[Optional[KeyHole]]] = []
-        for col in range(7):
-            self._keys.append([cast(Optional[KeyHole], None)] * 6)
+        self._keys: Grid2D[KeyHole] = Grid2D(7, 6)
         for col, row in self.key_indices():
             self._keys[col][row] = KeyHole(self.mesh, self._key_tf(col, row))
 
-        self._thumb_keys: List[List[Optional[KeyHole]]] = []
-        for col in range(3):
-            self._thumb_keys.append([cast(Optional[KeyHole], None)] * 3)
+        self._thumb_keys: Grid2D[KeyHole] = Grid2D(3, 3)
         for col, row in self.thumb_indices():
             self._thumb_keys[col][row] = KeyHole(
                 self.mesh, self._thumb_tf(col, row)
@@ -490,7 +537,6 @@ class Keyboard:
         self.k02.top_edge()
         for col in range(1, 6):
             k = self._keys[col][0]
-            assert k is not None
             k.top_edge()
             k.top_edge_right(self._keys[col + 1][0])
         self.k60.top_edge()
@@ -498,7 +544,6 @@ class Keyboard:
         # Right walls
         for row in range(5):
             k = self._keys[6][row]
-            assert k is not None
             k.right_edge()
             k.right_edge_bottom(self._keys[6][row + 1])
         self.k65.right_edge()
@@ -506,7 +551,6 @@ class Keyboard:
         # Bottom walls
         for col in range(2, 6):
             k = self._keys[col][5]
-            assert k is not None
             k.bottom_edge()
             k.bottom_edge_right(self._keys[col + 1][5])
         self.k04.bottom_edge()
@@ -635,7 +679,6 @@ class Keyboard:
         columns: List[WallColumn] = []
         for col_idx in range(6, 0, -1):
             k = self._keys[col_idx][0]
-            assert k is not None
 
             # Left and right columns for this key hole
             l = WallColumn()
@@ -687,7 +730,6 @@ class Keyboard:
         columns: List[WallColumn] = []
         for row in range(5, -1, -1):
             k = self._keys[6][row]
-            assert k is not None
             # top and bottom columns
             b = WallColumn()
             t = WallColumn()
@@ -764,7 +806,6 @@ class Keyboard:
         last_row = 5
         for col_idx in range(2, 7):
             k = self._keys[col_idx][last_row]
-            assert k is not None
 
             # Left and right columns for this key hole
             l = WallColumn()
@@ -837,7 +878,6 @@ class Keyboard:
         columns: List[WallColumn] = []
         for col_idx, row_idx in indices:
             k = self._keys[col_idx][row_idx]
-            assert k is not None
 
             t = WallColumn()
             b = WallColumn()
@@ -1168,9 +1208,7 @@ class Keyboard:
         """Generate mesh faces for the thumb key hole section.
         """
         for col, row in self.thumb_indices():
-            tk = self._thumb_keys[col][row]
-            assert tk is not None
-            tk.inner_walls()
+            self._thumb_keys[col][row].inner_walls()
 
         # Connections between key holes
         self.t00.join_bottom(self.t01)
