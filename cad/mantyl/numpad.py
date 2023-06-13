@@ -31,11 +31,20 @@ class NumpadPlate:
     kp_slash: KeyHole
     kp_star: KeyHole
     kp_plus: KeyHole
+    kp_minus: KeyHole
     kp_dot: KeyHole
     tl: Tuple[MeshPoint, MeshPoint]
     tr: Tuple[MeshPoint, MeshPoint]
     bl: Tuple[MeshPoint, MeshPoint]
     br: Tuple[MeshPoint, MeshPoint]
+    u_tl: MeshPoint
+    u_tr: MeshPoint
+    u_bl: MeshPoint
+    u_br: MeshPoint
+    l_tl: MeshPoint
+    l_tr: MeshPoint
+    l_bl: MeshPoint
+    l_br: MeshPoint
 
     def __init__(self) -> None:
         self.mesh = Mesh()
