@@ -69,7 +69,25 @@ class Grid2D(Generic[T]):
         return self._data[idx]
 
 
+# pyre-fixme[13]: some attributes are not initialized directly in __init__()
 class Keyboard:
+    front_wall: List[WallColumn]
+    right_wall: List[WallColumn]
+    back_wall: List[WallColumn]
+    left_wall: List[WallColumn]
+    fl: WallColumn
+    fr: WallColumn
+    bl: WallColumn
+    br: WallColumn
+
+    thumb_wall: List[ThumbColumn]
+    thumb_bl: ThumbColumn
+    thumb_br: ThumbColumn
+    thumb_tl: ThumbColumn
+    thumb_tr: ThumbColumn
+    thumb_tr_connect: MeshPoint
+    thumb_br_connect: MeshPoint
+
     def __init__(self) -> None:
         self.wall_thickness = 4.0
 
@@ -130,50 +148,91 @@ class Keyboard:
             raise IndexError(f"invalid {msg} position {name}")
         return value
 
-    def __getattr__(self, name: str) -> Any:
-        # Allow the keys to be accessed as kXY.  e.g., k12 is self._keys[1][2]
-        if name.startswith("k") and len(name) == 3:
-            return self._get_key_variable(name, self._keys, "key")
-
-        # Allow the thumb keys to be accessed as tXY.
-        # e.g., t12 is self._thumb_keys[1][2]
-        if name.startswith("t") and len(name) == 3:
-            return self._get_key_variable(name, self._thumb_keys, "thumb key")
-
-        raise AttributeError(name)
-
-    def key_indices(self) -> Generator[Tuple[int, int], None, None]:
-        for row in (2, 3, 4):
-            yield (0, row)
-        for row in range(5):
-            yield (1, row)
-        for col in (2, 3, 4, 5, 6):
-            for row in range(6):
-                yield (col, row)
-
     def enumerate_keys(
         self
     ) -> Generator[Tuple[int, int, KeyHole], None, None]:
-        for col, row in self.key_indices():
-            yield col, row, self._keys[col][row]
+        for col_idx, row in enumerate(self._keys):
+            for row_idx, key in enumerate(row):
+                if key is not None:
+                    yield col_idx, row_idx, key
 
-    def thumb_indices(self) -> Generator[Tuple[int, int], None, None]:
-        for col in range(2):
-            for row in range(3):
-                yield (col, row)
-        yield (2, 0)
-        yield (2, 1)
+    def all_keys(self) -> Generator[KeyHole, None, None]:
+        for row in self._keys:
+            for key in row:
+                if key is not None:
+                    yield key
+
+    def all_thumb_keys(self) -> Generator[KeyHole, None, None]:
+        for row in self._thumb_keys:
+            for key in row:
+                if key is not None:
+                    yield key
 
     def _define_keys(self) -> None:
         self._keys: Grid2D[KeyHole] = Grid2D(7, 6)
-        for col, row in self.key_indices():
-            self._keys[col][row] = KeyHole(self.mesh, self._key_tf(col, row))
-
         self._thumb_keys: Grid2D[KeyHole] = Grid2D(3, 3)
-        for col, row in self.thumb_indices():
-            self._thumb_keys[col][row] = KeyHole(
-                self.mesh, self._thumb_tf(col, row)
-            )
+
+        def mk_key(col: int, row: int) -> KeyHole:
+            key = KeyHole(self.mesh, self._key_tf(col, row))
+            self._keys[col][row] = key
+            return key
+
+        def mk_thumb(col: int, row: int) -> KeyHole:
+            key = KeyHole(self.mesh, self._thumb_tf(col, row))
+            self._thumb_keys[col][row] = key
+            return key
+
+        # We used to do define self._keys using a loop, and used a custom
+        # __getattr__() function to implement the kXY aliases.  However,
+        # this makes it difficult for Pyre to implement proper type checking of
+        # the aliases.  Therefore manually list each key here instead.
+        self.k02 = mk_key(0, 2)
+        self.k03 = mk_key(0, 3)
+        self.k04 = mk_key(0, 4)
+        self.k10 = mk_key(1, 0)
+        self.k11 = mk_key(1, 1)
+        self.k12 = mk_key(1, 2)
+        self.k13 = mk_key(1, 3)
+        self.k14 = mk_key(1, 4)
+        self.k20 = mk_key(2, 0)
+        self.k21 = mk_key(2, 1)
+        self.k22 = mk_key(2, 2)
+        self.k23 = mk_key(2, 3)
+        self.k24 = mk_key(2, 4)
+        self.k25 = mk_key(2, 5)
+        self.k30 = mk_key(3, 0)
+        self.k31 = mk_key(3, 1)
+        self.k32 = mk_key(3, 2)
+        self.k33 = mk_key(3, 3)
+        self.k34 = mk_key(3, 4)
+        self.k35 = mk_key(3, 5)
+        self.k40 = mk_key(4, 0)
+        self.k41 = mk_key(4, 1)
+        self.k42 = mk_key(4, 2)
+        self.k43 = mk_key(4, 3)
+        self.k44 = mk_key(4, 4)
+        self.k45 = mk_key(4, 5)
+        self.k50 = mk_key(5, 0)
+        self.k51 = mk_key(5, 1)
+        self.k52 = mk_key(5, 2)
+        self.k53 = mk_key(5, 3)
+        self.k54 = mk_key(5, 4)
+        self.k55 = mk_key(5, 5)
+        self.k60 = mk_key(6, 0)
+        self.k61 = mk_key(6, 1)
+        self.k62 = mk_key(6, 2)
+        self.k63 = mk_key(6, 3)
+        self.k64 = mk_key(6, 4)
+        self.k65 = mk_key(6, 5)
+
+        self.t00 = mk_thumb(0, 0)
+        self.t01 = mk_thumb(0, 1)
+        self.t02 = mk_thumb(0, 2)
+        self.t10 = mk_thumb(1, 0)
+        self.t11 = mk_thumb(1, 1)
+        self.t12 = mk_thumb(1, 2)
+        self.t20 = mk_thumb(2, 0)
+        self.t21 = mk_thumb(2, 1)
 
     def _key_tf(self, column: int, row: int) -> Transform:
         if column == 0:
@@ -456,15 +515,15 @@ class Keyboard:
         )
 
     def gen_keycaps(self) -> None:
-        for col, row in self.key_indices():
-            self._keys[col][row].dsa_keycap()
+        for key in self.all_keys():
+            key.dsa_keycap()
 
     def gen_main_grid(self) -> None:
         """Generate mesh faces for the main key hole section.
         """
         # All key holes need the inner walls
-        for col, row in self.key_indices():
-            self._keys[col][row].inner_walls()
+        for key in self.all_keys():
+            key.inner_walls()
 
         # Connections between vertical keys on each column
         self.k02.join_bottom(self.k03)
@@ -1209,8 +1268,8 @@ class Keyboard:
     def gen_thumb_grid(self) -> None:
         """Generate mesh faces for the thumb key hole section.
         """
-        for col, row in self.thumb_indices():
-            self._thumb_keys[col][row].inner_walls()
+        for key in self.all_thumb_keys():
+            key.inner_walls()
 
         # Connections between key holes
         self.t00.join_bottom(self.t01)

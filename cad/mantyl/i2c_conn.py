@@ -750,7 +750,11 @@ def add_i2c_connector(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
     x_off = 0.0
     z_off = 5 + I2cCutout.h * 0.5
     blender_util.apply_to_wall(
-        i2c_cutout, kbd.thumb_tr_connect, kbd.thumb_tl.out2, x=x_off, z=z_off
+        i2c_cutout,
+        kbd.thumb_tr_connect.point,
+        kbd.thumb_tl.out2,
+        x=x_off,
+        z=z_off,
     )
 
     blender_util.difference(kbd_obj, i2c_cutout)
