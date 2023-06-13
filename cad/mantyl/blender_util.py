@@ -3,11 +3,15 @@
 # Copyright (c) 2022, Adam Simpkins
 #
 
+# Note: most of the pyre-fixme comments in this file are due to the fact
+# that the type annotations provided by the blender-stubs package do not
+# accurately reflect the actual behavior of the blender C API.
+
 from __future__ import annotations
 
 import math
 import random
-from typing import Optional, Type, Union
+from typing import Optional, Tuple, Type, Union
 from types import TracebackType
 
 import bpy
@@ -26,6 +30,7 @@ def delete_all() -> None:
 
 def set_view_distance(distance: float) -> None:
     """Update the camera distance in all viewport panels"""
+    # pyre-fixme[16]
     layout = bpy.data.screens["Layout"]
     view_areas = [a for a in layout.areas if a.type == "VIEW_3D"]
     for a in view_areas:
@@ -37,7 +42,8 @@ def blender_mesh(name: str, mesh: cad.Mesh) -> bpy.types.Mesh:
     points = [(p.x, p.y, p.z) for p in mesh.points]
     faces = [tuple(reversed(f)) for f in mesh.faces]
 
-    blender_mesh = bpy.data.meshes.new(name)
+    # pyre-fixme[16]
+    blender_mesh: bpy.types.Mesh = bpy.data.meshes.new(name)
     blender_mesh.from_pydata(points, edges=[], faces=faces)
     blender_mesh.update()
     return blender_mesh
@@ -49,12 +55,15 @@ def new_mesh_obj(
     if isinstance(mesh, cad.Mesh):
         mesh = blender_mesh(f"{name}_mesh", mesh)
 
-    obj = bpy.data.objects.new(name, mesh)
+    # pyre-fixme[16]
+    obj: bpy.types.Object = bpy.data.objects.new(name, mesh)
+    # pyre-fixme[16]
     collection = bpy.data.collections[0]
     collection.objects.link(obj)
 
     # Select the newly created object
     obj.select_set(True)
+    # pyre-fixme[16]
     bpy.context.view_layer.objects.active = obj
 
     return obj
@@ -74,10 +83,12 @@ def boolean_op(
     """
     bpy.ops.object.select_all(action="DESELECT")
     obj1.select_set(True)
+    # pyre-fixme[16]
     bpy.context.view_layer.objects.active = obj1
 
     randn = random.randint(0, 1000000)
     mod_name = f"bool_op_{randn}"
+    # pyre-fixme[16]
     mod = obj1.modifiers.new(name=mod_name, type="BOOLEAN")
     mod.object = obj2
     mod.operation = op
@@ -151,6 +162,7 @@ def apply_to_wall(
 class TransformContext:
     def __init__(self, obj: bpy.types.Object) -> None:
         self.obj = obj
+        # pyre-fixme: 20
         self.bmesh = bmesh.new()
         self.bmesh.from_mesh(obj.data)
 
@@ -176,6 +188,7 @@ class TransformContext:
         if center is None:
             center = (0.0, 0.0, 0.0)
 
+        # pyre-fixme[20]
         bmesh.ops.rotate(
             self.bmesh,
             verts=self.bmesh.verts,
@@ -184,13 +197,16 @@ class TransformContext:
         )
 
     def translate(self, x: float, y: float, z: float) -> None:
+        # pyre-fixme[20]
         bmesh.ops.translate(self.bmesh, verts=self.bmesh.verts, vec=(x, y, z))
 
     def transform(self, tf: cad.Transform) -> None:
         matrix = mathutils.Matrix(tf._data)
+        # pyre-fixme[20]
         bmesh.ops.transform(self.bmesh, verts=self.bmesh.verts, matrix=matrix)
 
     def triangulate(self) -> None:
+        # pyre-fixme[20]
         bmesh.ops.triangulate(self.bmesh, faces=self.bmesh.faces[:])
 
     def mirror_x(self) -> None:
@@ -198,18 +214,22 @@ class TransformContext:
         # Mirror creates new mirrored geometry
         # Set merge_dist to a negative value to prevent any of the new mirrored
         # geometry from being merged with the original vertices.
+        # pyre-fixme[20]
         ret = bmesh.ops.mirror(
             self.bmesh, geom=geom, axis="X", merge_dist=-1.0
         )
         # Delete the original geometry
+        # pyre-fixme[20]
         bmesh.ops.delete(self.bmesh, geom=geom)
         # Reverse the faces to restore the correct normal direction
+        # pyre-fixme[20]
         bmesh.ops.reverse_faces(
             self.bmesh, faces=self.bmesh.faces[:]
         )
 
 
 def set_shading_mode(mode: str) -> None:
+    # pyre-fixme[16]
     for area in bpy.context.workspace.screens[0].areas:
         for space in area.spaces:
             if space.type == "VIEW_3D":

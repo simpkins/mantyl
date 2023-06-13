@@ -6,11 +6,13 @@
 from __future__ import annotations
 
 import math
+# pyre-fixme[21]: blender provides numpy, but no typing stubs
 import numpy
 from typing import List, Optional, Sequence, Tuple, Union
 
 
 class Transform:
+    # pyre-fixme[11]: numpy.array is unknown without the numpy stubs
     def __init__(self, data: Optional[numpy.array] = None) -> None:
         if data is None:
             self._data = numpy.array(
@@ -256,10 +258,12 @@ class MeshPoint:
 
     @property
     def index(self) -> int:
-        if self._index is None:
-            self._index = len(self.mesh.points)
+        index = self._index
+        if index is None:
+            index = len(self.mesh.points)
+            self._index = index
             self.mesh.points.append(self)
-        return self._index
+        return index
 
     @property
     def x(self) -> float:
@@ -272,13 +276,6 @@ class MeshPoint:
     @property
     def z(self) -> float:
         return self.point.z
-
-
-class MeshFace:
-    __slots__ = ["mesh", "_index", "point"]
-    mesh: Mesh
-    _index: int
-    point: Point
 
 
 class Mesh:
