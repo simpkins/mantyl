@@ -9,10 +9,11 @@ import bpy
 
 import enum
 import math
-from typing import Callable, List, Tuple
+from typing import Callable, List, Set, Tuple
 
 from . import blender_util, cad
 from .blender_util import range_cube as blender_range_cube, cylinder as blender_cylinder
+from .cad import MeshPoint
 
 
 class SocketParams:
@@ -60,8 +61,8 @@ class TopClip:
 
     def __init__(self, mesh: cad.Mesh) -> None:
         self.mesh = mesh
-        self.b_arc_points: List[cad.MeshPoint] = []
-        self.t_arc_points: List[cad.MeshPoint] = []
+        self.b_arc_points: List[MeshPoint] = []
+        self.t_arc_points: List[MeshPoint] = []
 
         SocketParams().assign_params_to(self)
         self.top_z = self.z_clip_top
@@ -252,8 +253,8 @@ class BottomClip:
 
     def __init__(self, mesh: cad.Mesh) -> None:
         self.mesh = mesh
-        self.b_arc_points: List[cad.MeshPoint] = []
-        self.t_arc_points: List[cad.MeshPoint] = []
+        self.b_arc_points: List[MeshPoint] = []
+        self.t_arc_points: List[MeshPoint] = []
 
         SocketParams().assign_params_to(self)
         self.top_z = self.z_clip_top
@@ -904,6 +905,7 @@ class SocketHolderBuilder:
             right_point_set, lambda idx: self.points[idx].y
         )
 
+        # pyre-fixme[16]
         bpy.data.objects.remove(obj)
 
     def _split_top_bottom(
@@ -935,7 +937,7 @@ class SocketHolderBuilder:
             tf = cad.Transform().rotate(0.0, 0.0, 180.0).transform(tf)
 
         holder = SocketHolder(mesh)
-        mesh_points: List[cad.MeshPoint] = []
+        mesh_points: List[MeshPoint] = []
         for p in self.points:
             mp = mesh.add_point(p.transform(tf))
             mesh_points.append(mp)

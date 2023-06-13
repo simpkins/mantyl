@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, cast, Dict, Generator, List, Optional, Tuple, Union
 
 import bpy
 
@@ -98,6 +98,12 @@ class Keyboard:
             for row in range(6):
                 yield (col, row)
 
+    def enumerate_keys(self) -> Generator[Tuple[int, int, KeyHole], None, None]:
+        for col, row in self.key_indices():
+            key = self._keys[col][row]
+            assert key is not None
+            yield col, row, key
+
     def thumb_indices(self) -> Generator[Tuple[int, int], None, None]:
         for col in range(2):
             for row in range(3):
@@ -108,13 +114,13 @@ class Keyboard:
     def _define_keys(self) -> None:
         self._keys: List[List[Optional[KeyHole]]] = []
         for col in range(7):
-            self._keys.append([None] * 6)
+            self._keys.append([cast(Optional[KeyHole], None)] * 6)
         for col, row in self.key_indices():
             self._keys[col][row] = KeyHole(self.mesh, self._key_tf(col, row))
 
         self._thumb_keys: List[List[Optional[KeyHole]]] = []
         for col in range(3):
-            self._thumb_keys.append([None] * 3)
+            self._thumb_keys.append([cast(Optional[KeyHole], None)] * 3)
         for col, row in self.thumb_indices():
             self._thumb_keys[col][row] = KeyHole(
                 self.mesh, self._thumb_tf(col, row)
@@ -483,20 +489,26 @@ class Keyboard:
         # Top walls
         self.k02.top_edge()
         for col in range(1, 6):
-            self._keys[col][0].top_edge()
-            self._keys[col][0].top_edge_right(self._keys[col + 1][0])
+            k = self._keys[col][0]
+            assert k is not None
+            k.top_edge()
+            k.top_edge_right(self._keys[col + 1][0])
         self.k60.top_edge()
 
         # Right walls
         for row in range(5):
-            self._keys[6][row].right_edge()
-            self._keys[6][row].right_edge_bottom(self._keys[6][row + 1])
+            k = self._keys[6][row]
+            assert k is not None
+            k.right_edge()
+            k.right_edge_bottom(self._keys[6][row + 1])
         self.k65.right_edge()
 
         # Bottom walls
         for col in range(2, 6):
-            self._keys[col][5].bottom_edge()
-            self._keys[col][5].bottom_edge_right(self._keys[col + 1][5])
+            k = self._keys[col][5]
+            assert k is not None
+            k.bottom_edge()
+            k.bottom_edge_right(self._keys[col + 1][5])
         self.k04.bottom_edge()
         self.k04.bottom_edge_right(self.k14)
         self.k65.bottom_edge()
@@ -623,6 +635,7 @@ class Keyboard:
         columns: List[WallColumn] = []
         for col_idx in range(6, 0, -1):
             k = self._keys[col_idx][0]
+            assert k is not None
 
             # Left and right columns for this key hole
             l = WallColumn()
@@ -674,6 +687,7 @@ class Keyboard:
         columns: List[WallColumn] = []
         for row in range(5, -1, -1):
             k = self._keys[6][row]
+            assert k is not None
             # top and bottom columns
             b = WallColumn()
             t = WallColumn()
@@ -750,6 +764,7 @@ class Keyboard:
         last_row = 5
         for col_idx in range(2, 7):
             k = self._keys[col_idx][last_row]
+            assert k is not None
 
             # Left and right columns for this key hole
             l = WallColumn()
@@ -822,6 +837,7 @@ class Keyboard:
         columns: List[WallColumn] = []
         for col_idx, row_idx in indices:
             k = self._keys[col_idx][row_idx]
+            assert k is not None
 
             t = WallColumn()
             b = WallColumn()
@@ -1152,7 +1168,9 @@ class Keyboard:
         """Generate mesh faces for the thumb key hole section.
         """
         for col, row in self.thumb_indices():
-            self._thumb_keys[col][row].inner_walls()
+            tk = self._thumb_keys[col][row]
+            assert tk is not None
+            tk.inner_walls()
 
         # Connections between key holes
         self.t00.join_bottom(self.t01)
@@ -1999,10 +2017,12 @@ def dsa_keycap(
     mesh = Mesh()
 
     if transform is None:
-        transform = Transform()
+        xtransform = Transform()
+    else:
+        xtransform = transform
 
     def add_xyz(x: float, y: float, z: float) -> MeshPoint:
-        p = Point(x, y, z).transform(transform)
+        p = Point(x, y, z).transform(xtransform)
         return mesh.add_point(p)
 
     tr_z0 = add_xyz(lower_w * 0.5, lower_d * 0.5, z0)
@@ -2109,10 +2129,12 @@ def gen_keyboard(kbd: Keyboard) -> bpy.types.Object:
     edge_weights = kbd.get_bevel_weights(mesh.edges)
     mesh.use_customdata_edge_bevel = True
     for edge_idx, weight in edge_weights.items():
+        # pyre-fixme[16]: incomplete bpy type annotations
         e = mesh.edges[edge_idx]
         e.bevel_weight = weight
 
     # Add a bevel modifier
+    # pyre-fixme[16]: incomplete bpy type annotations
     bevel = obj.modifiers.new(name="BevelCorners", type="BEVEL")
     bevel.width = 2.0
     bevel.limit_method = "WEIGHT"

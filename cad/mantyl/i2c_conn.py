@@ -12,6 +12,7 @@ from typing import List
 
 from . import blender_util
 from . import cad
+from .cad import MeshPoint
 from .keyboard import Keyboard
 
 

@@ -60,8 +60,8 @@ def gen_screw_hole(wall_thickness: float) -> bpy.types.Object:
 
     front_center = mesh.add_xyz(0.0, front_y, 0.0)
     back_center = mesh.add_xyz(0.0, back_y, 0.0)
-    front_points: List[MeshPoint] = []
-    back_points: List[MeshPoint] = []
+    front_points: List[cad.MeshPoint] = []
+    back_points: List[cad.MeshPoint] = []
 
     r = 1.9
     fn = 24

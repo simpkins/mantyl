@@ -129,7 +129,7 @@ def add_foot(
     angle: float,
     phase: float = 0.0,
     dbg: bool = False,
-) -> Tuple[bpy.types.Object, bpy.types.Object]:
+) -> None:
     """
     Add a foot to the keyboard object.
 
@@ -226,7 +226,7 @@ def add_feet(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
         kbd.thumb_tl.out2.x + (mid_dir.x * f),
         kbd.thumb_tl.out2.y + (mid_dir.y * f),
         angle,
-        1.0
+        1.0,
     )
 
 

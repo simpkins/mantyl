@@ -155,7 +155,7 @@ def apply_screw_holder(
             blender_util.union(wall, standoff)
 
 
-def test_clip_holder(show_breakout: bool = True) -> bpy.types.Object:
+def test_clip_holder(show_breakout: bool = True) -> None:
     if show_breakout:
         breakout = sx1509_breakout()
 
@@ -201,7 +201,7 @@ def gen_cross_wall() -> bpy.types.Object:
     return cyls[0]
 
 
-def test_screw_holder(show_breakout: bool = True) -> bpy.types.Object:
+def test_screw_holder(show_breakout: bool = True) -> None:
     show_breakout=False
     if show_breakout:
         breakout = sx1509_breakout()

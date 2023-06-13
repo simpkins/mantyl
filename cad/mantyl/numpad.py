@@ -6,14 +6,37 @@
 from __future__ import annotations
 
 import bpy
-from typing import List
+from typing import List, Tuple
 
 from . import blender_util
-from .cad import Mesh, Transform
+from .cad import Mesh, MeshPoint, Transform
 from .keyboard import KeyHole
 
 
+# pyre-fixme[13]: pyre complains that various members are uninitialized, since
+#   they are initialized in a helper method and not directly in __init__()
 class NumpadPlate:
+    kp1: KeyHole
+    kp2: KeyHole
+    kp3: KeyHole
+    kp4: KeyHole
+    kp5: KeyHole
+    kp6: KeyHole
+    kp7: KeyHole
+    kp8: KeyHole
+    kp9: KeyHole
+    kp0: KeyHole
+    kp_enter: KeyHole
+    kp_extra: KeyHole
+    kp_slash: KeyHole
+    kp_star: KeyHole
+    kp_plus: KeyHole
+    kp_dot: KeyHole
+    tl: Tuple[MeshPoint, MeshPoint]
+    tr: Tuple[MeshPoint, MeshPoint]
+    bl: Tuple[MeshPoint, MeshPoint]
+    br: Tuple[MeshPoint, MeshPoint]
+
     def __init__(self) -> None:
         self.mesh = Mesh()
         self.key_size = 19.0

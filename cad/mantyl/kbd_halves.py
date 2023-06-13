@@ -6,13 +6,14 @@
 from __future__ import annotations
 
 import bpy
+from typing import cast, List, Optional
 
 from . import blender_util
 from . import cad
 from .foot import add_feet
 from .i2c_conn import add_i2c_connector
-from .keyboard import Keyboard, gen_keyboard
-from .key_socket_holder import SocketHolderBuilder, SocketType
+from .keyboard import Keyboard, KeyHole, gen_keyboard
+from .key_socket_holder import SocketHolder, SocketHolderBuilder, SocketType
 from .screw_holes import add_screw_holes
 from . import oled_holder
 from . import sx1509_holder
@@ -126,13 +127,13 @@ def socket_underlay(kbd: Keyboard, mirror: bool = False) -> bpy.types.Object:
 
     holders: List[List[Optional[SocketHolder]]] = []
     for col in range(7):
-        holders.append([None] * 6)
+        holders.append([cast(Optional[SocketHolder], None)] * 6)
 
     # Add all of the socket holders
-    for col, row in kbd.key_indices():
+    for col, row, key in kbd.enumerate_keys():
         # Flip all socket holders, except for the top row where they would
         # otherwise hit the back walls
-        tf = base_transform.transform(kbd._keys[col][row].transform)
+        tf = base_transform.transform(key.transform)
         if row == 0:
             h = top_builder.gen(mesh, tf)
         else:

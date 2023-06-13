@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import bpy
+from typing import Dict, Tuple
 
 from . import cad
 from . import blender_util
@@ -38,12 +39,14 @@ class WristRest:
         edge_weights = self._get_bevel_weights(blend_mesh.edges)
         blend_mesh.use_customdata_edge_bevel = True
         for edge_idx, weight in edge_weights.items():
+            # pyre-fixme[16]
             e = blend_mesh.edges[edge_idx]
             e.bevel_weight = weight
 
         obj = blender_util.new_mesh_obj("wrist_rest", blend_mesh)
 
         # Add a bevel modifier
+        # pyre-fixme[16]
         bevel = obj.modifiers.new(name="BevelCorners", type="BEVEL")
         bevel.width = self.bevel_width
         bevel.limit_method = "WEIGHT"
@@ -84,7 +87,7 @@ class WristRest:
         return results
 
     def _bevel_edge(
-        self, p0: MeshPoint, p1: MeshPoint, weight: float = 1.0
+        self, p0: cad.MeshPoint, p1: cad.MeshPoint, weight: float = 1.0
     ) -> None:
         """Mark that a vertex is along an edge to be beveled."""
         if p0.index < p1.index:
