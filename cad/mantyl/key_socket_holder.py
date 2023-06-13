@@ -6,65 +6,95 @@
 from __future__ import annotations
 
 import bpy
+from dataclasses import dataclass
 
 import enum
 import math
 from typing import Callable, List, Set, Tuple
 
 from . import blender_util, cad
-from .blender_util import range_cube as blender_range_cube, cylinder as blender_cylinder
+from .blender_util import (
+    range_cube as blender_range_cube,
+    cylinder as blender_cylinder,
+)
 from .cad import MeshPoint
 
 
+@dataclass
 class SocketParams:
-    thickness = 1.0
-    socket_h = 2.0
+    thickness: float = 1.0
+    socket_h: float = 2.0
 
-    full_size = 17.4
-    x_left = -full_size * 0.5
-    x_right = full_size * 0.5
-    x_mid_left = -5.3
-    x_mid_right = 6.2
-    y_top = full_size * 0.5
-    y_bottom = -full_size * 0.5
-    z_top = 0.0
-    z_bottom = -thickness
+    full_size: float = 17.4
+    x_left: float = -full_size * 0.5
+    x_right: float = full_size * 0.5
+    x_mid_left: float = -5.3
+    x_mid_right: float = 6.2
+    y_top: float = full_size * 0.5
+    y_bottom: float = -full_size * 0.5
+    z_top: float = 0.0
+    z_bottom: float = -thickness
 
-    z_clip_top = -thickness
-    z_clip_bottom = -thickness - socket_h
+    z_clip_top: float = -thickness
+    z_clip_bottom: float = -thickness - socket_h
 
-    lip_bottom_h = socket_h + 0.05
-    lip_tip_bottom_h = socket_h + 0.134
-    lip_tip_top_h = lip_tip_bottom_h + 0.1
-    lip_top_h = 2.55
-    lip_bottom_z = -thickness - socket_h - 0.55
+    lip_bottom_h: float = socket_h + 0.05
+    lip_tip_bottom_h: float = socket_h + 0.134
+    lip_tip_top_h: float = lip_tip_bottom_h + 0.1
+    lip_top_h: float = 2.55
+    lip_bottom_z: float = -thickness - socket_h - 0.55
 
-    diode_x = 8.0
-    diode_y = -6.55
+    diode_x: float = 8.0
+    diode_y: float = -6.55
 
-    diode_w = 2.1
-    diode_h = 3.9
-
-    def assign_params_to(self, obj) -> None:
-        for name in dir(SocketParams):
-            if name.startswith("__"):
-                continue
-            setattr(obj, name, getattr(self, name))
+    diode_w: float = 2.1
+    diode_h: float = 3.9
 
 
-class TopClip:
-    arc_x = 0.4
-    arc_r = 1.8
-    edge_y = -2.8
+# pyre-fixme[13]: pyre complains that various members are uninitialized, since
+#   they are initialized in a helper method and not directly in __init__()
+class TopClip(SocketParams):
+    arc_x: float = 0.4
+    arc_r: float = 1.8
+    edge_y: float = -2.8
 
-    mid0_x = arc_x - 0.2
+    mid0_x: float = arc_x - 0.2
+
+    t_center: MeshPoint
+    b_center: MeshPoint
+    m0_tl: MeshPoint
+    m0_tr: MeshPoint
+    m0_ml: MeshPoint
+    m0_mr: MeshPoint
+    m0_bl: MeshPoint
+    m0_br: MeshPoint
+    m1_tl: MeshPoint
+    m1_ml: MeshPoint
+    m2_tl: MeshPoint
+    m2_ml: MeshPoint
+    l_tl: MeshPoint
+    l_tr: MeshPoint
+    l_ml: MeshPoint
+    l_mr: MeshPoint
+    l_bl: MeshPoint
+    l_br: MeshPoint
+    r_tl: MeshPoint
+    r_tr: MeshPoint
+    r_ml: MeshPoint
+    r_mr: MeshPoint
+
+    m0_lip0: MeshPoint
+    m0_lip1: MeshPoint
+    m0_lip2: MeshPoint
+    l_lip0: MeshPoint
+    l_lip1: MeshPoint
+    l_lip2: MeshPoint
 
     def __init__(self, mesh: cad.Mesh) -> None:
         self.mesh = mesh
         self.b_arc_points: List[MeshPoint] = []
         self.t_arc_points: List[MeshPoint] = []
 
-        SocketParams().assign_params_to(self)
         self.top_z = self.z_clip_top
         self.bottom_z = self.z_clip_bottom
 
@@ -247,16 +277,40 @@ class TopClip:
         self.mesh.add_tri(self.m0_br, self.m0_lip2, self.m0_lip1)
 
 
-class BottomClip:
+# pyre-fixme[13]: pyre complains that various members are uninitialized, since
+#   they are initialized in a helper method and not directly in __init__()
+class BottomClip(SocketParams):
     l_y = -7.0
     r_y = -8.5
+
+    m_bl: MeshPoint
+    m_br: MeshPoint
+    m0_tr: MeshPoint
+    m0_mr: MeshPoint
+
+    l_tr: MeshPoint
+    l_tl: MeshPoint
+    l_ml: MeshPoint
+    l_mr: MeshPoint
+    l_bl: MeshPoint
+    l_br: MeshPoint
+    r_tr: MeshPoint
+    r_tl: MeshPoint
+    r_ml: MeshPoint
+    r_mr: MeshPoint
+
+    m_lip0: MeshPoint
+    m_lip1: MeshPoint
+    m_lip2: MeshPoint
+    l_lip0: MeshPoint
+    l_lip1: MeshPoint
+    l_lip2: MeshPoint
 
     def __init__(self, mesh: cad.Mesh) -> None:
         self.mesh = mesh
         self.b_arc_points: List[MeshPoint] = []
         self.t_arc_points: List[MeshPoint] = []
 
-        SocketParams().assign_params_to(self)
         self.top_z = self.z_clip_top
         self.bottom_z = self.z_clip_bottom
 
@@ -417,10 +471,9 @@ class BottomClip:
         self.mesh.add_quad(self.l_bl, self.m_bl, self.m_lip2, self.l_lip2)
 
 
-class DiodeClip:
+class DiodeClip(SocketParams):
     def __init__(self, mesh: cad.Mesh) -> None:
         self.mesh = mesh
-        SocketParams().assign_params_to(self)
 
         self.top_wall_thickness = 0.75
         self.diode_x = -6.35
@@ -708,10 +761,10 @@ class SocketHolder:
         # in the keyboard grid.  These are split by the points on the top and
         # bottom of the face.  Within each set of top and bottom, the points
         # are sorted from left to right when looking at the front of the face.
-        self.top_points: Tuple[List[MeshPoint], List[MeshPoint]] = []
-        self.bottom_points: Tuple[List[MeshPoint], List[MeshPoint]] = []
-        self.left_points: Tuple[List[MeshPoint], List[MeshPoint]] = []
-        self.right_points: Tuple[List[MeshPoint], List[MeshPoint]] = []
+        self.top_points: Tuple[List[MeshPoint], List[MeshPoint]] = ([], [])
+        self.bottom_points: Tuple[List[MeshPoint], List[MeshPoint]] = ([], [])
+        self.left_points: Tuple[List[MeshPoint], List[MeshPoint]] = ([], [])
+        self.right_points: Tuple[List[MeshPoint], List[MeshPoint]] = ([], [])
 
     def close_bottom_face(self) -> None:
         self._close_face(self.bottom_points)
@@ -824,7 +877,9 @@ class SocketType(enum.IntEnum):
 
 
 class SocketHolderBuilder:
-    def __init__(self, type: SocketType = SocketType.NORMAL, mirror: bool = False) -> None:
+    def __init__(
+        self, type: SocketType = SocketType.NORMAL, mirror: bool = False
+    ) -> None:
         self.points: List[cad.Point] = []
         self.faces: List[Tuple[int, int, int]] = []
 
@@ -973,7 +1028,9 @@ class SocketHolderBuilder:
         return holder
 
 
-def cad_socket_holder(type: SocketType = SocketType.NORMAL) -> bpy.types.Object:
+def cad_socket_holder(
+    type: SocketType = SocketType.NORMAL
+) -> bpy.types.Object:
     """
     Return the original socket holder object that we generate, before turning
     it into a cad.Mesh.
