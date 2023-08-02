@@ -8,8 +8,8 @@ from __future__ import annotations
 import bpy
 from typing import List, Tuple
 
-from . import blender_util
-from .cad import Mesh, MeshPoint, Transform
+from bcad import blender_util
+from bcad.cad import Mesh, MeshPoint, Transform
 from .keyboard import KeyHole
 
 

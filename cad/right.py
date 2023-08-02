@@ -11,7 +11,7 @@ import os, sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from mantyl import auto_update, blender_util
+from bcad import auto_update, blender_util
 
 # Adjust the camera to better show the keyboard
 blender_util.set_view_distance(350)

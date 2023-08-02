@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import bpy
 
-from . import blender_util
-from . import cad
+from bcad import blender_util
+from bcad import cad
 from . import screw_holes
 
 

@@ -3,7 +3,7 @@
 # Copyright (c) 2023, Adam Simpkins
 #
 
-from . import blender_util
+from bcad import blender_util
 from . import kbd_halves
 
 

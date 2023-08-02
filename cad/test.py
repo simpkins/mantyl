@@ -11,7 +11,7 @@ import os, sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from mantyl import auto_update, blender_util
+from bcad import auto_update, blender_util
 
 blender_util.set_view_distance(350)
-auto_update.main("mantyl.testing.test")
+auto_update.main("mantyl.testing.test", ["bcad", "mantyl"])

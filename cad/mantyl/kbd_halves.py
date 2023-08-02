@@ -8,8 +8,8 @@ from __future__ import annotations
 import bpy
 from typing import cast, List, Optional
 
-from . import blender_util
-from . import cad
+from bcad import blender_util
+from bcad import cad
 from .foot import add_feet
 from .i2c_conn import add_i2c_connector
 from .keyboard import Grid2D, Keyboard, KeyHole, gen_keyboard

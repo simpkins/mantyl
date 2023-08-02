@@ -8,8 +8,8 @@ from __future__ import annotations
 import bpy
 from typing import Dict, Sequence, Tuple
 
-from . import cad
-from . import blender_util
+from bcad import cad
+from bcad import blender_util
 from .foot import add_foot
 from .keyboard import Keyboard
 from .screw_holes import gen_screw_hole

@@ -10,8 +10,8 @@ import bpy
 import math
 from typing import List, Tuple
 
-import mantyl.cad as cad
-from mantyl.blender_util import difference, new_mesh_obj, union
+import bcad.cad as cad
+from bcad.blender_util import difference, new_mesh_obj, union
 from mantyl.keyboard import Keyboard
 
 

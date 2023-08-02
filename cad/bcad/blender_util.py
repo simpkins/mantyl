@@ -11,7 +11,8 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Optional, Tuple, Type, Union
+import sys
+from typing import List, Optional, Tuple, Type, Union
 from types import TracebackType
 
 import bpy
@@ -125,6 +126,12 @@ def union(
     obj1: bpy.types.Object, obj2: bpy.types.Object, apply_mod: bool = True
 ) -> None:
     boolean_op(obj1, obj2, "UNION", apply_mod=apply_mod)
+
+
+def intersect(
+    obj1: bpy.types.Object, obj2: bpy.types.Object, apply_mod: bool = True
+) -> None:
+    boolean_op(obj1, obj2, "INTERSECT", apply_mod=apply_mod)
 
 
 def apply_to_wall(
@@ -272,3 +279,16 @@ def cone(
 ) -> bpy.types.Object:
     mesh = cad.cone(r, h, fn=fn, rotation=rotation)
     return new_mesh_obj(name, mesh)
+
+
+def get_script_args() -> List[str]:
+    """
+    Get the additional command line arguments that were passed to the
+    script when invoking blender.  This returns all arguments after "--".
+
+    The return value can be passed to argparse.ArgumentParser.parse_args()
+    """
+    for idx, arg in enumerate(sys.argv):
+        if arg == "--":
+            return sys.argv[idx + 1 :]
+    return []

@@ -14,8 +14,8 @@ import os, sys
 base_dir: str = os.path.dirname(__file__)
 sys.path.insert(0, base_dir)
 
+from bcad import blender_util
 from mantyl import (
-    blender_util,
     i2c_conn,
     kbd_halves,
     oled_holder,

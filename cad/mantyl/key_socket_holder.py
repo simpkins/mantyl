@@ -12,12 +12,12 @@ import enum
 import math
 from typing import Callable, List, Set, Tuple
 
-from . import blender_util, cad
-from .blender_util import (
+from bcad import blender_util, cad
+from bcad.blender_util import (
     range_cube as blender_range_cube,
     cylinder as blender_cylinder,
 )
-from .cad import MeshPoint
+from bcad.cad import MeshPoint
 
 
 @dataclass

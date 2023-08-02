@@ -18,7 +18,7 @@ from . import wrist_rest
 
 
 def test_numpad() -> None:
-    from . import blender_util
+    from bcad import blender_util
 
     half_offset = 140
 

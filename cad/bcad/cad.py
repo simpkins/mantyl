@@ -6,23 +6,25 @@
 from __future__ import annotations
 
 import math
-# pyre-fixme[21]: blender provides numpy, but no typing stubs
-import numpy
 from typing import List, Optional, Sequence, Tuple, Union
+
+# Blender modules
+import mathutils
 
 
 class Transform:
-    # pyre-fixme[11]: numpy.array is unknown without the numpy stubs
-    def __init__(self, data: Optional[numpy.array] = None) -> None:
+    def __init__(self, data: Optional[mathutils.Matrix] = None) -> None:
         if data is None:
-            self._data: numpy.array = numpy.array(
+            self._data: mathutils.Matrix = mathutils.Matrix(
                 ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
             )
         else:
-            self._data: numpy.array = data
+            self._data: mathutils.Matrix = data
 
     def __str__(self) -> str:
         row_strs = []
+        # pyre-fixme[16]: type stubs for mathutils.Matrix do not include
+        #   __iter__
         for row in self._data:
             row_contents = ", ".join(str(elem) for elem in row)
             row_strs.append(f"[{row_contents}]")
@@ -33,25 +35,29 @@ class Transform:
         return Point(self._data[0][3], self._data[1][3], self._data[2][3])
 
     def apply(self, point: Point) -> Point:
-        x = numpy.matmul(
-            self._data, numpy.array((point.x, point.y, point.z, 1))
-        )
+        x = self._data @ mathutils.Matrix((point.x, point.y, point.z, 1))
+        # pyre-fixme[6]: pyre doesn't know the multiply result is always a 3x1
+        #   vector of floats
         return Point(x[0], x[1], x[2])
 
     def transform(self, tf: Transform) -> Transform:
-        return Transform(numpy.matmul(tf._data, self._data))
+        # pyre-fixme[6]: pyre doesn't know that the multiply result will always
+        #   be another matrix
+        return Transform(tf._data @ self._data)
 
     def translate(self, x: float, y: float, z: float) -> Transform:
-        x = numpy.array(
+        tl = mathutils.Matrix(
             ((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z), (0, 0, 0, 1))
         )
-        return Transform(numpy.matmul(x, self._data))
+        # pyre-fixme[6]: pyre doesn't know that the multiply result will always
+        #   be another matrix
+        return Transform(tl @ self._data)
 
     def rotate(self, x: float, y: float, z: float) -> Transform:
         x_r = math.radians(x)
         y_r = math.radians(y)
         z_r = math.radians(z)
-        x = numpy.array(
+        rot = mathutils.Matrix(
             (
                 (
                     math.cos(y_r) * math.cos(z_r),
@@ -78,7 +84,9 @@ class Transform:
                 (0, 0, 0, 1),
             )
         )
-        return Transform(numpy.matmul(x, self._data))
+        # pyre-fixme[6]: pyre doesn't know that the multiply result will always
+        #   be another matrix
+        return Transform(rot @ self._data)
 
 
 class Point:

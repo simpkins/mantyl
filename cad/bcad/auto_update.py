@@ -25,36 +25,22 @@ from typing import Dict, List, Optional, Set, Tuple
 
 _instance: Optional[MonitorOperatorBase] = None
 
-MONITOR_PATH = "main.py"
-
-# Additional dependencies to monitor.
-# These should be listed in dependency order: if module A imports module B,
-# B should be listed first in this list.
-#
-# In theory it would be nice to use the modulefinder library to automatically
-# find the dependencies of the script.  Unfortunately modulefinder cannot
-# currently handle numpy: https://bugs.python.org/issue40350
-_DEPENDENCIES: List[Tuple[Path, str]] = [
-    (Path("mantyl/cad.py"), "mantyl.cad"),
-    (Path("mantyl/blender_util.py"), "mantyl.blender_util"),
-    (Path("mantyl/keyboard.py"), "mantyl.keyboard"),
-    (Path("mantyl/foot.py"), "mantyl.foot"),
-    (Path("mantyl/screw_holes.py"), "mantyl.screw_holes"),
-    (Path("mantyl/i2c_conn.py"), "mantyl.i2c_conn"),
-    (Path("mantyl/sx1509_holder.py"), "mantyl.sx1509_holder"),
-    (Path("mantyl/oled_holder.py"), "mantyl.oled_holder"),
-    (Path("mantyl/usb_cutout.py"), "mantyl.usb_cutout"),
-    (Path("mantyl/wrist_rest.py"), "mantyl.wrist_rest"),
-    (Path("mantyl/key_socket_holder.py"), "mantyl.key_socket_holder"),
-    (Path("mantyl/numpad.py"), "mantyl.numpad"),
-    (Path("mantyl/kbd_halves.py"), "mantyl.kbd_halves"),
-    (Path("mantyl/kbd_middle.py"), "mantyl.kbd_middle"),
-    (Path("mantyl/testing.py"), "mantyl.testing"),
-]
-
 
 class MonitorOperatorBase(bpy.types.Operator):
     """Monitor an external script for changes and re-run on change."""
+
+    # pyre-fixme[31]: bpy property types aren't really types
+    poll_interval: bpy.props.FloatProperty(name="poll_interval", default=0.1)
+
+    # pyre-fixme[31]: bpy property types aren't really types
+    delete_all: bpy.props.BoolProperty(name="delete_all", default=True)
+
+    # This is really a list, but blender does not appear to support passing
+    # CollectionProperty values to operators when invoking them, so we pass it
+    # as a comma-separated string.
+    # pyre-fixme[31]: bpy property types aren't really types
+    monitored_packages: bpy.props.StringProperty(name="monitored_packages")
+    _monitored_packages: List[str] = []
 
     # The REGISTER option allows our messages to be logged to the info console
     bl_options = {"REGISTER"}
@@ -62,8 +48,9 @@ class MonitorOperatorBase(bpy.types.Operator):
     _timer: Optional[bpy.types.Timer] = None
     stop: bool = False
 
+    _monitored_paths: List[Path] = []
+    _monitored_modules: List[str] = []
     _timestamps: Dict[Path, Optional[float]] = {}
-    _monitor_modules: List[Tuple[Path, Optional[str]]] = []
     _name: str = ""
 
     @classmethod
@@ -94,20 +81,41 @@ class MonitorOperatorBase(bpy.types.Operator):
             return {"CANCELLED"}
         _instance = self
 
-        self._timestamps = {}
-        self._monitor_modules = self._init_monitor_modules()
+        self._monitored_packages = self.monitored_packages.split(",")
 
-        self.report({"INFO"}, f"monitoring external script {self._name}")
-        self._timestamps = self._get_timestamps()
-        self.on_change()
+        self._init()
+        self.on_change(force_refresh_module_list=True)
 
         wm = context.window_manager
-        self._timer = wm.event_timer_add(0.1, window=context.window)
+        self._timer = wm.event_timer_add(
+            self.poll_interval, window=context.window
+        )
         wm.modal_handler_add(self)
         return {"RUNNING_MODAL"}
 
-    def _init_monitor_modules(self) -> List[Tuple[Path, Optional[str]]]:
-        raise NotImplementedError()
+    def _refresh_monitored_modules(self) -> None:
+        self._monitored_modules, self._monitored_paths = (
+            self._init_monitor_modules()
+        )
+
+        self.report({"INFO"}, f"monitoring modules for {self._name}")
+        self._timestamps = self._get_timestamps()
+
+    def _init_monitor_modules(self) -> Tuple[List[str], List[Path]]:
+        monitored_modules: List[str] = []
+        monitored_paths: List[Path] = []
+
+        for mod_name, module in sys.modules.items():
+            mod_path = getattr(module, "__file__", None)
+            if mod_path is None:
+                continue
+
+            for pkg in self._monitored_packages:
+                if mod_name == pkg or mod_name.startswith(pkg + "."):
+                    monitored_modules.append(mod_name)
+                    monitored_paths.append(Path(mod_path))
+
+        return monitored_modules, monitored_paths
 
     def cancel(self, context: bpy.types.Context) -> None:
         wm = context.window_manager
@@ -121,30 +129,33 @@ class MonitorOperatorBase(bpy.types.Operator):
             return
 
         self._timestamps = current
-
-        # Reload all modules.
-        # This has to be done in the proper order, where modules are reloaded
-        # after any other modules they depend on.
-        importlib.invalidate_caches()
-        for _path, module_name in self._monitor_modules:
-            if module_name is None:
-                continue
-            mod = sys.modules.get(module_name, None)
-            if mod is None:
-                # This module isn't loaded, so we don't need to reload it.
-                continue
-            try:
-                importlib.reload(mod)
-            except Exception as ex:
-                self._report_error(f"error reloading {module_name}")
-                return
-
+        self._purge_loaded_modules()
         self._timestamps = current
         self.on_change()
 
+    def _purge_loaded_modules(self) -> None:
+        # We simply delete all currently monitored modules from sys.modules
+        # Calling self._run() should then re-import any modules that are needed
+        #
+        # Note that this behavior is different than using importlib.reload():
+        # importlib.reload() keeps the old module objects and replaces their
+        # contents with the newer info.  We are replacing the module objects
+        # wholesale.  It is possible that the old modules remain around if they
+        # are still referenced, but in general we don't really care about this.
+        #
+        # Replacing the modules wholesale and letting them be re-imported as
+        # they are used is simpler, since we don't need to worry about
+        # re-importing modules in the correct order to ensure that some
+        # dependent modules always get reloaded before other modules that
+        # depend on them.
+        importlib.invalidate_caches()
+        for mod_name in self._monitored_modules:
+            print(f"forget module {mod_name}")
+            sys.modules.pop(mod_name, None)
+
     def _get_timestamps(self) -> Dict[Path, Optional[float]]:
         result: Dict[Path, Optional[float]] = {}
-        for path, _mod_name in self._monitor_modules:
+        for path in self._monitored_paths:
             result[path] = self._get_timestamp(path)
         return result
 
@@ -155,15 +166,37 @@ class MonitorOperatorBase(bpy.types.Operator):
             return None
         return s.st_mtime
 
-    def on_change(self) -> None:
+    def on_change(self, force_refresh_module_list: bool = False) -> None:
+        if self.delete_all:
+            if bpy.context.object is not None:
+                bpy.ops.object.mode_set(mode="OBJECT")
+            bpy.ops.object.select_all(action="SELECT")
+            bpy.ops.object.delete(use_global=False)
+
         print("=" * 60, file=sys.stderr)
         print(f"Running {self._name}...", file=sys.stderr)
         self.report({"INFO"}, f"running {self._name}")
+
+        error = False
         try:
             self._run()
             print(f"Finished {self._name}")
         except Exception as ex:
+            # If your editor replaces files by removing the old one before
+            # writing out the new file, we can attempt to reload the module
+            # before it has been written out completely, which will result in
+            # an error here.  This is okay, we will keep monitoring and
+            # will reload again once the editor has finished writing out the
+            # full new file.
             self._report_error(f"error running {self._name}")
+            error = True
+
+        if force_refresh_module_list or not error:
+            # Only refresh the list of monitored modules after a successful run.
+            self._refresh_monitored_modules()
+
+    def _init(self) -> None:
+        pass
 
     def _run(self) -> None:
         raise NotImplementedError("must be implemented by a subclass")
@@ -200,23 +233,33 @@ class ScriptMonitorOperator(MonitorOperatorBase):
     _local_dir: Path = Path()
     _abs_path: Path = Path()
     # pyre-fixme[31]: bpy property types aren't really types
-    path: bpy.props.StringProperty(name="path")
+    path: bpy.props.StringProperty(name="path", default="main.py")
 
-    def _init_monitor_modules(self) -> List[Tuple[Path, Optional[str]]]:
+    def _init(self) -> None:
         self._local_dir = Path(bpy.data.filepath).parent.resolve()
-        if self.path:
-            self._abs_path = self._local_dir / self.path
-        else:
-            self._abs_path = self._local_dir / MONITOR_PATH
+        self._abs_path = self._local_dir / self.path
         self._name = str(self._abs_path)
 
-        monitor_modules: List[Tuple[Path, Optional[str]]] = [
-            (self._local_dir / path, mod_name)
-            for path, mod_name in _DEPENDENCIES
-        ]
-        monitor_modules.append((self._abs_path, None))
+    def _init_monitor_modules(self) -> Tuple[List[str], List[Path]]:
+        if self.monitored_packages is not None:
+            # If an explicit set of packages to monitor was specified,
+            # just use that.
+            return super()._init_monitor_modules()
 
-        return monitor_modules
+        monitored_modules: List[str] = []
+        monitored_paths: List[Path] = [self._abs_path]
+
+        for mod_name, module in sys.modules.items():
+            mod_path_str = getattr(module, "__file__", None)
+            if mod_path_str is None:
+                continue
+            mod_path = Path(mod_path_str)
+
+            if self._local_dir in mod_path.parents:
+                monitored_modules.append(mod_name)
+                monitored_paths.append(Path(mod_path))
+
+        return monitored_modules, monitored_paths
 
     def _run(self) -> None:
         global_namespace = {
@@ -233,16 +276,13 @@ class FunctionMonitorOperator(MonitorOperatorBase):
 
     # pyre-fixme[31]: bpy property types aren't really types
     function: bpy.props.StringProperty(name="function")
-    # pyre-fixme[31]: bpy property types aren't really types
-    delete_all: bpy.props.BoolProperty(name="delete_all", default=True)
 
     _local_dir: Path = Path()
     _mod_name: str = ""
     _fn_name: str = ""
 
-    def _init_monitor_modules(self) -> List[Tuple[Path, Optional[str]]]:
+    def _init(self) -> None:
         self._name = self.function
-
         parts = self.function.rsplit(".", 1)
         if len(parts) != 2:
             raise Exception(
@@ -250,24 +290,19 @@ class FunctionMonitorOperator(MonitorOperatorBase):
             )
         self._mod_name, self._fn_name = parts
 
-        importlib.import_module(self._mod_name)
-
-        self._local_dir = Path(bpy.data.filepath).parent.resolve()
-        monitor_modules: List[Tuple[Path, Optional[str]]] = [
-            (self._local_dir / path, mod_name)
-            for path, mod_name in _DEPENDENCIES
-        ]
-
-        return monitor_modules
+        # If monitored_packages was not specified, default to monitoring the
+        # entire package that contains the module we are running.
+        if not self.monitored_packages:
+            parts = self._mod_name.rsplit(".", 1)
+            if len(parts) == 2:
+                pkg_name = parts[0]
+                self.monitored_packages = pkg_name
+            else:
+                # If this module is not in a package, just monitor the module
+                self.monitored_packages = self._mod_name
 
     def _run(self) -> None:
-        if self.delete_all:
-            if bpy.context.object is not None:
-                bpy.ops.object.mode_set(mode="OBJECT")
-            bpy.ops.object.select_all(action="SELECT")
-            bpy.ops.object.delete(use_global=False)
-
-        module = sys.modules[self._mod_name]
+        module = importlib.import_module(self._mod_name)
         fn = getattr(module, self._fn_name)
         fn()
 
@@ -298,11 +333,16 @@ def unregister() -> None:
     bpy.types.TOPBAR_MT_edit.remove(menu_func)
 
 
-def main(fn_name: str) -> None:
+def main(fn_name: str, monitored_packages: Optional[List[str]] = None) -> None:
     try:
+        monitored_packages = monitored_packages or []
+        monitored_packages_str = ",".join(monitored_packages)
+
         register()
         # pyre-fixme[16]: external_function_monitor is dynamically registered
-        bpy.ops.script.external_function_monitor(function=fn_name)
+        bpy.ops.script.external_function_monitor(
+            function=fn_name, monitored_packages=monitored_packages_str
+        )
     except Exception as ex:
         import logging
 
