@@ -30,10 +30,7 @@ def test_numpad() -> None:
     with blender_util.TransformContext(left) as ctx:
         ctx.translate(-half_offset, 0.0, 0.0)
 
-    np = numpad.test()
-    with blender_util.TransformContext(np) as ctx:
-        ctx.rotate(12.0, "X")
-        ctx.translate(-9.5, 15.0, 70.0)
+    numpad.test()
 
 
 def test() -> None:

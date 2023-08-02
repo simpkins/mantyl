@@ -1006,7 +1006,7 @@ class Keyboard:
                 0.0,
             )
         )
-        ic.out2 = self.mesh.add_point(Point(ic.out3.x, ic.out3.y, ic.out1.z))
+        ic.out2 = self.mesh.add_point(Point(ic.out3.x, ic.out3.y, ic.out1.z + 2.0))
 
         return ic
 
@@ -1021,7 +1021,7 @@ class Keyboard:
         oc.in1 = k.add_point(-k.outer_w - 2.0, k.outer_h + 2.0, k.mid_height)
 
         oc.out2 = self.mesh.add_point(
-            Point(bottom_out_x, oc.out1.y + 6.0, oc.out1.z - 2.0)
+            Point(bottom_out_x, oc.out1.y + 6.0, oc.out1.z)
         )
         oc.out3 = self.mesh.add_point(Point(oc.out2.x, oc.out2.y, 0.0))
         oc.in3 = self.mesh.add_point(
@@ -1040,12 +1040,15 @@ class Keyboard:
     def _left_wall_straighten(self, segment: List[WallColumn]) -> None:
         dx = segment[0].out2.x - segment[-1].out2.x
         dy = segment[0].out2.y - segment[-1].out2.y
+        dz = segment[0].out2.z - segment[-1].out2.z
 
         for idx in range(1, len(segment) - 1):
             col = segment[idx]
             fx = (col.out2.x - segment[-1].out2.x) / dx
             fy = (col.out2.y - segment[-1].out2.y) / dy
+            fz = (col.out2.z - segment[-1].out2.z) / dz
             col.out2.point.x = segment[-1].out2.x + (fy * dx)
+            col.out2.point.z = segment[-1].out2.z + (fy * dz)
 
             col.out3.point.x = col.out2.x
             col.in3.point.x = col.out3.x + self.wall_thickness
@@ -1062,7 +1065,7 @@ class Keyboard:
         segment2 = self._left_wall_helper(
             [(0, 2), (0, 3), (0, 4)],
             x_aligned=False,
-            far_off=Point(-7.8, 0.0, -2.0),
+            far_off=Point(-7.8, 0.0, 0.0),
         )
 
         oc = self._left_wall_outer_corner(segment2[0].out3.x)
@@ -1521,6 +1524,7 @@ class Keyboard:
         back_wall_delta = thumb_wall[-1].in2.point - thumb_wall[-1].out2.point
 
         self.mesh.add_quad(bu3, self.t10.u_tr, thumb_wall[-1].out1, bu4)
+        self.thumb_bu4 = bu4
 
         # Lower thumb area face from the thumb grid to the wall
         bl1 = self.t21.add_point(

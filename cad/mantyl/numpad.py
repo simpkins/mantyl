@@ -111,6 +111,17 @@ class NumpadPlate:
         self.bl = (self.u_bl, self.l_bl)
         self.br = (self.u_br, self.l_br)
 
+        top_y2 = top_y + 5.2265
+        self.tr2 = (
+            self.mesh.add_xyz(right_x, top_y2, upper_z),
+            self.mesh.add_xyz(right_x, top_y2, lower_z),
+        )
+        self.tl2 = (
+            self.mesh.add_xyz(left_x, top_y2, upper_z),
+            self.mesh.add_xyz(left_x, top_y2, lower_z),
+        )
+        self.tr2 = self.tr2
+
     def _join_keys(self) -> None:
         self.kp_extra.join_bottom(self.kp7)
         self.kp_slash.join_bottom(self.kp8)
@@ -207,12 +218,7 @@ class NumpadPlate:
         )
         self._fan(
             self.br,
-            [
-                self.tr,
-                self.kp_plus.br,
-                self.kp_enter.tr,
-                self.kp_enter.br,
-            ],
+            [self.tr, self.kp_plus.br, self.kp_enter.tr, self.kp_enter.br],
         )
 
         # Bottom
@@ -225,15 +231,7 @@ class NumpadPlate:
                 self.kp_dot.bl,
             ],
         )
-        self._fan(
-            self.bl,
-            [
-                self.br,
-                self.kp_dot.bl,
-                self.kp0.br,
-                self.kp0.bl,
-            ],
-        )
+        self._fan(self.bl, [self.br, self.kp_dot.bl, self.kp0.br, self.kp0.bl])
 
         # Left
         self._fan(
@@ -270,10 +268,88 @@ class NumpadPlate:
             tri(p[0], l[idx + 1][0], l[idx][0])
             tri(p[1], l[idx][1], l[idx + 1][1])
 
+    def add_walls(self, rkbd: Keyboard, lkbd: Keyboard) -> None:
+        rthumb_tr = self.mesh.add_point(rkbd.thumb_tr.out1)
+        rthumb_tl = self.mesh.add_point(rkbd.thumb_tl.out1)
+        rthumb_tl_b = self.mesh.add_xyz(rthumb_tl.x, rthumb_tl.y, 0.0)
+
+        lthumb_tl = self.mesh.add_point(lkbd.thumb_tr.out1)
+        lthumb_tr = self.mesh.add_point(lkbd.thumb_tl.out1)
+        lthumb_tr_b = self.mesh.add_xyz(lthumb_tr.x, lthumb_tr.y, 0.0)
+
+        self.mesh.add_tri(rthumb_tr, rthumb_tl, self.br[0])
+        self.mesh.add_tri(lthumb_tr, lthumb_tl, self.bl[0])
+        self.mesh.add_quad(lthumb_tr, self.bl[0], self.br[0], rthumb_tl)
+        self.mesh.add_quad(lthumb_tr, rthumb_tl, rthumb_tl_b, lthumb_tr_b)
+
+        rthumb_conn_tr = self.mesh.add_point(rkbd.thumb_bu4)
+        self.mesh.add_tri(rthumb_tr, self.br[0], rthumb_conn_tr)
+        lthumb_conn_tl = self.mesh.add_point(lkbd.thumb_bu4)
+        self.mesh.add_tri(lthumb_tl, self.bl[0], lthumb_conn_tl)
+
+        right_wall = [
+            self.mesh.add_point(wp.out2) for wp in reversed(rkbd.left_wall)
+        ]
+        right_wall.append(self.mesh.add_point(rkbd.bl.out2))
+
+        self.mesh.add_tri(rthumb_conn_tr, self.br[0], right_wall[0])
+        self.mesh.add_tri(self.br[0], right_wall[1], right_wall[0])
+        self.mesh.add_tri(self.br[0], right_wall[2], right_wall[1])
+        self.mesh.add_tri(self.br[0], right_wall[3], right_wall[2])
+        self.mesh.add_tri(self.br[0], self.tr[0], right_wall[3])
+        self.mesh.add_tri(self.tr[0], right_wall[4], right_wall[3])
+        self.mesh.add_tri(self.tr[0], right_wall[5], right_wall[4])
+        self.mesh.add_tri(self.tr[0], right_wall[6], right_wall[5])
+        self.mesh.add_tri(self.tr[0], right_wall[7], right_wall[6])
+        self.mesh.add_tri(self.tr[0], right_wall[8], right_wall[7])
+        self.mesh.add_tri(self.tr[0], right_wall[9], right_wall[8])
+        self.mesh.add_tri(self.tr2[0], self.tr[0], right_wall[9])
+
+        left_wall = [
+            self.mesh.add_point(wp.out2) for wp in reversed(lkbd.left_wall)
+        ]
+        left_wall.append(self.mesh.add_point(lkbd.bl.out2))
+        self.mesh.add_tri(lthumb_conn_tl, self.bl[0], left_wall[0])
+        self.mesh.add_tri(self.bl[0], left_wall[1], left_wall[0])
+        self.mesh.add_tri(self.bl[0], left_wall[2], left_wall[1])
+        self.mesh.add_tri(self.bl[0], left_wall[3], left_wall[2])
+        self.mesh.add_tri(self.bl[0], self.tl[0], left_wall[3])
+        self.mesh.add_tri(self.tl[0], left_wall[4], left_wall[3])
+        self.mesh.add_tri(self.tl[0], left_wall[5], left_wall[4])
+        self.mesh.add_tri(self.tl[0], left_wall[6], left_wall[5])
+        self.mesh.add_tri(self.tl[0], left_wall[7], left_wall[6])
+        self.mesh.add_tri(self.tl[0], left_wall[8], left_wall[7])
+        self.mesh.add_tri(self.tl[0], left_wall[9], left_wall[8])
+        self.mesh.add_tri(self.tl2[0], self.tl[0], left_wall[9])
+
+        self.mesh.add_quad(self.tr[0], self.tl[0], self.tl2[0], self.tr2[0])
+
+
+def gen_numpad() -> Mesh:
+    from .keyboard import Keyboard
+
+    rkbd = Keyboard()
+    rkbd.gen_mesh()
+
+    lkbd = Keyboard()
+    lkbd.gen_mesh()
+
+    half_offset = 140
+    right_tf = Transform().translate(half_offset, 0.0, 0.0)
+    left_tf = Transform().mirror_x().translate(-half_offset, 0.0, 0.0)
+    rkbd.mesh.transform(right_tf)
+    lkbd.mesh.transform(left_tf)
+
+    np = NumpadPlate()
+    np.mesh.rotate(12.0, 0.0, 0.0)
+    np.mesh.translate(-9.5, 15.0, 70.0)
+
+    np.add_walls(rkbd, lkbd)
+    return np.mesh
+
 
 def test() -> bpy.types.Object:
-    np = NumpadPlate()
-
-    blend_mesh = blender_util.blender_mesh("numpad_mesh", np.mesh)
+    mesh = gen_numpad()
+    blend_mesh = blender_util.blender_mesh("numpad_mesh", mesh)
     obj = blender_util.new_mesh_obj("numpad", blend_mesh)
     return obj
