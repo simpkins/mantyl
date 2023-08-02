@@ -2241,7 +2241,6 @@ def gen_keyboard(kbd: Keyboard) -> bpy.types.Object:
     # Set bevel weights on the edges
     # pyre-fixme[6]: inaccurate bpy type annotations
     edge_weights = kbd.get_bevel_weights(mesh.edges)
-    mesh.use_customdata_edge_bevel = True
     for edge_idx, weight in edge_weights.items():
         # pyre-fixme[16]: incomplete bpy type annotations
         e = mesh.edges[edge_idx]

@@ -1,7 +1,6 @@
 # Running the Mesh Generation Code
 
-This code requires Blender 2.91+ for its improved boolean operator support.
-I have primarily been using Blender 3.1.2 for development.
+This code requires Blender 3.4+.
 
 ## Generating STL Files
 

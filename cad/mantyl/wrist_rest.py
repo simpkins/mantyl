@@ -38,7 +38,6 @@ class WristRest:
         # Set bevel weights on the edges
         # pyre-fixme[6]: blender type stubs are inaccurate
         edge_weights = self._get_bevel_weights(blend_mesh.edges)
-        blend_mesh.use_customdata_edge_bevel = True
         for edge_idx, weight in edge_weights.items():
             # pyre-fixme[16]
             e = blend_mesh.edges[edge_idx]
