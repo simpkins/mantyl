@@ -88,6 +88,24 @@ class Transform:
         #   be another matrix
         return Transform(rot @ self._data)
 
+    def mirror_x(self) -> Transform:
+        mirror = mathutils.Matrix(
+            ((-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
+        )
+        return Transform(mirror @ self._data)
+
+    def mirror_y(self) -> Transform:
+        mirror = mathutils.Matrix(
+            ((0, 0, 0, 0), (0, -1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
+        )
+        return Transform(mirror @ self._data)
+
+    def mirror_z(self) -> Transform:
+        mirror = mathutils.Matrix(
+            ((0, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1))
+        )
+        return Transform(mirror @ self._data)
+
 
 class Point:
     __slots__ = ["x", "y", "z"]
@@ -289,12 +307,15 @@ class MeshPoint:
 class Mesh:
     def __init__(self) -> None:
         self.points: List[MeshPoint] = []
+        self.all_points: List[MeshPoint] = []
         self.faces: List[
             Union[Tuple[int, int, int], Tuple[int, int, int, int]]
         ] = []
 
     def add_point(self, point: Point) -> MeshPoint:
-        return MeshPoint(self, point=point)
+        mp = MeshPoint(self, point=point)
+        self.all_points.append(mp)
+        return mp
 
     def add_xyz(self, x: float, y: float, z: float) -> MeshPoint:
         return self.add_point(Point(x, y, z))
@@ -312,7 +333,7 @@ class Mesh:
         return index
 
     def transform(self, tf: Transform) -> None:
-        for mp in self.points:
+        for mp in self.all_points:
             mp.point = mp.point.transform(tf)
 
     def rotate(self, x: float, y: float, z: float) -> None:
@@ -324,7 +345,7 @@ class Mesh:
         self.transform(tf)
 
     def mirror_x(self) -> None:
-        for mp in self.points:
+        for mp in self.all_points:
             mp.point.x = -1.0 * mp.x
         self.faces = [tuple(reversed(face)) for face in self.faces]
 
