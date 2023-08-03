@@ -92,18 +92,24 @@ class Transform:
         mirror = mathutils.Matrix(
             ((-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
         )
+        # pyre-fixme[6]: pyre doesn't know that the multiply result will always
+        #   be another matrix
         return Transform(mirror @ self._data)
 
     def mirror_y(self) -> Transform:
         mirror = mathutils.Matrix(
             ((0, 0, 0, 0), (0, -1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
         )
+        # pyre-fixme[6]: pyre doesn't know that the multiply result will always
+        #   be another matrix
         return Transform(mirror @ self._data)
 
     def mirror_z(self) -> Transform:
         mirror = mathutils.Matrix(
             ((0, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1))
         )
+        # pyre-fixme[6]: pyre doesn't know that the multiply result will always
+        #   be another matrix
         return Transform(mirror @ self._data)
 
 

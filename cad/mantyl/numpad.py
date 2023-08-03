@@ -10,7 +10,8 @@ from typing import List, Tuple
 
 from bcad import blender_util
 from bcad.cad import Mesh, MeshPoint, Plane, Point, Transform
-from .keyboard import KeyHole
+from .keyboard import Keyboard, KeyHole
+
 
 
 # pyre-fixme[13]: pyre complains that various members are uninitialized, since
@@ -45,6 +46,10 @@ class NumpadPlate:
     l_tr: MeshPoint
     l_bl: MeshPoint
     l_br: MeshPoint
+    tr_wall: MeshPoint
+    tl_wall: MeshPoint
+    perim: List[Tuple[MeshPoint, MeshPoint]]
+    perim_floor: List[Tuple[MeshPoint, MeshPoint]]
 
     wall_thickness: float = 4.0
 
@@ -284,7 +289,9 @@ class NumpadPlate:
         rplane = Plane(high_pt, pt.point, rneighbor.point)
         rplane = rplane.shifted_along_normal(self.wall_thickness)
 
-        p0, p1 = lplane.intersect_plane(rplane)
+        intersect_result = lplane.intersect_plane(rplane)
+        assert intersect_result is not None, "walls are parallel"
+        p0, p1 = intersect_result
         return self.mesh.add_xyz(p0.x, p0.y, 0.0)
 
     def _inner_perim_point(
@@ -409,15 +416,6 @@ class NumpadPlate:
         ]
         lperim_in = [self.mesh.add_xyz(-rp.x, rp.y, rp.z) for rp in rperim_in]
 
-        self.rperim_out = rperim_out
-        self.rperim_in = rperim_in
-        self.rperim_floor_out = rperim_floor_out
-        self.rperim_floor_in = rperim_floor_in
-        self.lperim_out = lperim_out
-        self.lperim_in = lperim_in
-        self.lperim_floor_out = lperim_floor_out
-        self.lperim_floor_in = lperim_floor_in
-
         rperim = list(zip(rperim_out, rperim_in))
         lperim = list(zip(lperim_out, lperim_in))
         rperim_floor = list(zip(rperim_floor_out, rperim_floor_in))
@@ -457,8 +455,6 @@ class NumpadPlate:
 
 
 def gen_numpad_mesh(half_offset: float) -> Mesh:
-    from .keyboard import Keyboard
-
     rkbd = Keyboard()
     rkbd.gen_mesh()
 

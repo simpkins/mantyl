@@ -87,6 +87,7 @@ class Keyboard:
     thumb_tr: ThumbColumn
     thumb_tr_connect: MeshPoint
     thumb_br_connect: MeshPoint
+    thumb_bu4: MeshPoint
 
     def __init__(self) -> None:
         self.wall_thickness = 4.0
