@@ -113,8 +113,8 @@ class NumpadPlate:
         self.l_tr = self.mesh.add_xyz(right_x, top_y, lower_z)
         # Move the lower bottom corners in slightly, to avoid them being
         # to close to the inner walls
-        self.l_bl = self.mesh.add_xyz(left_x + 3.0, bottom_y + 1.5, lower_z)
-        self.l_br = self.mesh.add_xyz(right_x - 3.0, bottom_y + 1.5, lower_z)
+        self.l_bl = self.mesh.add_xyz(left_x + 1.5, bottom_y + 1.5, lower_z)
+        self.l_br = self.mesh.add_xyz(right_x - 1.5, bottom_y + 1.5, lower_z)
 
         self.tl = (self.u_tl, self.l_tl)
         self.tr = (self.u_tr, self.l_tr)
@@ -205,7 +205,6 @@ class NumpadPlate:
                 self.kp_star.tr,
                 self.kp_minus.tl,
                 self.kp_minus.tr,
-                self.tr,
             ],
         )
 
@@ -558,7 +557,7 @@ def test() -> bpy.types.Object:
     half_offset = 140
     obj = gen_numpad_obj(half_offset)
 
-    show_halves = True
+    show_halves = False
     if show_halves:
         from . import kbd_halves
 
