@@ -8,7 +8,6 @@ import bpy
 from . import i2c_conn
 from . import foot
 from . import kbd_halves
-from . import kbd_middle
 from . import keyboard
 from . import numpad
 from . import oled_holder
@@ -17,29 +16,8 @@ from . import usb_cutout
 from . import wrist_rest
 
 
-def test_numpad() -> None:
-    from bcad import blender_util
-
-    half_offset = 140
-
-    show_halves = True
-    if show_halves:
-        right = kbd_halves.right_shell_simple()
-        with blender_util.TransformContext(right) as ctx:
-            ctx.translate(half_offset, 0.0, 0.0)
-
-        left = kbd_halves.left_shell_simple()
-        with blender_util.TransformContext(left) as ctx:
-            ctx.translate(-half_offset, 0.0, 0.0)
-
-    numpad.test()
-
-
 def test() -> None:
-    #kbd_middle.middle()
-
-    test_numpad()
-    #numpad.test()
+    numpad.test()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()

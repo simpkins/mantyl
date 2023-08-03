@@ -456,7 +456,7 @@ class NumpadPlate:
             )
 
 
-def gen_numpad() -> Mesh:
+def gen_numpad_mesh(half_offset: float) -> Mesh:
     from .keyboard import Keyboard
 
     rkbd = Keyboard()
@@ -465,7 +465,6 @@ def gen_numpad() -> Mesh:
     lkbd = Keyboard()
     lkbd.gen_mesh()
 
-    half_offset = 140
     right_tf = Transform().translate(half_offset, 0.0, 0.0)
     left_tf = Transform().mirror_x().translate(-half_offset, 0.0, 0.0)
     rkbd.mesh.transform(right_tf)
@@ -479,10 +478,29 @@ def gen_numpad() -> Mesh:
     return np.mesh
 
 
-def test() -> bpy.types.Object:
-    mesh = gen_numpad()
+def gen_numpad(half_offset: float) -> bpy.types.Object:
+    mesh = gen_numpad_mesh(half_offset)
     blend_mesh = blender_util.blender_mesh("numpad_mesh", mesh)
     obj = blender_util.new_mesh_obj("numpad", blend_mesh)
+
+    return obj
+
+
+def test() -> bpy.types.Object:
+    half_offset = 140
+    obj = gen_numpad(half_offset)
+
+    show_halves = True
+    if show_halves:
+        from . import kbd_halves
+
+        right = kbd_halves.right_shell_simple()
+        with blender_util.TransformContext(right) as ctx:
+            ctx.translate(half_offset, 0.0, 0.0)
+
+        left = kbd_halves.left_shell_simple()
+        with blender_util.TransformContext(left) as ctx:
+            ctx.translate(-half_offset, 0.0, 0.0)
 
     show_oled = False
     if show_oled:
