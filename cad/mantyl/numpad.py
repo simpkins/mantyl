@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import bpy
-from typing import List, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 from bcad import blender_util
 from bcad.cad import Mesh, MeshPoint, Plane, Point, Transform
@@ -56,6 +56,7 @@ class NumpadPlate:
     def __init__(self) -> None:
         self.mesh = Mesh()
         self.key_size = 19.0
+        self._bevel_edges: Dict[Tuple[int, int], float] = {}
         self.gen_mesh()
 
     def _make_key(self, x_offset: float, y_offset: float) -> KeyHole:
@@ -453,8 +454,57 @@ class NumpadPlate:
                 self.perim_floor[idx - 1][1],
             )
 
+    def add_bevels(self) -> None:
+        # Perimeter wall bevels
+        perim_bevels = [
+            (0, 1.0),
+            (2, 1.0),
+            (3, 1.0),
+            (7, 0.6),
+            (8, 1.0),
+            (12, 0.5),
+        ]
+        for (idx, weight) in perim_bevels:
+            mirror = len(self.perim_floor) - 1 - idx
+            self._bevel_edge(self.perim_floor[idx][0], self.perim[idx][0], weight)
+            self._bevel_edge(self.perim_floor[mirror][0], self.perim[mirror][0], weight)
 
-def gen_numpad_mesh(half_offset: float) -> Mesh:
+        # Top face bevels
+        self._bevel_edge(self.br[0], self.perim[0][0], 1.0)
+        self._bevel_edge(self.br[0], self.perim[1][0], 0.2)
+        self._bevel_edge(self.br[0], self.perim[2][0], 0.2)
+        self._bevel_edge(self.br[0], self.perim[3][0], 1.0)
+
+    def _bevel_edge(
+        self, p0: MeshPoint, p1: MeshPoint, weight: float = 1.0
+    ) -> None:
+        """Mark that a vertex is along an edge to be beveled."""
+        if p0.index < p1.index:
+            key = p0.index, p1.index
+        else:
+            key = p1.index, p0.index
+        self._bevel_edges[key] = weight
+
+    def get_bevel_weights(
+        self, edges: Sequence[bpy.types.MeshEdge]
+    ) -> Dict[int, float]:
+        results: Dict[int, float] = {}
+        for idx, e in enumerate(edges):
+            v0 = e.vertices[0]
+            v1 = e.vertices[1]
+            if v0 < v1:
+                key = v0, v1
+            else:
+                key = v1, v0
+
+            weight = self._bevel_edges.get(key, 0.0)
+            if weight > 0.0:
+                results[idx] = weight
+
+        return results
+
+
+def gen_numpad(half_offset: float) -> NumpadPlate:
     rkbd = Keyboard()
     rkbd.gen_mesh()
 
@@ -471,20 +521,49 @@ def gen_numpad_mesh(half_offset: float) -> Mesh:
     np.mesh.translate(-9.5, 15.0, 70.0)
 
     np.add_walls(rkbd, lkbd)
-    return np.mesh
+    np.add_bevels()
+    return np
 
 
-def gen_numpad(half_offset: float) -> bpy.types.Object:
-    mesh = gen_numpad_mesh(half_offset)
-    blend_mesh = blender_util.blender_mesh("numpad_mesh", mesh)
-    obj = blender_util.new_mesh_obj("numpad", blend_mesh)
+def gen_numpad_obj(half_offset: float) -> bpy.types.Object:
+    np = gen_numpad(half_offset)
+    mesh = blender_util.blender_mesh("numpad_mesh", np.mesh)
+    obj = blender_util.new_mesh_obj("numpad", mesh)
+
+    edge_weights = np.get_bevel_weights(mesh.edges)
+    for edge_idx, weight in edge_weights.items():
+        # pyre-fixme[16]: incomplete bpy type annotations
+        e = mesh.edges[edge_idx]
+        e.bevel_weight = weight
+
+    # Add a bevel modifier
+    # pyre-fixme[16]: incomplete bpy type annotations
+    bevel = obj.modifiers.new(name="BevelCorners", type="BEVEL")
+    bevel.width = 2.0
+    bevel.limit_method = "WEIGHT"
+    bevel.segments = 8
+
+    # Apply the bevel modifier
+    apply_bevel = True
+    if apply_bevel:
+        bpy.ops.object.modifier_apply(modifier=bevel.name)
+
+        # Enter edit mode
+        bpy.ops.object.mode_set(mode="EDIT")
+
+        # Merge vertices that are close together
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.mesh.remove_doubles()
+        bpy.ops.mesh.select_all(action="DESELECT")
+
+    bpy.ops.object.mode_set(mode="OBJECT")
 
     return obj
 
 
 def test() -> bpy.types.Object:
     half_offset = 140
-    obj = gen_numpad(half_offset)
+    obj = gen_numpad_obj(half_offset)
 
     show_halves = True
     if show_halves:
