@@ -421,11 +421,13 @@ class NumpadPlate:
 
         # Top perimeter faces
         self._fan(self.br, self.perim[0:4] + [self.tr])
-        self._fan(self.tr, self.perim[3:11])
-        self._fan(self.tl, self.perim[11:19])
+        self._fan(self.tr, self.perim[3:9])
+        self._wall_quad(self.tr, self.perim[10], self.perim[9], self.perim[8])
+        self._wall_quad(self.perim[10], self.tr, self.tl, self.perim[11])
+        self._wall_quad(self.tl, self.perim[13], self.perim[12], self.perim[11])
+        self._fan(self.tl, self.perim[13:19])
         self._fan(self.bl, [self.tl] + self.perim[18:])
         self._wall_quad(self.perim[0], self.perim[-1], self.bl, self.br)
-        self._wall_quad(self.perim[10], self.tr, self.tl, self.perim[11])
 
         # Vertical wall faces
         for idx in range(len(self.perim)):
@@ -446,15 +448,15 @@ class NumpadPlate:
             )
 
     def add_bevels(self) -> None:
-        return
         # Perimeter wall bevels
         perim_bevels = [
             (0, 1.0),
+            (1, 1.0),
             (2, 1.0),
-            (3, 1.0),
-            (7, 0.6),
-            (8, 1.0),
-            (12, 0.5),
+            (3, 0.5),
+            (4, 0.6),
+            (5, 1.0),
+            (9, 0.5),
         ]
         for (idx, weight) in perim_bevels:
             mirror = len(self.perim_floor) - 1 - idx
@@ -462,10 +464,47 @@ class NumpadPlate:
             self._bevel_edge(self.perim_floor[mirror][0], self.perim[mirror][0], weight)
 
         # Top face bevels
-        self._bevel_edge(self.br[0], self.perim[0][0], 1.0)
-        self._bevel_edge(self.br[0], self.perim[1][0], 0.2)
-        self._bevel_edge(self.br[0], self.perim[2][0], 0.2)
-        self._bevel_edge(self.br[0], self.perim[3][0], 1.0)
+        bottom_bevels = [
+            (0, 1.0),
+            (1, 0.4),
+            (2, 0.5),
+            (3, 0.7),
+        ]
+        for (idx, weight) in bottom_bevels:
+            mirror = len(self.perim) - 1 - idx
+            self._bevel_edge(self.br[0], self.perim[idx][0], weight)
+            self._bevel_edge(self.bl[0], self.perim[mirror][0], weight)
+
+        top_bevels = [
+            (3, 0.7),
+            (4, 1.0),
+            (5, 1.0),
+            (8, 1.0),
+        ]
+        for (idx, weight) in top_bevels:
+            mirror = len(self.perim) - 1 - idx
+            self._bevel_edge(self.tr[0], self.perim[idx][0], weight)
+            self._bevel_edge(self.tl[0], self.perim[mirror][0], weight)
+
+        self._bevel_edge(self.bl[0], self.br[0], 0.5)
+
+        # Applying bevels to the left and right sides of the numpad plate
+        # unfortunately results in thin/intersecting faces, presumably since
+        # we already have some pretty thin faces here to start with.
+        # This area doesn't really have a very steep gradient, so just leave it
+        # unbeveled.
+        #
+        #self._bevel_edge(self.br[0], self.tr[0], 0.5)
+        #self._bevel_edge(self.bl[0], self.tl[0], 0.5)
+
+        # Perimeter corner bevels
+        for idx in range(len(self.perim)):
+            self._bevel_edge(self.perim[idx - 1][0], self.perim[idx][0], 0.6)
+        # Heavier edge bevels on the front and back edges
+        self._bevel_edge(self.perim[-1][0], self.perim[0][0], 1.0)
+        self._bevel_edge(self.perim[9][0], self.perim[10][0], 1.0)
+        self._bevel_edge(self.perim[10][0], self.perim[11][0], 1.0)
+        self._bevel_edge(self.perim[11][0], self.perim[12][0], 1.0)
 
     def _bevel_edge(
         self, p0: MeshPoint, p1: MeshPoint, weight: float = 1.0
