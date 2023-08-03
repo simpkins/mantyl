@@ -312,11 +312,12 @@ class NumpadPlate:
         # Outer perimeter, right side
         rperim_out = [
             self.mesh.add_point(rkbd.thumb_tl.out1),
-            self.mesh.add_point(rkbd.thumb_tr.out1),
+            # We are skipping rkbd.thumb_tr.out1 since it is in a straight line
+            # between thumb_tl.out1 and thumb_bu4, and including it makes it
+            # harder to do bevels cleanly.
             self.mesh.add_point(rkbd.thumb_bu4),
             self.mesh.add_point(rkbd.left_wall[8].out2),
-            self.mesh.add_point(rkbd.left_wall[7].out2),
-            self.mesh.add_point(rkbd.left_wall[6].out2),
+            # Similar to above, we skip rkbd.left_wall[7] and left_wall[6]
             self.mesh.add_point(rkbd.left_wall[5].out2),
             self.mesh.add_point(rkbd.left_wall[4].out2),
             self.mesh.add_point(rkbd.left_wall[3].out2),
@@ -372,47 +373,38 @@ class NumpadPlate:
                 rperim_floor_in[0], (lperim_out[0], self.br[0], rperim_out[0])
             ),
             self._inner_perim_point(
-                rperim_floor_in[1], (self.br[0], rperim_out[1], rperim_out[0])
+                rperim_floor_in[1], (self.br[0], rperim_out[2], rperim_out[1])
             ),
             self._inner_perim_point(
                 rperim_floor_in[2], (self.br[0], rperim_out[3], rperim_out[2])
             ),
             self._inner_perim_point(
-                rperim_floor_in[3], (self.br[0], rperim_out[4], rperim_out[3])
+                rperim_floor_in[3], (self.br[0], self.tr[0], rperim_out[2])
             ),
             self._inner_perim_point(
-                rperim_floor_in[4], (self.br[0], rperim_out[5], rperim_out[4])
+                rperim_floor_in[4], (self.br[0], self.tr[0], rperim_out[2])
             ),
             self._inner_perim_point(
-                rperim_floor_in[5], (self.br[0], self.tr[0], rperim_out[5])
+                rperim_floor_in[5], (self.tr[0], rperim_out[5], rperim_out[4])
             ),
             self._inner_perim_point(
-                rperim_floor_in[6], (self.br[0], self.tr[0], rperim_out[5])
+                rperim_floor_in[6], (self.tr[0], rperim_out[6], rperim_out[5])
             ),
             self._inner_perim_point(
-                rperim_floor_in[7], (self.br[0], self.tr[0], rperim_out[5])
+                rperim_floor_in[7],
+                (self.tr[0], rperim_out[7], rperim_out[6]),
             ),
             self._inner_perim_point(
-                rperim_floor_in[8], (self.tr[0], rperim_out[8], rperim_out[7])
+                rperim_floor_in[8],
+                (self.tr[0], rperim_out[8], rperim_out[7]),
             ),
             self._inner_perim_point(
-                rperim_floor_in[9], (self.tr[0], rperim_out[9], rperim_out[8])
+                rperim_floor_in[9],
+                (self.tr[0], rperim_out[9], rperim_out[8]),
             ),
             self._inner_perim_point(
                 rperim_floor_in[10],
                 (self.tr[0], rperim_out[10], rperim_out[9]),
-            ),
-            self._inner_perim_point(
-                rperim_floor_in[11],
-                (self.tr[0], rperim_out[11], rperim_out[10]),
-            ),
-            self._inner_perim_point(
-                rperim_floor_in[12],
-                (self.tr[0], rperim_out[12], rperim_out[11]),
-            ),
-            self._inner_perim_point(
-                rperim_floor_in[13],
-                (self.tr[0], rperim_out[13], rperim_out[12]),
             ),
         ]
         lperim_in = [self.mesh.add_xyz(-rp.x, rp.y, rp.z) for rp in rperim_in]
@@ -429,12 +421,12 @@ class NumpadPlate:
         self.compute_perimiters(rkbd, lkbd)
 
         # Top perimeter faces
-        self._fan(self.br, self.perim[0:7] + [self.tr])
-        self._fan(self.tr, self.perim[6:14])
-        self._fan(self.tl, self.perim[14:22])
-        self._fan(self.bl, [self.tl] + self.perim[21:])
+        self._fan(self.br, self.perim[0:4] + [self.tr])
+        self._fan(self.tr, self.perim[3:11])
+        self._fan(self.tl, self.perim[11:19])
+        self._fan(self.bl, [self.tl] + self.perim[18:])
         self._wall_quad(self.perim[0], self.perim[-1], self.bl, self.br)
-        self._wall_quad(self.perim[13], self.tr, self.tl, self.perim[14])
+        self._wall_quad(self.perim[10], self.tr, self.tl, self.perim[11])
 
         # Vertical wall faces
         for idx in range(len(self.perim)):
@@ -455,6 +447,7 @@ class NumpadPlate:
             )
 
     def add_bevels(self) -> None:
+        return
         # Perimeter wall bevels
         perim_bevels = [
             (0, 1.0),
