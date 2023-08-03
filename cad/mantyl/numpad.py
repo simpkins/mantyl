@@ -177,7 +177,7 @@ class NumpadPlate:
             ],
         )
 
-        self._fan(self.kp1.bl, [self.kp0.tl, self.kp1.br])
+        self._fan(self.kp0.tl, [self.kp2.bl, self.kp1.br, self.kp1.bl])
 
     def _border_faces(self) -> None:
         quad = self.mesh.add_quad
@@ -352,4 +352,14 @@ def test() -> bpy.types.Object:
     mesh = gen_numpad()
     blend_mesh = blender_util.blender_mesh("numpad_mesh", mesh)
     obj = blender_util.new_mesh_obj("numpad", blend_mesh)
+
+    show_oled = False
+    if show_oled:
+        # Possible display panel:
+        # https://www.dfrobot.com/product-2019.html
+        oled = blender_util.range_cube((-20.5, 20.5), (-6, 6), (-1.5, 1.5))
+        with blender_util.TransformContext(oled) as ctx:
+            ctx.rotate(-3.0, "X")
+            ctx.translate(0, -42.0, 63.0)
+
     return obj
