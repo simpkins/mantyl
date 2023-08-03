@@ -9,7 +9,7 @@ import bpy
 from typing import List, Tuple
 
 from bcad import blender_util
-from bcad.cad import Mesh, MeshPoint, Transform
+from bcad.cad import Mesh, MeshPoint, Plane, Point, Transform
 from .keyboard import KeyHole
 
 
@@ -45,6 +45,8 @@ class NumpadPlate:
     l_tr: MeshPoint
     l_bl: MeshPoint
     l_br: MeshPoint
+
+    wall_thickness: float = 4.0
 
     def __init__(self) -> None:
         self.mesh = Mesh()
@@ -103,8 +105,10 @@ class NumpadPlate:
         self.u_br = self.mesh.add_xyz(right_x, bottom_y, upper_z)
         self.l_tl = self.mesh.add_xyz(left_x, top_y, lower_z)
         self.l_tr = self.mesh.add_xyz(right_x, top_y, lower_z)
-        self.l_bl = self.mesh.add_xyz(left_x, bottom_y, lower_z)
-        self.l_br = self.mesh.add_xyz(right_x, bottom_y, lower_z)
+        # Move the lower bottom corners in slightly, to avoid them being
+        # to close to the inner walls
+        self.l_bl = self.mesh.add_xyz(left_x + 3.0, bottom_y + 1.5, lower_z)
+        self.l_br = self.mesh.add_xyz(right_x - 3.0, bottom_y + 1.5, lower_z)
 
         self.tl = (self.u_tl, self.l_tl)
         self.tr = (self.u_tr, self.l_tr)
@@ -112,15 +116,8 @@ class NumpadPlate:
         self.br = (self.u_br, self.l_br)
 
         top_y2 = top_y + 5.2265
-        self.tr2 = (
-            self.mesh.add_xyz(right_x, top_y2, upper_z),
-            self.mesh.add_xyz(right_x, top_y2, lower_z),
-        )
-        self.tl2 = (
-            self.mesh.add_xyz(left_x, top_y2, upper_z),
-            self.mesh.add_xyz(left_x, top_y2, lower_z),
-        )
-        self.tr2 = self.tr2
+        self.tr_wall = self.mesh.add_xyz(right_x, top_y2, upper_z)
+        self.tl_wall = self.mesh.add_xyz(left_x, top_y2, upper_z)
 
     def _join_keys(self) -> None:
         self.kp_extra.join_bottom(self.kp7)
@@ -268,61 +265,253 @@ class NumpadPlate:
             tri(p[0], l[idx + 1][0], l[idx][0])
             tri(p[1], l[idx][1], l[idx + 1][1])
 
+    def _inner_floor_point(
+        self, pt: MeshPoint, lneighbor: MeshPoint, rneighbor: MeshPoint
+    ) -> MeshPoint:
+        high_pt = Point(pt.x, pt.y, pt.z + 1.0)
+        lplane = Plane(pt.point, high_pt, lneighbor.point)
+        lplane = lplane.shifted_along_normal(self.wall_thickness)
+        rplane = Plane(high_pt, pt.point, rneighbor.point)
+        rplane = rplane.shifted_along_normal(self.wall_thickness)
+
+        p0, p1 = lplane.intersect_plane(rplane)
+        return self.mesh.add_xyz(p0.x, p0.y, 0.0)
+
+    def _inner_perim_point(
+        self,
+        floor_pt: MeshPoint,
+        outer_wall: Tuple[MeshPoint, MeshPoint, MeshPoint],
+    ) -> MeshPoint:
+        plane = Plane(
+            outer_wall[0].point, outer_wall[1].point, outer_wall[2].point
+        )
+        plane = plane.shifted_along_normal(-self.wall_thickness)
+
+        z = plane.z_intersect(floor_pt.x, floor_pt.y)
+        return self.mesh.add_xyz(floor_pt.x, floor_pt.y, z)
+
     def add_walls(self, rkbd: Keyboard, lkbd: Keyboard) -> None:
-        rthumb_tr = self.mesh.add_point(rkbd.thumb_tr.out1)
-        rthumb_tl = self.mesh.add_point(rkbd.thumb_tl.out1)
-        rthumb_tl_b = self.mesh.add_xyz(rthumb_tl.x, rthumb_tl.y, 0.0)
-
-        lthumb_tl = self.mesh.add_point(lkbd.thumb_tr.out1)
-        lthumb_tr = self.mesh.add_point(lkbd.thumb_tl.out1)
-        lthumb_tr_b = self.mesh.add_xyz(lthumb_tr.x, lthumb_tr.y, 0.0)
-
-        self.mesh.add_tri(rthumb_tr, rthumb_tl, self.br[0])
-        self.mesh.add_tri(lthumb_tr, lthumb_tl, self.bl[0])
-        self.mesh.add_quad(lthumb_tr, self.bl[0], self.br[0], rthumb_tl)
-        self.mesh.add_quad(lthumb_tr, rthumb_tl, rthumb_tl_b, lthumb_tr_b)
-
-        rthumb_conn_tr = self.mesh.add_point(rkbd.thumb_bu4)
-        self.mesh.add_tri(rthumb_tr, self.br[0], rthumb_conn_tr)
-        lthumb_conn_tl = self.mesh.add_point(lkbd.thumb_bu4)
-        self.mesh.add_tri(lthumb_tl, self.bl[0], lthumb_conn_tl)
-
-        right_wall = [
-            self.mesh.add_point(wp.out2) for wp in reversed(rkbd.left_wall)
+        # Outer perimeter, right side
+        rperim_out = [
+            self.mesh.add_point(rkbd.thumb_tl.out1),
+            self.mesh.add_point(rkbd.thumb_tr.out1),
+            self.mesh.add_point(rkbd.thumb_bu4),
+            self.mesh.add_point(rkbd.left_wall[8].out2),
+            self.mesh.add_point(rkbd.left_wall[7].out2),
+            self.mesh.add_point(rkbd.left_wall[6].out2),
+            self.mesh.add_point(rkbd.left_wall[5].out2),
+            self.mesh.add_point(rkbd.left_wall[4].out2),
+            self.mesh.add_point(rkbd.left_wall[3].out2),
+            self.mesh.add_point(rkbd.left_wall[2].out2),
+            self.mesh.add_point(rkbd.left_wall[1].out2),
+            self.mesh.add_point(rkbd.left_wall[0].out2),
+            self.mesh.add_point(rkbd.bl.out2),
+            self.tr_wall,
         ]
-        right_wall.append(self.mesh.add_point(rkbd.bl.out2))
+        top_bottom_split_idx = 6
 
-        self.mesh.add_tri(rthumb_conn_tr, self.br[0], right_wall[0])
-        self.mesh.add_tri(self.br[0], right_wall[1], right_wall[0])
-        self.mesh.add_tri(self.br[0], right_wall[2], right_wall[1])
-        self.mesh.add_tri(self.br[0], right_wall[3], right_wall[2])
-        self.mesh.add_tri(self.br[0], self.tr[0], right_wall[3])
-        self.mesh.add_tri(self.tr[0], right_wall[4], right_wall[3])
-        self.mesh.add_tri(self.tr[0], right_wall[5], right_wall[4])
-        self.mesh.add_tri(self.tr[0], right_wall[6], right_wall[5])
-        self.mesh.add_tri(self.tr[0], right_wall[7], right_wall[6])
-        self.mesh.add_tri(self.tr[0], right_wall[8], right_wall[7])
-        self.mesh.add_tri(self.tr[0], right_wall[9], right_wall[8])
-        self.mesh.add_tri(self.tr2[0], self.tr[0], right_wall[9])
-
-        left_wall = [
-            self.mesh.add_point(wp.out2) for wp in reversed(lkbd.left_wall)
+        # Outer perimeter, left side
+        # Mirrored from right side
+        lperim_out = [
+            self.mesh.add_xyz(-rp.x, rp.y, rp.z) for rp in rperim_out
         ]
-        left_wall.append(self.mesh.add_point(lkbd.bl.out2))
-        self.mesh.add_tri(lthumb_conn_tl, self.bl[0], left_wall[0])
-        self.mesh.add_tri(self.bl[0], left_wall[1], left_wall[0])
-        self.mesh.add_tri(self.bl[0], left_wall[2], left_wall[1])
-        self.mesh.add_tri(self.bl[0], left_wall[3], left_wall[2])
-        self.mesh.add_tri(self.bl[0], self.tl[0], left_wall[3])
-        self.mesh.add_tri(self.tl[0], left_wall[4], left_wall[3])
-        self.mesh.add_tri(self.tl[0], left_wall[5], left_wall[4])
-        self.mesh.add_tri(self.tl[0], left_wall[6], left_wall[5])
-        self.mesh.add_tri(self.tl[0], left_wall[7], left_wall[6])
-        self.mesh.add_tri(self.tl[0], left_wall[8], left_wall[7])
-        self.mesh.add_tri(self.tl[0], left_wall[9], left_wall[8])
-        self.mesh.add_tri(self.tl2[0], self.tl[0], left_wall[9])
 
-        self.mesh.add_quad(self.tr[0], self.tl[0], self.tl2[0], self.tr2[0])
+        # Outer floor points, right side
+        rperim_floor_out = [
+            self.mesh.add_xyz(rp.x, rp.y, 0) for rp in rperim_out
+        ]
+        lperim_floor_out = [
+            self.mesh.add_xyz(lp.x, lp.y, 0) for lp in lperim_out
+        ]
+
+        # Inner floor points, right side
+        rperim_floor_in = [
+            self._inner_floor_point(
+                rperim_floor_out[0], lperim_floor_out[0], rperim_floor_out[1]
+            )
+        ]
+        for idx in range(1, len(rperim_floor_out) - 1):
+            rperim_floor_in.append(
+                self._inner_floor_point(
+                    rperim_floor_out[idx],
+                    rperim_floor_out[idx - 1],
+                    rperim_floor_out[idx + 1],
+                )
+            )
+        rperim_floor_in.append(
+            self._inner_floor_point(
+                rperim_floor_out[-1],
+                rperim_floor_out[-2],
+                lperim_floor_out[-1],
+            )
+        )
+        lperim_floor_in = [
+            self.mesh.add_xyz(-rp.x, rp.y, rp.z) for rp in rperim_floor_in
+        ]
+
+        # Inner perimeter points
+        rperim_in = [
+            self._inner_perim_point(
+                rperim_floor_in[0], (lperim_out[0], self.br[0], rperim_out[0])
+            ),
+            self._inner_perim_point(
+                rperim_floor_in[1], (self.br[0], rperim_out[1], rperim_out[0])
+            ),
+            self._inner_perim_point(
+                rperim_floor_in[2], (self.br[0], rperim_out[3], rperim_out[2])
+            ),
+            self._inner_perim_point(
+                rperim_floor_in[3], (self.br[0], rperim_out[4], rperim_out[3])
+            ),
+            self._inner_perim_point(
+                rperim_floor_in[4], (self.br[0], rperim_out[5], rperim_out[4])
+            ),
+            self._inner_perim_point(
+                rperim_floor_in[5], (self.br[0], self.tr[0], rperim_out[5])
+            ),
+            self._inner_perim_point(
+                rperim_floor_in[6], (self.br[0], self.tr[0], rperim_out[5])
+            ),
+            self._inner_perim_point(
+                rperim_floor_in[7], (self.br[0], self.tr[0], rperim_out[5])
+            ),
+            self._inner_perim_point(
+                rperim_floor_in[8], (self.tr[0], rperim_out[8], rperim_out[7])
+            ),
+            self._inner_perim_point(
+                rperim_floor_in[9], (self.tr[0], rperim_out[9], rperim_out[8])
+            ),
+            self._inner_perim_point(
+                rperim_floor_in[10],
+                (self.tr[0], rperim_out[10], rperim_out[9]),
+            ),
+            self._inner_perim_point(
+                rperim_floor_in[11],
+                (self.tr[0], rperim_out[11], rperim_out[10]),
+            ),
+            self._inner_perim_point(
+                rperim_floor_in[12],
+                (self.tr[0], rperim_out[12], rperim_out[11]),
+            ),
+            self._inner_perim_point(
+                rperim_floor_in[13],
+                (self.tr[0], rperim_out[13], rperim_out[12]),
+            ),
+        ]
+        lperim_in = [self.mesh.add_xyz(-rp.x, rp.y, rp.z) for rp in rperim_in]
+
+        # Top perimeter faces
+        for idx in range(top_bottom_split_idx):
+            self.mesh.add_tri(self.br[0], rperim_out[idx + 1], rperim_out[idx])
+            self.mesh.add_tri(self.bl[0], lperim_out[idx], lperim_out[idx + 1])
+            self.mesh.add_tri(self.br[1], rperim_in[idx], rperim_in[idx + 1])
+            self.mesh.add_tri(self.bl[1], lperim_in[idx + 1], lperim_in[idx])
+        for idx in range(top_bottom_split_idx, len(rperim_out) - 1):
+            self.mesh.add_tri(self.tr[0], rperim_out[idx + 1], rperim_out[idx])
+            self.mesh.add_tri(self.tl[0], lperim_out[idx], lperim_out[idx + 1])
+            self.mesh.add_tri(self.tr[1], rperim_in[idx], rperim_in[idx + 1])
+            self.mesh.add_tri(self.tl[1], lperim_in[idx + 1], lperim_in[idx])
+        self.mesh.add_tri(
+            rperim_out[top_bottom_split_idx], self.br[0], self.tr[0]
+        )
+        self.mesh.add_tri(
+            lperim_out[top_bottom_split_idx], self.tl[0], self.bl[0]
+        )
+        self.mesh.add_tri(
+            rperim_in[top_bottom_split_idx], self.tr[1], self.br[1]
+        )
+        self.mesh.add_tri(
+            lperim_in[top_bottom_split_idx], self.bl[1], self.tl[1]
+        )
+
+        self.mesh.add_quad(
+            rperim_out[0], lperim_out[0], self.bl[0], self.br[0]
+        )
+        self.mesh.add_quad(
+            rperim_out[-1], self.tr[0], self.tl[0], lperim_out[-1]
+        )
+        self.mesh.add_quad(lperim_in[0], rperim_in[0], self.br[1], self.bl[1])
+        self.mesh.add_quad(
+            lperim_in[-1], self.tl[1], self.tr[1], rperim_in[-1]
+        )
+
+        # Outer wall faces
+        for idx in range(len(rperim_out) - 1):
+            self.mesh.add_quad(
+                rperim_floor_out[idx],
+                rperim_out[idx],
+                rperim_out[idx + 1],
+                rperim_floor_out[idx + 1],
+            )
+            self.mesh.add_quad(
+                lperim_floor_out[idx],
+                lperim_floor_out[idx + 1],
+                lperim_out[idx + 1],
+                lperim_out[idx],
+            )
+        self.mesh.add_quad(
+            rperim_out[0],
+            rperim_floor_out[0],
+            lperim_floor_out[0],
+            lperim_out[0],
+        )
+        self.mesh.add_quad(
+            rperim_floor_out[-1],
+            rperim_out[-1],
+            lperim_out[-1],
+            lperim_floor_out[-1],
+        )
+
+        # Wall bottom faces
+        for idx in range(0, len(rperim_floor_out) - 1):
+            self.mesh.add_quad(
+                rperim_floor_in[idx],
+                rperim_floor_out[idx],
+                rperim_floor_out[idx + 1],
+                rperim_floor_in[idx + 1],
+            )
+            self.mesh.add_quad(
+                lperim_floor_in[idx],
+                lperim_floor_in[idx + 1],
+                lperim_floor_out[idx + 1],
+                lperim_floor_out[idx],
+            )
+        self.mesh.add_quad(
+            lperim_floor_in[0],
+            lperim_floor_out[0],
+            rperim_floor_out[0],
+            rperim_floor_in[0],
+        )
+        self.mesh.add_quad(
+            rperim_floor_in[-1],
+            rperim_floor_out[-1],
+            lperim_floor_out[-1],
+            lperim_floor_in[-1],
+        )
+
+        # Inner walls
+        self.mesh.add_quad(
+            lperim_floor_in[0], rperim_floor_in[0], rperim_in[0], lperim_in[0]
+        )
+        for idx in range(len(rperim_in) - 1):
+            self.mesh.add_quad(
+                rperim_in[idx],
+                rperim_floor_in[idx],
+                rperim_floor_in[idx + 1],
+                rperim_in[idx + 1],
+            )
+            self.mesh.add_quad(
+                lperim_in[idx],
+                lperim_in[idx + 1],
+                lperim_floor_in[idx + 1],
+                lperim_floor_in[idx],
+            )
+        self.mesh.add_quad(
+            lperim_floor_in[-1],
+            lperim_in[-1],
+            rperim_in[-1],
+            rperim_floor_in[-1],
+        )
 
 
 def gen_numpad() -> Mesh:

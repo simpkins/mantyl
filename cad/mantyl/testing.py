@@ -22,13 +22,15 @@ def test_numpad() -> None:
 
     half_offset = 140
 
-    right = kbd_halves.right_shell_simple()
-    with blender_util.TransformContext(right) as ctx:
-        ctx.translate(half_offset, 0.0, 0.0)
+    show_halves = True
+    if show_halves:
+        right = kbd_halves.right_shell_simple()
+        with blender_util.TransformContext(right) as ctx:
+            ctx.translate(half_offset, 0.0, 0.0)
 
-    left = kbd_halves.left_shell_simple()
-    with blender_util.TransformContext(left) as ctx:
-        ctx.translate(-half_offset, 0.0, 0.0)
+        left = kbd_halves.left_shell_simple()
+        with blender_util.TransformContext(left) as ctx:
+            ctx.translate(-half_offset, 0.0, 0.0)
 
     numpad.test()
 

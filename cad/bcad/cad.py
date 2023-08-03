@@ -312,7 +312,13 @@ class Mesh:
             Union[Tuple[int, int, int], Tuple[int, int, int, int]]
         ] = []
 
-    def add_point(self, point: Point) -> MeshPoint:
+    def add_point(self, point: Union[Point, MeshPoint]) -> MeshPoint:
+        if isinstance(point, MeshPoint):
+            assert (
+                point.mesh is not self
+            ), "no need for duplicate points in the same mesh"
+            point = point.point
+        assert isinstance(point, Point)
         mp = MeshPoint(self, point=point)
         self.all_points.append(mp)
         return mp
