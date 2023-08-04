@@ -553,6 +553,14 @@ class NumpadSection:
         if bevel_joins:
             for idx in range(len(self.perim)):
                 self._bevel_edge(self.perim[idx - 1][0], self.perim[idx][0], 0.6)
+        else:
+            # Even with bevel_joins disabled, we still bevel a few of the front
+            # edges that are near the thumb section and aren't fully aligned
+            # with the thumb section edges.
+            self._bevel_edge(self.perim[0][0], self.perim[1][0], 0.6)
+            self._bevel_edge(self.perim[-1][0], self.perim[-2][0], 0.6)
+            self._bevel_edge(self.perim[1][0], self.perim[2][0], 0.6)
+            self._bevel_edge(self.perim[-2][0], self.perim[-3][0], 0.6)
 
         # Heavier edge bevels on the front and back edges
         self._bevel_edge(self.perim[-1][0], self.perim[0][0], 1.0)

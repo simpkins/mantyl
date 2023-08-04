@@ -21,7 +21,7 @@ def test_full() -> None:
 
     show_halves = True
     show_numpad = True
-    show_keys = True
+    show_keys = False
     show_oled = False
 
     rkbd, lkbd, np = kbd_halves.gen_3_sections()
