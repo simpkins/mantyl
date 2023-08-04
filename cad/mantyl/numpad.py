@@ -567,38 +567,3 @@ class NumpadSection:
 
     def apply_bevels(self, obj: bpy.types.Object) -> None:
         return self._beveler.apply_bevels(obj)
-
-
-def gen_numpad_section(half_offset: float) -> NumpadSection:
-    rkbd = Keyboard()
-    rkbd.gen_mesh()
-
-    lkbd = Keyboard()
-    lkbd.gen_mesh()
-
-    right_tf = Transform().translate(half_offset, 0.0, 0.0)
-    left_tf = Transform().mirror_x().translate(-half_offset, 0.0, 0.0)
-    rkbd.mesh.transform(right_tf)
-    lkbd.mesh.transform(left_tf)
-
-    np = NumpadSection(rkbd, lkbd)
-
-    show_keys = True
-    if show_keys:
-        rkbd.gen_keycaps(right_tf)
-        lkbd.gen_keycaps(left_tf)
-        np.gen_keycaps()
-
-    return np
-
-
-def gen_numpad(half_offset: float) -> bpy.types.Object:
-    np = gen_numpad_section(half_offset)
-    mesh = blender_util.blender_mesh("numpad_mesh", np.mesh)
-    obj = blender_util.new_mesh_obj("numpad", mesh)
-
-    np.apply_bevels(obj)
-
-    bpy.ops.object.mode_set(mode="OBJECT")
-
-    return obj

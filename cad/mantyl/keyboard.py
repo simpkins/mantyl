@@ -125,6 +125,13 @@ class Keyboard:
             self.gen_main_grid_edges()
             self.gen_thumb_grid_edges()
 
+    def transform(self, tf: Transform) -> None:
+        self.mesh.transform(tf)
+        for k in self.all_keys():
+            k.transform = k.transform.transform(tf)
+        for k in self.all_thumb_keys():
+            k.transform = k.transform.transform(tf)
+
     def _bevel_edge(
         self, p0: MeshPoint, p1: MeshPoint, weight: float = 1.0
     ) -> None:

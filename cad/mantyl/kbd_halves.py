@@ -16,6 +16,7 @@ from .keyboard import Grid2D, Keyboard, KeyHole, gen_keyboard
 from .key_socket_holder import SocketHolder, SocketHolderBuilder, SocketType
 from .screw_holes import add_screw_holes
 from . import oled_holder
+from . import numpad
 from . import sx1509_holder
 from . import usb_cutout
 from . import wrist_rest
@@ -32,6 +33,28 @@ def left_shell_simple(name: str = "left_keyboard") -> bpy.types.Object:
     with blender_util.TransformContext(kbd_obj) as ctx:
         ctx.mirror_x()
     return kbd_obj
+
+
+def gen_3_sections() -> Tuple[Keyboard, Keyboard, NumpadSection]:
+    """
+    Generate and return right keyboard half, left keyboard half, and numpad
+    section.
+    """
+    half_offset = 140
+    right_tf = cad.Transform().translate(half_offset, 0.0, 0.0)
+    left_tf = cad.Transform().mirror_x().translate(-half_offset, 0.0, 0.0)
+
+    rkbd = Keyboard()
+    rkbd.gen_mesh()
+    rkbd.transform(right_tf)
+
+    lkbd = Keyboard()
+    lkbd.gen_mesh()
+    lkbd.transform(left_tf)
+
+    np = numpad.NumpadSection(rkbd, lkbd)
+
+    return rkbd, lkbd, np
 
 
 def right_shell() -> bpy.types.Object:
