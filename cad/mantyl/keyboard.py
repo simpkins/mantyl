@@ -2251,9 +2251,9 @@ class ThumbColumn:
         return rows
 
 
-def gen_keyboard(kbd: Keyboard) -> bpy.types.Object:
-    mesh = blender_mesh("keyboard_mesh", kbd.mesh)
-    obj = new_mesh_obj("keyboard", mesh)
+def gen_keyboard(kbd: Keyboard, name: str = "keyboard") -> bpy.types.Object:
+    mesh = blender_mesh(f"{name}_mesh", kbd.mesh)
+    obj = new_mesh_obj(name, mesh)
 
     # Deselect all vertices in the mesh
     bpy.ops.object.mode_set(mode="EDIT")

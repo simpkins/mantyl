@@ -569,7 +569,7 @@ class NumpadSection:
         return self._beveler.apply_bevels(obj)
 
 
-def gen_numpad(half_offset: float) -> NumpadSection:
+def gen_numpad_section(half_offset: float) -> NumpadSection:
     rkbd = Keyboard()
     rkbd.gen_mesh()
 
@@ -592,8 +592,8 @@ def gen_numpad(half_offset: float) -> NumpadSection:
     return np
 
 
-def gen_numpad_obj(half_offset: float) -> bpy.types.Object:
-    np = gen_numpad(half_offset)
+def gen_numpad(half_offset: float) -> bpy.types.Object:
+    np = gen_numpad_section(half_offset)
     mesh = blender_util.blender_mesh("numpad_mesh", np.mesh)
     obj = blender_util.new_mesh_obj("numpad", mesh)
 
@@ -601,32 +601,4 @@ def gen_numpad_obj(half_offset: float) -> bpy.types.Object:
 
     bpy.ops.object.mode_set(mode="OBJECT")
 
-    return obj
-
-
-def test() -> bpy.types.Object:
-    half_offset = 140
-
-    show_halves = True
-    if show_halves:
-        from . import kbd_halves
-
-        right = kbd_halves.right_shell_simple()
-        with blender_util.TransformContext(right) as ctx:
-            ctx.translate(half_offset, 0.0, 0.0)
-
-        left = kbd_halves.left_shell_simple()
-        with blender_util.TransformContext(left) as ctx:
-            ctx.translate(-half_offset, 0.0, 0.0)
-
-    show_oled = False
-    if show_oled:
-        # Possible display panel:
-        # https://www.dfrobot.com/product-2019.html
-        oled = blender_util.range_cube((-20.5, 20.5), (-6, 6), (-2.0, 2.0))
-        with blender_util.TransformContext(oled) as ctx:
-            ctx.rotate(-3.0, "X")
-            ctx.translate(0, -41.0, 62.5)
-
-    obj = gen_numpad_obj(half_offset)
     return obj
