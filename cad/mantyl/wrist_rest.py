@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import bpy
-from typing import Dict, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 from bcad import cad
 from bcad import blender_util
@@ -410,5 +410,146 @@ def left() -> bpy.types.Object:
     return obj
 
 
+BASE_THICKNESS = 1.0
+
+
+class LipSegment:
+    inner_h = 4.0
+    lip_w = 3.0
+    lip_h = 2.0
+    outer_w = 4.0
+
+    def __init__(self, mesh, x: float, y: float, z: float) -> None:
+        # Bottom outer corner of inset
+        self.p1 = mesh.add_xyz(x, y, z)
+        # Top outer corner of inset
+        self.p2 = mesh.add_xyz(x, y, z + self.inner_h)
+
+        p = cad.Point(x, y, z)
+        lip_vec = p.unit() * self.lip_w
+        in_p = p - lip_vec
+        out_vec = p.unit() * self.outer_w
+        out_p = p + out_vec
+
+        top_z = z + self.inner_h + self.lip_h
+
+        # Bottom corner of lip
+        self.p3 = mesh.add_xyz(in_p.x, in_p.y, z + self.inner_h)
+        # Top corner of lip
+        self.p4 = mesh.add_xyz(in_p.x, in_p.y, top_z)
+        # Top outer corner of lip
+        self.p5 = mesh.add_xyz(out_p.x, out_p.y, top_z)
+        # Bottom outer corner of lip
+        self.p6 = mesh.add_xyz(out_p.x, out_p.y, z)
+
+        # Lower outer corner of base for test print
+        self.p7 = mesh.add_xyz(out_p.x, out_p.y, z - BASE_THICKNESS)
+
+    def gen_faces(
+        self, bcenter: MeshPoint, prev: LipSegment, base_center: MeshPoint
+    ) -> None:
+        mesh = bcenter.mesh
+        mesh.add_tri(bcenter, prev.p1, self.p1)
+        mesh.add_quad(self.p1, prev.p1, prev.p2, self.p2)
+        mesh.add_quad(self.p2, prev.p2, prev.p3, self.p3)
+        mesh.add_quad(self.p3, prev.p3, prev.p4, self.p4)
+        mesh.add_quad(self.p4, prev.p4, prev.p5, self.p5)
+        mesh.add_quad(self.p5, prev.p5, prev.p6, self.p6)
+
+        # Base for test print
+        mesh.add_quad(self.p6, prev.p6, prev.p7, self.p7)
+        mesh.add_tri(self.p7, prev.p7, base_center)
+
+
+class PadHolder:
+    def __init__(self) -> None:
+        self.mesh = cad.Mesh()
+        self.beveler = blender_util.Beveler()
+
+    def gen(self) -> None:
+        perim = self.gen_perim()
+        self.bcenter = self.mesh.add_xyz(0.0, 0.0, 0.0)
+        base_center = self.mesh.add_xyz(0.0, 0.0, -BASE_THICKNESS)
+
+        segments: List[LipSegment] = []
+        for x, y in perim:
+            segments.append(LipSegment(self.mesh, x, y, 0.0))
+
+        for idx, seg in enumerate(segments):
+            prev = segments[idx - 1]
+            seg.gen_faces(self.bcenter, prev, base_center)
+            self.beveler.bevel_edge(seg.p5, prev.p5, 1.0)
+
+    def gen_perim(self) -> List[float, float]:
+        # Control points for a cubic bezier cube
+        # for each quadrant.
+        top = cad.Point(0.0, 29.5)
+        top_cp_out = cad.Point(18.0, 29.5)
+        right_cp_in = cad.Point(68.0, 53)
+        right = cad.Point(71.5, 0.0)
+        right_cp_out = cad.Point(71.0, -19.0)
+        bottom_cp_in = cad.Point(55.0, -45.0)
+        bottom = cad.Point(0.0, -47.5)
+
+        # The left side is a mirror of the right side
+        bottom_cp_out = bottom_cp_in.mirror_x()
+        left_cp_in = right_cp_out.mirror_x()
+        left = right.mirror_x()
+        left_cp_out = right_cp_in.mirror_x()
+        top_cp_in = top_cp_out.mirror_x()
+
+        quadrants = [
+            (top, top_cp_out, right_cp_in, right),
+            (right, right_cp_out, bottom_cp_in, bottom),
+            (bottom, bottom_cp_out, left_cp_in, left),
+            (left, left_cp_out, top_cp_in, top),
+        ]
+
+        # Number of points in each quadrant
+        npoints = 20
+
+        perim: List[Tuple[float, float]] = []
+        for ctrl_pts in quadrants:
+            for idx, pt in enumerate(cad.bezier(npoints, *ctrl_pts)):
+                if idx == 0:
+                    # The start point is the same as the end of the previous quadrant
+                    continue
+                perim.append((pt.x, pt.y))
+
+        return perim
+
+
+def pad_holder() -> bpy.types.Object:
+    holder = PadHolder()
+    holder.gen()
+    blend_mesh = blender_util.blender_mesh("pad_holder_mesh", holder.mesh)
+    obj = blender_util.new_mesh_obj("pad_holder", blend_mesh)
+
+    holder.beveler.apply_bevels(obj)
+
+    return obj
+
+
+def load_reference_image() -> None:
+    import math
+    from pathlib import Path
+
+    img = Path(__file__).parent.parent / "reference" / "wrist_rest.jpg"
+    bpy.ops.object.load_reference_image(filepath=str(img))
+    scale = 56.5
+
+    obj = bpy.context.active_object
+    obj.name = "reference"
+    obj.scale.x = scale
+    obj.scale.y = scale
+    obj.scale.z = scale
+    obj.rotation_euler = [0, 0, math.radians(-89.3)]
+    obj.location.x -= 14.8
+    obj.location.y += 7
+
+
 def test() -> bpy.types.Object:
-    return right()
+    load_reference_image()
+    # return right()
+
+    return pad_holder()

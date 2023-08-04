@@ -50,7 +50,7 @@ def test_full() -> None:
 
 
 def test() -> None:
-    test_full()
+    # test_full()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()
@@ -65,7 +65,7 @@ def test() -> None:
 
     # keyboard.test()
 
-    # wrist_rest.test()
+    wrist_rest.test()
     # sx1509_holder.test_screw_holder()
     # oled_holder.test()
     # usb_cutout.test()
