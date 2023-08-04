@@ -207,6 +207,11 @@ class TransformContext:
         # pyre-fixme[20]
         bmesh.ops.translate(self.bmesh, verts=self.bmesh.verts, vec=(x, y, z))
 
+    def scale(self, x: float, y: float, z: float) -> None:
+        matrix = mathutils.Matrix(tf._data)
+        # pyre-fixme[20]
+        bmesh.ops.scale(self.bmesh, vec=(x, y, z))
+
     def transform(self, tf: cad.Transform) -> None:
         matrix = mathutils.Matrix(tf._data)
         # pyre-fixme[20]

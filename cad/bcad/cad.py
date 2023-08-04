@@ -148,6 +148,15 @@ class Point:
     def transform(self, tf: Transform) -> Point:
         return self.to_transform().transform(tf).point()
 
+    def mirror_x(self) -> Point:
+        return Point(-self.x, self.y, self.z)
+
+    def mirror_y(self) -> Point:
+        return Point(self.x, -self.y, self.z)
+
+    def mirror_z(self) -> Point:
+        return Point(self.x, self.y, -self.z)
+
     def unit(self) -> Point:
         """Treating this point as a vector, return a new vector of length 1.0"""
         length = math.sqrt(
@@ -515,3 +524,30 @@ def cone(r: float, h: float, fn: int = 24, rotation: float = 360.0) -> Mesh:
         mesh.add_tri(top_center, bottom_points[-1], bottom_center)
 
     return mesh
+
+
+def bezier(
+    npoints: int, start: Point, ctrl0: Point, ctrl1: Point, end: Point
+) -> List[Point]:
+    """
+    Generates a cubic bezier curve from the start to the end point,
+    with the control points defined by ctrl0 and ctrl1.
+
+    The curve will go from the start to the end, leaving the start point
+    heading towards ctrl0, and approaching the end point from the direction of
+    ctrl1.
+    """
+    results: List[Point] = []
+    tscale = 1.0 / (npoints - 1)
+    for idx in range(npoints):
+        t = idx * tscale
+        nt = 1.0 - t
+        b = (
+            (start * (nt ** 3))
+            + (ctrl0 * (3 * nt * nt * t))
+            + (ctrl1 * (3 * nt * t * t))
+            + (end * (t ** 3))
+        )
+        results.append(b)
+
+    return results
