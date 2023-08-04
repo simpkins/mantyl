@@ -596,7 +596,7 @@ def test() -> bpy.types.Object:
     half_offset = 140
     obj = gen_numpad_obj(half_offset)
 
-    show_halves = False
+    show_halves = True
     if show_halves:
         from . import kbd_halves
 
@@ -612,9 +612,9 @@ def test() -> bpy.types.Object:
     if show_oled:
         # Possible display panel:
         # https://www.dfrobot.com/product-2019.html
-        oled = blender_util.range_cube((-20.5, 20.5), (-6, 6), (-1.5, 1.5))
+        oled = blender_util.range_cube((-20.5, 20.5), (-6, 6), (-2.0, 2.0))
         with blender_util.TransformContext(oled) as ctx:
             ctx.rotate(-3.0, "X")
-            ctx.translate(0, -42.0, 63.0)
+            ctx.translate(0, -41.0, 62.5)
 
     return obj
