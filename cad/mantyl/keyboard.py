@@ -102,7 +102,7 @@ class Keyboard:
         self.mesh = Mesh()
         self._define_keys()
 
-        self._bevel_edges: Dict[Tuple[int, int], float] = {}
+        self._beveler = blender_util.Beveler()
 
         self._bevel_outer_vert_corner = 1.0
         self._bevel_inner_vert_corner = 0.75
@@ -124,12 +124,7 @@ class Keyboard:
     def _bevel_edge(
         self, p0: MeshPoint, p1: MeshPoint, weight: float = 1.0
     ) -> None:
-        """Mark that a vertex is along an edge to be beveled."""
-        if p0.index < p1.index:
-            key = p0.index, p1.index
-        else:
-            key = p1.index, p0.index
-        self._bevel_edges[key] = weight
+        self._beveler.bevel_edge(p0, p1, weight)
 
     @staticmethod
     def _get_key_variable(
@@ -1007,7 +1002,9 @@ class Keyboard:
                 0.0,
             )
         )
-        ic.out2 = self.mesh.add_point(Point(ic.out3.x, ic.out3.y, ic.out1.z + 2.0))
+        ic.out2 = self.mesh.add_point(
+            Point(ic.out3.x, ic.out3.y, ic.out1.z + 2.0)
+        )
 
         return ic
 
@@ -1812,23 +1809,8 @@ class Keyboard:
             (c0_out2, c1_out2, c2_out2, c3_out2),
         )
 
-    def get_bevel_weights(
-        self, edges: Sequence[bpy.types.MeshEdge]
-    ) -> Dict[int, float]:
-        results: Dict[int, float] = {}
-        for idx, e in enumerate(edges):
-            v0 = e.vertices[0]
-            v1 = e.vertices[1]
-            if v0 < v1:
-                key = v0, v1
-            else:
-                key = v1, v0
-
-            weight = self._bevel_edges.get(key, 0.0)
-            if weight > 0.0:
-                results[idx] = weight
-
-        return results
+    def apply_bevels(self, obj: bpy.types.Object) -> None:
+        self._beveler.apply_bevels(obj)
 
 
 class KeyHole:
@@ -2243,35 +2225,8 @@ def gen_keyboard(kbd: Keyboard) -> bpy.types.Object:
     bpy.ops.mesh.select_all(action="DESELECT")
     bpy.ops.object.mode_set(mode="OBJECT")
 
-    # Set bevel weights on the edges
-    # pyre-fixme[6]: inaccurate bpy type annotations
-    edge_weights = kbd.get_bevel_weights(mesh.edges)
-    for edge_idx, weight in edge_weights.items():
-        # pyre-fixme[16]: incomplete bpy type annotations
-        e = mesh.edges[edge_idx]
-        e.bevel_weight = weight
-
-    # Add a bevel modifier
-    # pyre-fixme[16]: incomplete bpy type annotations
-    bevel = obj.modifiers.new(name="BevelCorners", type="BEVEL")
-    bevel.width = 2.0
-    bevel.limit_method = "WEIGHT"
-    bevel.segments = 8
-
-    # Apply the bevel modifier
-    apply_bevel = True
-    if apply_bevel:
-        bpy.ops.object.modifier_apply(modifier=bevel.name)
-
-        # Enter edit mode
-        bpy.ops.object.mode_set(mode="EDIT")
-
-        # Merge vertices that are close together
-        bpy.ops.mesh.select_all(action="SELECT")
-        bpy.ops.mesh.remove_doubles()
-        bpy.ops.mesh.select_all(action="DESELECT")
-
-    bpy.ops.object.mode_set(mode="OBJECT")
+    # Apply bevels
+    kbd.apply_bevels(obj)
     return obj
 
 

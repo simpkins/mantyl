@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 import random
 import sys
-from typing import List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Type, Union
 from types import TracebackType
 
 import bpy
@@ -230,9 +230,7 @@ class TransformContext:
         bmesh.ops.delete(self.bmesh, geom=geom)
         # Reverse the faces to restore the correct normal direction
         # pyre-fixme[20]
-        bmesh.ops.reverse_faces(
-            self.bmesh, faces=self.bmesh.faces[:]
-        )
+        bmesh.ops.reverse_faces(self.bmesh, faces=self.bmesh.faces[:])
 
 
 def set_shading_mode(mode: str) -> None:
@@ -279,6 +277,82 @@ def cone(
 ) -> bpy.types.Object:
     mesh = cad.cone(r, h, fn=fn, rotation=rotation)
     return new_mesh_obj(name, mesh)
+
+
+class Beveler:
+    """
+    A helper class for applying bevels to the edges of a Mesh.
+    """
+
+    _bevel_edges: Dict[Tuple[int, int], float]
+
+    def __init__(self) -> None:
+        self._bevel_edges = {}
+
+    def bevel_edge(
+        self, p0: cad.MeshPoint, p1: cad.MeshPoint, weight: float = 1.0
+    ) -> None:
+        """Set the bevel weight for an edge"""
+        if p0.index < p1.index:
+            key = p0.index, p1.index
+        else:
+            key = p1.index, p0.index
+        self._bevel_edges[key] = weight
+
+    def get_bevel_weights(
+        self, edges: Sequence[bpy.types.MeshEdge]
+    ) -> Dict[int, float]:
+        results: Dict[int, float] = {}
+        for idx, e in enumerate(edges):
+            v0 = e.vertices[0]
+            v1 = e.vertices[1]
+            if v0 < v1:
+                key = v0, v1
+            else:
+                key = v1, v0
+
+            weight = self._bevel_edges.get(key, 0.0)
+            if weight > 0.0:
+                results[idx] = weight
+
+        return results
+
+    def apply_bevels(
+        self, obj: bpy.types.Object, width: float = 2.0, segments: int = 8
+    ) -> None:
+        mesh = obj.data
+        assert isinstance(
+            mesh, bpy.types.Mesh
+        ), "bevels can only be applied to mesh objects"
+        # pyre-fixme[6]: blender type stubs don't make it clear that mesh.edges
+        #   always behaves as a sequence of MeshEdges
+        edge_weights = self.get_bevel_weights(mesh.edges)
+        for edge_idx, weight in edge_weights.items():
+            # pyre-fixme[16]: incomplete bpy type annotations
+            e = mesh.edges[edge_idx]
+            e.bevel_weight = weight
+
+        # Create the bevel modifier
+        # pyre-fixme[16]: incomplete bpy type annotations
+        bevel = obj.modifiers.new(name="BevelCorners", type="BEVEL")
+        bevel.width = width
+        bevel.limit_method = "WEIGHT"
+        bevel.segments = segments
+
+        # Apply the modifier
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.ops.object.modifier_apply(modifier=bevel.name)
+
+        # Enter edit mode
+        bpy.ops.object.mode_set(mode="EDIT")
+
+        # Merge vertices that are close together
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.mesh.remove_doubles()
+        bpy.ops.mesh.select_all(action="DESELECT")
+
+        bpy.ops.object.mode_set(mode="OBJECT")
 
 
 def get_script_args() -> List[str]:
