@@ -13,7 +13,6 @@ from bcad.cad import Mesh, MeshPoint, Plane, Point, Transform
 from .keyboard import Keyboard, KeyHole
 
 
-
 # pyre-fixme[13]: pyre complains that various members are uninitialized, since
 #   they are initialized in a helper method and not directly in __init__()
 class NumpadPlate:
@@ -121,9 +120,9 @@ class NumpadPlate:
         self.bl = (self.u_bl, self.l_bl)
         self.br = (self.u_br, self.l_br)
 
-        top_y2 = top_y + 5.2265
-        self.tr_wall = self.mesh.add_xyz(right_x, top_y2, upper_z)
-        self.tl_wall = self.mesh.add_xyz(left_x, top_y2, upper_z)
+        top_y2 = top_y + 5.067
+        self.tr_wall = self.mesh.add_xyz(right_x, top_y2, upper_z - 0.75)
+        self.tl_wall = self.mesh.add_xyz(left_x, top_y2, upper_z - 0.75)
 
     def _join_keys(self) -> None:
         self.kp_extra.join_bottom(self.kp7)
@@ -310,7 +309,11 @@ class NumpadPlate:
     def compute_perimiters(self, rkbd: Keyboard, lkbd: Keyboard) -> None:
         # Outer perimeter, right side
         rperim_out = [
-            self.mesh.add_point(rkbd.thumb_tl.out1),
+            self.mesh.add_xyz(
+                rkbd.thumb_tl.out1.x,
+                rkbd.thumb_tl.out1.y,
+                rkbd.thumb_tl.out1.z - 0.85,
+            ),
             # We are skipping rkbd.thumb_tr.out1 since it is in a straight line
             # between thumb_tl.out1 and thumb_bu4, and including it makes it
             # harder to do bevels cleanly.
@@ -390,16 +393,13 @@ class NumpadPlate:
                 rperim_floor_in[6], (self.tr[0], rperim_out[6], rperim_out[5])
             ),
             self._inner_perim_point(
-                rperim_floor_in[7],
-                (self.tr[0], rperim_out[7], rperim_out[6]),
+                rperim_floor_in[7], (self.tr[0], rperim_out[7], rperim_out[6])
             ),
             self._inner_perim_point(
-                rperim_floor_in[8],
-                (self.tr[0], rperim_out[8], rperim_out[7]),
+                rperim_floor_in[8], (self.tr[0], rperim_out[8], rperim_out[7])
             ),
             self._inner_perim_point(
-                rperim_floor_in[9],
-                (self.tr[0], rperim_out[9], rperim_out[8]),
+                rperim_floor_in[9], (self.tr[0], rperim_out[9], rperim_out[8])
             ),
             self._inner_perim_point(
                 rperim_floor_in[10],
@@ -424,7 +424,9 @@ class NumpadPlate:
         self._fan(self.tr, self.perim[3:9])
         self._wall_quad(self.tr, self.perim[10], self.perim[9], self.perim[8])
         self._wall_quad(self.perim[10], self.tr, self.tl, self.perim[11])
-        self._wall_quad(self.tl, self.perim[13], self.perim[12], self.perim[11])
+        self._wall_quad(
+            self.tl, self.perim[13], self.perim[12], self.perim[11]
+        )
         self._fan(self.tl, self.perim[13:19])
         self._fan(self.bl, [self.tl] + self.perim[18:])
         self._wall_quad(self.perim[0], self.perim[-1], self.bl, self.br)
@@ -460,27 +462,21 @@ class NumpadPlate:
         ]
         for (idx, weight) in perim_bevels:
             mirror = len(self.perim_floor) - 1 - idx
-            self._bevel_edge(self.perim_floor[idx][0], self.perim[idx][0], weight)
-            self._bevel_edge(self.perim_floor[mirror][0], self.perim[mirror][0], weight)
+            self._bevel_edge(
+                self.perim_floor[idx][0], self.perim[idx][0], weight
+            )
+            self._bevel_edge(
+                self.perim_floor[mirror][0], self.perim[mirror][0], weight
+            )
 
         # Top face bevels
-        bottom_bevels = [
-            (0, 1.0),
-            (1, 0.4),
-            (2, 0.5),
-            (3, 0.7),
-        ]
+        bottom_bevels = [(0, 1.0), (1, 0.4), (2, 0.5), (3, 0.7)]
         for (idx, weight) in bottom_bevels:
             mirror = len(self.perim) - 1 - idx
             self._bevel_edge(self.br[0], self.perim[idx][0], weight)
             self._bevel_edge(self.bl[0], self.perim[mirror][0], weight)
 
-        top_bevels = [
-            (3, 0.7),
-            (4, 1.0),
-            (5, 1.0),
-            (8, 1.0),
-        ]
+        top_bevels = [(3, 0.7), (4, 1.0), (5, 1.0), (8, 1.0)]
         for (idx, weight) in top_bevels:
             mirror = len(self.perim) - 1 - idx
             self._bevel_edge(self.tr[0], self.perim[idx][0], weight)
@@ -494,8 +490,8 @@ class NumpadPlate:
         # This area doesn't really have a very steep gradient, so just leave it
         # unbeveled.
         #
-        #self._bevel_edge(self.br[0], self.tr[0], 0.5)
-        #self._bevel_edge(self.bl[0], self.tl[0], 0.5)
+        # self._bevel_edge(self.br[0], self.tr[0], 0.5)
+        # self._bevel_edge(self.bl[0], self.tl[0], 0.5)
 
         # Perimeter corner bevels
         for idx in range(len(self.perim)):
