@@ -71,11 +71,37 @@ class NumpadSection:
         self._join_keys()
         self._border_faces()
 
-        self.mesh.rotate(12.0, 0.0, 0.0)
-        self.mesh.translate(-9.5, 15.0, 70.0)
+        self.plate_tf = (
+            Transform().rotate(12.0, 0.0, 0.0).translate(-9.5, 15.0, 70.0)
+        )
+        self.mesh.transform(self.plate_tf)
 
         self.add_walls(rkbd, lkbd)
         self.add_bevels()
+
+    def gen_keycaps(self) -> None:
+        keys1 = [
+            self.kp1,
+            self.kp2,
+            self.kp3,
+            self.kp4,
+            self.kp5,
+            self.kp6,
+            self.kp7,
+            self.kp8,
+            self.kp9,
+            self.kp_extra,
+            self.kp_slash,
+            self.kp_star,
+            self.kp_minus,
+            self.kp_dot,
+        ]
+        for k in keys1:
+            k.dsa_keycap(transform=self.plate_tf)
+
+        self.kp_plus.dsa_keycap(yratio=2.0, transform=self.plate_tf)
+        self.kp_enter.dsa_keycap(yratio=2.0, transform=self.plate_tf)
+        self.kp0.dsa_keycap(xratio=2.0, transform=self.plate_tf)
 
     def _init_keys(self) -> None:
         self.kp1 = self._make_key(-1, -1)
@@ -530,6 +556,13 @@ def gen_numpad(half_offset: float) -> NumpadSection:
     lkbd.mesh.transform(left_tf)
 
     np = NumpadSection(rkbd, lkbd)
+
+    show_keys = True
+    if show_keys:
+        rkbd.gen_keycaps(right_tf)
+        lkbd.gen_keycaps(left_tf)
+        np.gen_keycaps()
+
     return np
 
 

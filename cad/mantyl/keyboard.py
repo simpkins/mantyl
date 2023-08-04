@@ -510,9 +510,15 @@ class Keyboard:
             .transform(self._main_thumb_transform)
         )
 
-    def gen_keycaps(self) -> None:
+    def gen_keycaps(self, transform: Optional[Transform] = None) -> None:
         for key in self.all_keys():
-            key.dsa_keycap()
+            key.dsa_keycap(transform=transform)
+
+        for key in self.all_thumb_keys():
+            if key == self.t21:
+                key.dsa_keycap(yratio=1.5, transform=transform)
+            else:
+                key.dsa_keycap(transform=transform)
 
     def gen_main_grid(self) -> None:
         """Generate mesh faces for the main key hole section.
@@ -2062,19 +2068,29 @@ class KeyHole:
         mesh.add_quad(p0[0], p1[0], p2[0], p3[0])
         mesh.add_quad(p3[1], p2[1], p1[1], p0[1])
 
-    def dsa_keycap(self, ratio: float = 1.0) -> bpy.types.Object:
-        return dsa_keycap(ratio=ratio, transform=self.transform)
+    def dsa_keycap(
+        self,
+        xratio: float = 1.0,
+        yratio: float = 1.0,
+        transform: Optional[Transform] = None,
+    ) -> bpy.types.Object:
+        if transform is None:
+            tf = self.transform
+        else:
+            tf = self.transform.transform(transform)
+        return dsa_keycap(xratio=xratio, yratio=yratio, transform=tf)
 
 
 def dsa_keycap(
-    ratio: float = 1.0,
+    xratio: float = 1.0,
+    yratio: float = 1.0,
     include_base: bool = True,
     transform: Optional[Transform] = None,
 ) -> bpy.types.Object:
     """
     Create an approximation of a 1xN DSA keycap.
 
-    The ratio argument controls the length dimension (N).
+    The xratio and yratio argument controls the length and height dimensions.
     DSA keycaps are commonly available in 1x1, 1.25, 1.5, 1.75, and 1x2
 
     Signature Plastics DSA keycap specs:
@@ -2093,13 +2109,15 @@ def dsa_keycap(
     # to about 7.85mm.  The taper inwards only starts about 1mm up.
     height = 7.85
 
-    lower_w = 18.415
-    lower_d = lower_w * ratio
+    base = 18.415
+    lower_w = base * xratio
+    lower_d = base * yratio
     # The height of the lower portion before it starts to taper in
     lower_h = 1
 
-    upper_w = 12.7
-    upper_d = lower_d - (lower_w - upper_w)
+    upper_inset = 5.715
+    upper_w = lower_w - upper_inset
+    upper_d = lower_d - upper_inset
 
     # The offset from the key plate to the bottom of the key cap,
     # when the key switch is not pressed.
@@ -2155,7 +2173,6 @@ def dsa_keycap(
     mesh.add_quad(tl_z0, bl_z0, br_z0, tr_z0)
 
     kh = KeyHole(mesh, Transform())
-    kh.inner_walls()
     return new_mesh_obj("keycap", mesh)
 
 
