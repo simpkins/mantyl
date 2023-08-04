@@ -482,16 +482,22 @@ class NumpadSection:
             )
 
     def add_bevels(self) -> None:
-        # Perimeter wall bevels
+        # bevel_joins controls whether we bevel the edges where
+        # the separately printed sections of the keyboard join.
+        bevel_joins = False
+
+        # Outer perimeter wall bevels
         perim_bevels = [
             (0, 1.0),
             (1, 1.0),
             (2, 1.0),
             (3, 0.5),
-            (4, 0.6),
+            (4, 0.2),
             (5, 1.0),
-            (9, 0.5),
         ]
+        if bevel_joins:
+            perim_bevels.append((9, 0.5))
+
         for (idx, weight) in perim_bevels:
             mirror = len(self.perim_floor) - 1 - idx
             self._bevel_edge(
@@ -499,6 +505,24 @@ class NumpadSection:
             )
             self._bevel_edge(
                 self.perim_floor[mirror][0], self.perim[mirror][0], weight
+            )
+
+        # Inner perimeter wall bevels
+        iperim_bevels = [
+            (0, 0.5),
+            (1, 0.5),
+            (2, 0.5),
+            (4, 1.0),
+            (5, 1.0),
+            (9, 1.0),
+        ]
+        for (idx, weight) in iperim_bevels:
+            mirror = len(self.perim_floor) - 1 - idx
+            self._bevel_edge(
+                self.perim_floor[idx][1], self.perim[idx][1], weight
+            )
+            self._bevel_edge(
+                self.perim_floor[mirror][1], self.perim[mirror][1], weight
             )
 
         # Top face bevels
@@ -526,8 +550,10 @@ class NumpadSection:
         # self._bevel_edge(self.bl[0], self.tl[0], 0.5)
 
         # Perimeter corner bevels
-        for idx in range(len(self.perim)):
-            self._bevel_edge(self.perim[idx - 1][0], self.perim[idx][0], 0.6)
+        if bevel_joins:
+            for idx in range(len(self.perim)):
+                self._bevel_edge(self.perim[idx - 1][0], self.perim[idx][0], 0.6)
+
         # Heavier edge bevels on the front and back edges
         self._bevel_edge(self.perim[-1][0], self.perim[0][0], 1.0)
         self._bevel_edge(self.perim[9][0], self.perim[10][0], 1.0)

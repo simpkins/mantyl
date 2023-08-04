@@ -92,6 +92,10 @@ class Keyboard:
     def __init__(self) -> None:
         self.wall_thickness = 4.0
 
+        # bevel_joins controls whether we bevel the edges where
+        # the separately printed sections of the keyboard join.
+        self.bevel_joins = False
+
         self._main_thumb_transform: Transform = (
             Transform()
             .rotate(0, 0, 40)
@@ -713,7 +717,10 @@ class Keyboard:
             if idx + 1 < len(left_wall):
                 c0 = left_wall[idx]
                 c1 = left_wall[idx + 1]
-                self._bevel_edge(c0.out2, c1.out2, self._bevel_outer_ring)
+                if self.bevel_joins:
+                    # Don't bevel the left wall's top perimeter if bevel_joins
+                    # is off.
+                    self._bevel_edge(c0.out2, c1.out2, self._bevel_outer_ring)
                 self._bevel_edge(c0.out1, c1.out1, self._bevel_ring_flat)
 
         self._bevel_edge(left_wall[0].out3, left_wall[0].out2)
@@ -1093,9 +1100,12 @@ class Keyboard:
         self._bevel_edge(ic.out3, ic.out2, self._bevel_inner_vert_corner)
         self._bevel_edge(ic.in3, ic.in2, self._bevel_outer_vert_corner)
 
-        for n in range(1, 5):
+        if not self.bevel_joins:
+            # Lowermost vertical wall edge on left segment
+            # This bevel is on a flat wall, but is need to fix beveling
+            # at the top corner where the thumb section joins.
             self._bevel_edge(
-                segment2[n].out2, segment2[n].out3, self._bevel_ring_flat
+                segment2[4].out2, segment2[4].out3, self._bevel_ring_flat
             )
 
         return columns
@@ -1260,8 +1270,14 @@ class Keyboard:
         self.mesh.add_tri(back.out3, bl.out3, back.in3)
         self.mesh.add_quad(back.in3, bl.out3, left.out3, left.in3)
 
-        self._bevel_edge(bl.out3, bl.out2, self._bevel_outer_vert_corner)
-        self._bevel_edge(bl.out2, bl.out1, 0.1)
+        if self.bevel_joins:
+            # Vertical edge of back left corner
+            self._bevel_edge(bl.out3, bl.out2, self._bevel_outer_vert_corner)
+            # Horizontal edge of back left corner
+            # Ideally we would bevel this edge even with self.bevel_joins,
+            # but doing so makes it join oddly with the numpad segment,
+            # and leaving this disabled seems better
+            self._bevel_edge(bl.out2, bl.out1, 0.8)
         self._bevel_edge(back.out2, back.out1, 0.1)
 
         self._bevel_edge(bl.in3, bl.in2, self._bevel_inner_vert_corner)
@@ -1269,7 +1285,9 @@ class Keyboard:
         self._bevel_edge(bl.out2, back.out2, self._bevel_outer_ring)
         self._bevel_edge(bl.out1, back.out1, self._bevel_outer_ring)
 
-        self._bevel_edge(bl.out2, left.out2, self._bevel_outer_ring)
+        if self.bevel_joins:
+            # Very back segment of top edge of left wall
+            self._bevel_edge(bl.out2, left.out2, self._bevel_outer_ring)
         self._bevel_edge(bl.out1, left.out2, self._bevel_outer_ring)
 
     def gen_thumb_grid(self) -> None:
