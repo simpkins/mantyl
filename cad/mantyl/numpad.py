@@ -15,7 +15,7 @@ from .keyboard import Keyboard, KeyHole
 
 # pyre-fixme[13]: pyre complains that various members are uninitialized, since
 #   they are initialized in a helper method and not directly in __init__()
-class NumpadPlate:
+class NumpadSection:
     kp1: KeyHole
     kp2: KeyHole
     kp3: KeyHole
@@ -52,11 +52,11 @@ class NumpadPlate:
 
     wall_thickness: float = 4.0
 
-    def __init__(self) -> None:
+    def __init__(self, rkbd: Keyboard, lkbd: Keyboard) -> None:
         self.mesh = Mesh()
         self.key_size = 19.0
         self._beveler = blender_util.Beveler()
-        self.gen_mesh()
+        self.gen_mesh(rkbd, lkbd)
 
     def _make_key(self, x_offset: float, y_offset: float) -> KeyHole:
         x_off_mm = x_offset * self.key_size
@@ -65,11 +65,17 @@ class NumpadPlate:
         kh.inner_walls()
         return kh
 
-    def gen_mesh(self) -> None:
+    def gen_mesh(self, rkbd: Keyboard, lkbd: Keyboard) -> None:
         self._init_keys()
         self._init_corners()
         self._join_keys()
         self._border_faces()
+
+        self.mesh.rotate(12.0, 0.0, 0.0)
+        self.mesh.translate(-9.5, 15.0, 70.0)
+
+        self.add_walls(rkbd, lkbd)
+        self.add_bevels()
 
     def _init_keys(self) -> None:
         self.kp1 = self._make_key(-1, -1)
@@ -511,7 +517,7 @@ class NumpadPlate:
         return self._beveler.apply_bevels(obj)
 
 
-def gen_numpad(half_offset: float) -> NumpadPlate:
+def gen_numpad(half_offset: float) -> NumpadSection:
     rkbd = Keyboard()
     rkbd.gen_mesh()
 
@@ -523,12 +529,7 @@ def gen_numpad(half_offset: float) -> NumpadPlate:
     rkbd.mesh.transform(right_tf)
     lkbd.mesh.transform(left_tf)
 
-    np = NumpadPlate()
-    np.mesh.rotate(12.0, 0.0, 0.0)
-    np.mesh.translate(-9.5, 15.0, 70.0)
-
-    np.add_walls(rkbd, lkbd)
-    np.add_bevels()
+    np = NumpadSection(rkbd, lkbd)
     return np
 
 
