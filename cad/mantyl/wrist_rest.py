@@ -22,7 +22,8 @@ class WristRest:
         self.mesh = cad.Mesh()
         self.kbd = kbd
 
-        self._bevel_edges: Dict[Tuple[int, int], float] = {}
+        self.beveler = blender_util.Beveler()
+        self.bevel_width = 8.0
 
         self.wall_thickness = 4.0
 
@@ -34,69 +35,19 @@ class WristRest:
 
     def gen(self) -> bpy.types.Object:
         blend_mesh = blender_util.blender_mesh("wrist_rest_mesh", self.mesh)
-
-        # Set bevel weights on the edges
-        # pyre-fixme[6]: blender type stubs are inaccurate
-        edge_weights = self._get_bevel_weights(blend_mesh.edges)
-        for edge_idx, weight in edge_weights.items():
-            # pyre-fixme[16]
-            e = blend_mesh.edges[edge_idx]
-            e.bevel_weight = weight
-
         obj = blender_util.new_mesh_obj("wrist_rest", blend_mesh)
 
-        # Add a bevel modifier
-        # pyre-fixme[16]
-        bevel = obj.modifiers.new(name="BevelCorners", type="BEVEL")
-        bevel.width = self.bevel_width
-        bevel.limit_method = "WEIGHT"
-        bevel.segments = 8
-
-        # Apply the bevel modifier
-        apply_bevel = True
-        if apply_bevel:
-            bpy.ops.object.modifier_apply(modifier=bevel.name)
-
-            # Enter edit mode
-            bpy.ops.object.mode_set(mode="EDIT")
-
-            # Merge vertices that are close together
-            bpy.ops.mesh.select_all(action="SELECT")
-            bpy.ops.mesh.remove_doubles()
-            bpy.ops.mesh.select_all(action="DESELECT")
+        self.beveler.apply_bevels(obj, width=self.bevel_width)
 
         bpy.ops.object.mode_set(mode="OBJECT")
         self.add_feet(obj)
         self.add_screw_holes(obj)
         return obj
 
-    def _get_bevel_weights(
-        self, edges: Sequence[bpy.types.MeshEdge]
-    ) -> Dict[int, float]:
-        results: Dict[int, float] = {}
-        for idx, e in enumerate(edges):
-            v0 = e.vertices[0]
-            v1 = e.vertices[1]
-            if v0 < v1:
-                key = v0, v1
-            else:
-                key = v1, v0
-
-            weight = self._bevel_edges.get(key, 0.0)
-            if weight > 0.0:
-                results[idx] = weight
-
-        return results
-
     def _bevel_edge(
         self, p0: cad.MeshPoint, p1: cad.MeshPoint, weight: float = 1.0
     ) -> None:
-        """Mark that a vertex is along an edge to be beveled."""
-        if p0.index < p1.index:
-            key = p0.index, p1.index
-        else:
-            key = p1.index, p0.index
-        self._bevel_edges[key] = weight
+        self.beveler.bevel_edge(p0, p1, weight)
 
     def gen_top_face(self) -> None:
         fl = self.kbd.front_wall[1].out1
@@ -338,7 +289,6 @@ class WristRest:
         )
 
     def mark_bevels(self) -> None:
-        self.bevel_width = 8.0
         w_main = 0.5
         w_inner = 0.25
 
@@ -549,7 +499,6 @@ def load_reference_image() -> None:
 
 
 def test() -> bpy.types.Object:
-    load_reference_image()
-    # return right()
-
-    return pad_holder()
+    # load_reference_image()
+    ph = pad_holder()
+    return right()
