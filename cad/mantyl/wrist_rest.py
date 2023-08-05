@@ -14,6 +14,8 @@ from .foot import add_foot
 from .keyboard import Keyboard
 from .screw_holes import gen_screw_hole
 
+import math
+
 
 class WristRest:
     def __init__(self, kbd: Keyboard) -> None:
@@ -37,7 +39,7 @@ class WristRest:
         blend_mesh = blender_util.blender_mesh("wrist_rest_mesh", self.mesh)
         obj = blender_util.new_mesh_obj("wrist_rest", blend_mesh)
 
-        self.beveler.apply_bevels(obj, width=self.bevel_width)
+        # self.beveler.apply_bevels(obj, width=self.bevel_width)
 
         bpy.ops.object.mode_set(mode="OBJECT")
         self.add_feet(obj)
@@ -350,7 +352,10 @@ class WristRest:
 def right() -> bpy.types.Object:
     kbd = Keyboard()
     kbd.gen_mesh()
-    return WristRest(kbd).gen()
+
+    wr = WristRest(kbd)
+    ph = pad_holder(wr)
+    return wr.gen()
 
 
 def left() -> bpy.types.Object:
@@ -469,9 +474,27 @@ class PadHolder:
         return perim
 
 
-def pad_holder() -> bpy.types.Object:
+def pad_holder(wr: WristRest) -> bpy.types.Object:
     holder = PadHolder()
     holder.gen()
+
+    norm = wr.top_plane.normal()
+    x_angle = math.degrees(
+        math.acos(norm.z / math.sqrt((norm.y ** 2) + (norm.z ** 2)))
+    )
+    y_angle = math.degrees(
+        math.acos(norm.z / math.sqrt((norm.x ** 2) + (norm.z ** 2)))
+    )
+    print(f"{x_angle=}")
+    print(f"{y_angle=}")
+
+    x_center = (wr.top_tl.x + wr.top_tr.x) * 0.5
+    y_center = (wr.top_tl.y + wr.top_bl.y) * 0.5
+    z_center = (wr.top_tl.z + wr.top_br.z) * 0.5
+    holder.mesh.translate(10.0, 0.0, 0.0)
+    holder.mesh.rotate(x_angle, y_angle, 0.0)
+    holder.mesh.translate(x_center, y_center, z_center)
+
     blend_mesh = blender_util.blender_mesh("pad_holder_mesh", holder.mesh)
     obj = blender_util.new_mesh_obj("pad_holder", blend_mesh)
 
@@ -500,5 +523,4 @@ def load_reference_image() -> None:
 
 def test() -> bpy.types.Object:
     # load_reference_image()
-    ph = pad_holder()
     return right()
