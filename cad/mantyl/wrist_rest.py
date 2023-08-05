@@ -415,8 +415,8 @@ BASE_THICKNESS = 1.0
 
 class LipSegment:
     inner_h = 4.0
-    lip_w = 3.0
-    lip_h = 2.0
+    lip_w = 3.5
+    lip_h = 2.5
     outer_w = 4.0
 
     def __init__(self, mesh, x: float, y: float, z: float) -> None:
