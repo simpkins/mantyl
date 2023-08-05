@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import bpy
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from bcad import cad
 from bcad import blender_util
@@ -17,7 +17,7 @@ from .screw_holes import gen_screw_hole
 import math
 
 
-class WristRest:
+class WristRestSimple:
     def __init__(self, kbd: Keyboard) -> None:
         self.depth = 70.0
         self.back_z_drop = 14
@@ -39,9 +39,8 @@ class WristRest:
         blend_mesh = blender_util.blender_mesh("wrist_rest_mesh", self.mesh)
         obj = blender_util.new_mesh_obj("wrist_rest", blend_mesh)
 
-        # self.beveler.apply_bevels(obj, width=self.bevel_width)
+        self.beveler.apply_bevels(obj, width=self.bevel_width)
 
-        bpy.ops.object.mode_set(mode="OBJECT")
         self.add_feet(obj)
         self.add_screw_holes(obj)
         return obj
@@ -349,13 +348,23 @@ class WristRest:
         add_screw_hole(x=x_spacing * 0.5, z=22)
 
 
-def right() -> bpy.types.Object:
+def right_simple() -> bpy.types.Object:
     kbd = Keyboard()
     kbd.gen_mesh()
+    return WristRestSimple(kbd).gen()
 
-    wr = WristRest(kbd)
-    ph = pad_holder(wr)
-    return wr.gen()
+
+def right(kbd: Optional[Keyboard] = None) -> bpy.types.Object:
+    if kbd is None:
+        kbd = Keyboard()
+        kbd.gen_mesh()
+
+    holder = PadHolder(kbd)
+    blend_mesh = blender_util.blender_mesh("wrist_rest_mesh", holder.mesh)
+    obj = blender_util.new_mesh_obj("wrist_rest", blend_mesh)
+    holder.beveler.apply_bevels(obj)
+
+    return obj
 
 
 def left() -> bpy.types.Object:
@@ -368,7 +377,7 @@ def left() -> bpy.types.Object:
 BASE_THICKNESS = 1.0
 
 
-class LipSegment:
+class PadSegment:
     inner_h = 4.0
     lip_w = 3.5
     lip_h = 2.5
@@ -398,12 +407,14 @@ class LipSegment:
         self.p6 = mesh.add_xyz(out_p.x, out_p.y, z)
 
         # Lower outer corner of base for test print
-        self.p7 = mesh.add_xyz(out_p.x, out_p.y, z - BASE_THICKNESS)
+        # self.p7 = mesh.add_xyz(out_p.x, out_p.y, z - BASE_THICKNESS)
 
     def gen_faces(
-        self, bcenter: MeshPoint, prev: LipSegment, base_center: MeshPoint
+        self, bcenter: MeshPoint, prev: PadSegment, base_center: MeshPoint
     ) -> None:
         mesh = bcenter.mesh
+
+        # Upper lip to hole the wrist rest pad
         mesh.add_tri(bcenter, prev.p1, self.p1)
         mesh.add_quad(self.p1, prev.p1, prev.p2, self.p2)
         mesh.add_quad(self.p2, prev.p2, prev.p3, self.p3)
@@ -411,28 +422,75 @@ class LipSegment:
         mesh.add_quad(self.p4, prev.p4, prev.p5, self.p5)
         mesh.add_quad(self.p5, prev.p5, prev.p6, self.p6)
 
-        # Base for test print
+        # Base segment
         mesh.add_quad(self.p6, prev.p6, prev.p7, self.p7)
-        mesh.add_tri(self.p7, prev.p7, base_center)
+        # mesh.add_tri(self.p7, prev.p7, base_center)
 
 
 class PadHolder:
-    def __init__(self) -> None:
+    """
+    A wrist rest designed to hold a Belkin WaveRest wrist pad (F8E244).
+
+    I've been using these gel pads for 15+ years and fortunately they continue
+    to be easily available to purchase.
+    """
+    def __init__(self, kbd: Keyboard) -> None:
         self.mesh = cad.Mesh()
         self.beveler = blender_util.Beveler()
+        self.kbd = kbd
 
-    def gen(self) -> None:
+        self.segments_per_quadrant = 40
+
+        # These parameters control the tilt angle of the top plane
+        # The front edge will drop according to the front wall of the keyboard.
+        # The right edge will drop according to these run/rise parameters.
+        right_edge_rise = 1.0
+        right_edge_run = 5.0
+
+        # Define the plane for the top face
+        # (the bottom of the wrist pad holder).
+        fl = self.kbd.front_wall[1].out1
+        fr = self.kbd.front_wall[-1].out1
+        self.top_plane = cad.Plane(
+            fl.point + cad.Point(0, 0, 5),
+            fr.point,
+            cad.Point(fr.x, fr.y - right_edge_run, fr.z - right_edge_rise),
+        )
+
+        self.segments: List[PadSegment] = []
+
+        self.gen_upper_segments()
+        self.align_pad_holder()
+        self.base_center = self.mesh.add_xyz(
+            self.top_center.x, self.top_center.y, 0.0
+        )
+        self.gen_base()
+        self.gen_faces()
+
+    def align_pad_holder(self) -> None:
+        # Rotate the pad slightly around the Z axis
+        self.mesh.rotate(0.0, 0.0, 4.0)
+        # Rotate around the X and Y axes to align with our desired top plane
+        r = self.top_plane.rotation_off_z()
+        self.mesh.rotate(r.x, r.y, 0.0)
+
+        # Translate to the desired location
+        x_offset = 51
+        y_offset = -94
+        z_off = self.top_plane.z_intersect(x_offset, y_offset)
+        self.mesh.translate(x_offset, y_offset, z_off)
+
+    def gen_upper_segments(self) -> None:
         perim = self.gen_perim()
-        self.bcenter = self.mesh.add_xyz(0.0, 0.0, 0.0)
-        base_center = self.mesh.add_xyz(0.0, 0.0, -BASE_THICKNESS)
+        self.top_center = self.mesh.add_xyz(0.0, 0.0, 0.0)
 
-        segments: List[LipSegment] = []
         for x, y in perim:
-            segments.append(LipSegment(self.mesh, x, y, 0.0))
+            self.segments.append(PadSegment(self.mesh, x, y, 0.0))
 
-        for idx, seg in enumerate(segments):
-            prev = segments[idx - 1]
-            seg.gen_faces(self.bcenter, prev, base_center)
+    def gen_faces(self) -> None:
+        for idx, seg in enumerate(self.segments):
+            prev = self.segments[idx - 1]
+            seg.gen_faces(self.top_center, prev, self.base_center)
             self.beveler.bevel_edge(seg.p5, prev.p5, 1.0)
 
     def gen_perim(self) -> List[float, float]:
@@ -460,8 +518,7 @@ class PadHolder:
             (left, left_cp_out, top_cp_in, top),
         ]
 
-        # Number of points in each quadrant
-        npoints = 20
+        npoints = self.segments_per_quadrant
 
         perim: List[Tuple[float, float]] = []
         for ctrl_pts in quadrants:
@@ -473,34 +530,68 @@ class PadHolder:
 
         return perim
 
+    def tweak_front_face(self) -> None:
+        # Make p6 drop directly down from p5.
+        # It was previously calculated before applying the top plane rotation,
+        # so it drops down in the rotated plane.  However, it looks nicer to
+        # drop down vertically after rotation.  We leave the z height alone.
+        for segment in self.segments:
+            segment.p6.point.x = segment.p5.x
+            segment.p6.point.y = segment.p5.y
 
-def pad_holder(wr: WristRest) -> bpy.types.Object:
-    holder = PadHolder()
-    holder.gen()
+        # Adjust the front edge of the pad holder to make it flush with the
+        # front edge of the keyboard section.
+        kbd_fr = self.kbd.fr.out1
+        left_idx = self.segments_per_quadrant * 3
+        fr_idx = None
+        for idx, segment in enumerate(self.segments):
+            if segment.p5.x < self.segments[left_idx].p5.x:
+                left_idx = idx
+            if fr_idx is None and segment.p5.x >= kbd_fr.x:
+                fr_idx = idx - 1
 
-    norm = wr.top_plane.normal()
-    x_angle = math.degrees(
-        math.acos(norm.z / math.sqrt((norm.y ** 2) + (norm.z ** 2)))
-    )
-    y_angle = math.degrees(
-        math.acos(norm.z / math.sqrt((norm.x ** 2) + (norm.z ** 2)))
-    )
-    print(f"{x_angle=}")
-    print(f"{y_angle=}")
+        # Make the front left corner extend out to meet where the keyboard
+        # thumb section joins the main body
+        self.segments[left_idx].p6.point.x = self.kbd.bu0.x
+        self.segments[left_idx].p6.point.y = self.kbd.bu0.y
+        self.segments[left_idx].p6.point.z = self.kbd.bu0.z
 
-    x_center = (wr.top_tl.x + wr.top_tr.x) * 0.5
-    y_center = (wr.top_tl.y + wr.top_bl.y) * 0.5
-    z_center = (wr.top_tl.z + wr.top_br.z) * 0.5
-    holder.mesh.translate(10.0, 0.0, 0.0)
-    holder.mesh.rotate(x_angle, y_angle, 0.0)
-    holder.mesh.translate(x_center, y_center, z_center)
+        # On the right hand side, adjust the point just before the end of the
+        # keyboard to align exactly with the right side of the keyboard.
+        self.segments[fr_idx].p6.point.x = kbd_fr.x
+        self.segments[fr_idx].p6.point.y = kbd_fr.y
 
-    blend_mesh = blender_util.blender_mesh("pad_holder_mesh", holder.mesh)
-    obj = blender_util.new_mesh_obj("pad_holder", blend_mesh)
+        # Tweaks to the front edge that interfaces with the keyboard
+        front_indices = list(range(left_idx + 1, len(self.segments))) + list(
+            range(fr_idx + 1)
+        )
+        for idx in front_indices:
+            # Adjust the front edge of the pad holder to make it flush with the
+            # front edge of the keyboard section.
+            seg = self.segments[idx]
+            seg.p6.point.y = kbd_fr.y
 
-    holder.beveler.apply_bevels(obj)
+            # Make the p6 Z rise gradually from the thumb connector
+            x_pct = (seg.p6.x - self.kbd.bu0.x) / (kbd_fr.x - self.kbd.bu0.x)
+            z_off = 0.0
+            # z_off = 10 * (1.0 - (x_pct ** 2))
+            #z_off = 10 * (1.0 - (x_pct ** 3))
+            z_off = -(1 / ((-6.0 * (x_pct ** 2)) - .075) )
+            seg.p6.point.z -= z_off
 
-    return obj
+            # Apply a minor bevel on the front face above the keyboard
+            if x_pct > 0.18:
+                prev = self.segments[idx - 1]
+                self.beveler.bevel_edge(seg.p6, prev.p6, 0.5)
+
+        self.beveler.bevel_edge(
+            self.segments[left_idx].p6, self.segments[left_idx].p5
+        )
+
+    def gen_base(self) -> None:
+        self.tweak_front_face()
+        for segment in self.segments:
+            segment.p7 = self.mesh.add_xyz(segment.p6.x, segment.p6.y, 0.0)
 
 
 def load_reference_image() -> None:
@@ -521,6 +612,6 @@ def load_reference_image() -> None:
     obj.location.y += 7
 
 
-def test() -> bpy.types.Object:
+def test() -> None:
     # load_reference_image()
-    return right()
+    right()

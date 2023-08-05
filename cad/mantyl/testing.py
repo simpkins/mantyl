@@ -21,8 +21,9 @@ def test_full() -> None:
 
     show_halves = True
     show_numpad = True
-    show_keys = False
+    show_keycaps = False
     show_oled = False
+    show_wrist_rests = True
 
     rkbd, lkbd, np = kbd_halves.gen_3_sections()
 
@@ -35,7 +36,16 @@ def test_full() -> None:
         np_obj = blender_util.new_mesh_obj("numpad", mesh)
         np.apply_bevels(np_obj)
 
-    if show_keys:
+    if show_wrist_rests:
+        rwr = wrist_rest.right_new()
+        with blender_util.TransformContext(rwr) as ctx:
+            ctx.translate(kbd_halves.HALF_OFFSET, 0, 0)
+        lwr = wrist_rest.right_new()
+        with blender_util.TransformContext(lwr) as ctx:
+            ctx.mirror_x()
+            ctx.translate(-kbd_halves.HALF_OFFSET, 0, 0)
+
+    if show_keycaps:
         rkbd.gen_keycaps()
         lkbd.gen_keycaps()
         np.gen_keycaps()
@@ -65,7 +75,7 @@ def test() -> None:
 
     # keyboard.test()
 
-    kbd_halves.right_shell_simple()
+    #kbd_halves.right_shell_simple()
     wrist_rest.test()
 
     # sx1509_holder.test_screw_holder()

@@ -279,6 +279,28 @@ class Plane:
 
         return (p0, p1)
 
+    def rotation_off_z(self) -> Point:
+        """
+        Return the X and Y rotation required to rotate another object
+        so that it is in alignment with this plane.
+
+        This can be used to tilt an object so it will sit flat on this plane.
+        If this plane is completely level with the ground (it's normal vector
+        is the Z axis) then no rotation is required and (0, 0, 0) is returned.
+        If the plane is tilted away from the Z axis this returns the X and Y
+        rotation required to match the tilt.
+
+        The Z component of the returned point is always 0.0.
+        """
+        norm = self.normal()
+        x_angle = math.degrees(
+            math.acos(norm.z / math.sqrt((norm.y ** 2) + (norm.z ** 2)))
+        )
+        y_angle = math.degrees(
+            math.acos(norm.z / math.sqrt((norm.x ** 2) + (norm.z ** 2)))
+        )
+        return Point(x_angle, y_angle, 0.0)
+
 
 class MeshPoint:
     __slots__ = ["mesh", "_index", "point"]

@@ -1593,6 +1593,7 @@ class Keyboard:
         self.mesh.add_tri(bu0, c0_out2, front_wall[0].out2)
         self.mesh.add_tri(front_wall[0].out2, c0_out2, front_wall[0].out1)
         self.mesh.add_tri(bu0, bu1, c0_out2)
+        self.bu0 = bu0
 
         self.mesh.add_quad(bl2, bl1, c0_in2, c1_in2)
         self.mesh.add_tri(bl2, c1_in2, c2_in2)

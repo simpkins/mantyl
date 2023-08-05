@@ -35,14 +35,16 @@ def left_shell_simple(name: str = "left_keyboard") -> bpy.types.Object:
     return kbd_obj
 
 
+HALF_OFFSET = 140
+
+
 def gen_3_sections() -> Tuple[Keyboard, Keyboard, NumpadSection]:
     """
     Generate and return right keyboard half, left keyboard half, and numpad
     section.
     """
-    half_offset = 140
-    right_tf = cad.Transform().translate(half_offset, 0.0, 0.0)
-    left_tf = cad.Transform().mirror_x().translate(-half_offset, 0.0, 0.0)
+    right_tf = cad.Transform().translate(HALF_OFFSET, 0.0, 0.0)
+    left_tf = cad.Transform().mirror_x().translate(-HALF_OFFSET, 0.0, 0.0)
 
     rkbd = Keyboard()
     rkbd.gen_mesh()
