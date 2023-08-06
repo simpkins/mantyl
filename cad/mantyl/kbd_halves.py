@@ -19,7 +19,6 @@ from . import oled_holder
 from . import numpad
 from . import sx1509_holder
 from . import usb_cutout
-from . import wrist_rest
 
 
 def right_shell_simple(name: str = "right_keyboard") -> bpy.types.Object:
@@ -65,8 +64,10 @@ def right_shell() -> bpy.types.Object:
     return right_shell_obj(kbd)
 
 
-def right_shell_obj(kbd: Keyboard) -> bpy.types.Object:
-    kbd_obj = gen_keyboard(kbd)
+def right_shell_obj(
+    kbd: Keyboard, name: str = "keyboard.R"
+) -> bpy.types.Object:
+    kbd_obj = gen_keyboard(kbd, name=name)
     add_feet(kbd, kbd_obj)
     add_i2c_connector(kbd, kbd_obj)
     add_screw_holes(kbd, kbd_obj)
@@ -83,8 +84,10 @@ def left_shell() -> bpy.types.Object:
     return left_shell_obj(kbd)
 
 
-def left_shell_obj(kbd: Keyboard) -> bpy.types.Object:
-    kbd_obj = gen_keyboard(kbd)
+def left_shell_obj(
+    kbd: Keyboard, name: str = "keyboard.L"
+) -> bpy.types.Object:
+    kbd_obj = gen_keyboard(kbd, name=name)
 
     oled_holder.apply_oled_holder(
         kbd_obj,
@@ -312,26 +315,26 @@ def left_thumb_underlay() -> bpy.types.Object:
     return thumb_underlay(Keyboard(), mirror=True)
 
 
-def right_full() -> List[bpy.types.Object]:
-    kbd = Keyboard()
-    kbd.gen_mesh()
+def right_full(kbd: Keyboard) -> List[bpy.types.Object]:
+    if kbd is None:
+        kbd = Keyboard()
+        kbd.gen_mesh()
 
     return [
         right_shell_obj(kbd),
         socket_underlay(kbd, mirror=False),
         thumb_underlay(kbd, mirror=False),
-        wrist_rest.right(),
     ]
 
 
-def left_full() -> List[bpy.types.Object]:
-    kbd = Keyboard()
-    kbd.gen_mesh()
+def left_full(kbd: Optional[Keyboard] = None) -> List[bpy.types.Object]:
+    if kbd is None:
+        kbd = Keyboard()
+        kbd.gen_mesh()
 
     return [
         left_shell_obj(kbd),
         left_oled_backplate(kbd),
         socket_underlay(kbd, mirror=True),
         thumb_underlay(kbd, mirror=True),
-        wrist_rest.left(),
     ]

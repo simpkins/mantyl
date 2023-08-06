@@ -30,6 +30,7 @@ def test_full() -> None:
     if show_halves:
         keyboard.gen_keyboard(rkbd, "keyboard.R")
         keyboard.gen_keyboard(lkbd, "keyboard.L")
+        #kbd_halves.right_full(rkbd)
 
     if show_numpad:
         mesh = blender_util.blender_mesh("numpad_mesh", np.mesh)
