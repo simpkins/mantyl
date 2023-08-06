@@ -37,12 +37,11 @@ def test_full() -> None:
         np.apply_bevels(np_obj)
 
     if show_wrist_rests:
-        rwr = wrist_rest.right_new()
+        rwr = wrist_rest.right()
         with blender_util.TransformContext(rwr) as ctx:
             ctx.translate(kbd_halves.HALF_OFFSET, 0, 0)
-        lwr = wrist_rest.right_new()
+        lwr = wrist_rest.left()
         with blender_util.TransformContext(lwr) as ctx:
-            ctx.mirror_x()
             ctx.translate(-kbd_halves.HALF_OFFSET, 0, 0)
 
     if show_keycaps:
@@ -60,7 +59,7 @@ def test_full() -> None:
 
 
 def test() -> None:
-    # test_full()
+    test_full()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()
@@ -75,8 +74,8 @@ def test() -> None:
 
     # keyboard.test()
 
-    #kbd_halves.right_shell_simple()
-    wrist_rest.test()
+    # kbd_halves.right_shell_simple()
+    # wrist_rest.test()
 
     # sx1509_holder.test_screw_holder()
     # oled_holder.test()

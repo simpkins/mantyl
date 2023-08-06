@@ -382,32 +382,39 @@ class PadSegment:
     lip_w = 3.5
     lip_h = 2.5
     outer_w = 4.0
+    bottom_thickness = 4.0
 
-    def __init__(self, mesh, x: float, y: float, z: float) -> None:
+    def __init__(self, mesh, x: float, y: float) -> None:
         # Bottom outer corner of inset
-        self.p1 = mesh.add_xyz(x, y, z)
+        self.p1 = mesh.add_xyz(x, y, 0.0)
         # Top outer corner of inset
-        self.p2 = mesh.add_xyz(x, y, z + self.inner_h)
+        self.p2 = mesh.add_xyz(x, y, self.inner_h)
 
-        p = cad.Point(x, y, z)
+        p = cad.Point(x, y, 0.0)
         lip_vec = p.unit() * self.lip_w
         in_p = p - lip_vec
         out_vec = p.unit() * self.outer_w
         out_p = p + out_vec
 
-        top_z = z + self.inner_h + self.lip_h
+        top_z = self.inner_h + self.lip_h
 
         # Bottom corner of lip
-        self.p3 = mesh.add_xyz(in_p.x, in_p.y, z + self.inner_h)
+        self.p3 = mesh.add_xyz(in_p.x, in_p.y, self.inner_h)
         # Top corner of lip
         self.p4 = mesh.add_xyz(in_p.x, in_p.y, top_z)
         # Top outer corner of lip
         self.p5 = mesh.add_xyz(out_p.x, out_p.y, top_z)
         # Bottom outer corner of lip
-        self.p6 = mesh.add_xyz(out_p.x, out_p.y, z)
+        self.p6 = mesh.add_xyz(out_p.x, out_p.y, 0.0)
 
-        # Lower outer corner of base for test print
-        # self.p7 = mesh.add_xyz(out_p.x, out_p.y, z - BASE_THICKNESS)
+        # p7 is the outer corner on the ground
+        # p8 is the inner corner on the ground
+        #
+        # p7 and p8 will be computed later, after we have translated the other
+        # points to be in the correct location relative to the keyboard.
+
+        # p9 is the upper point on the interior
+        self.p9 = mesh.add_xyz(x, y, -self.bottom_thickness)
 
     def gen_faces(
         self, bcenter: MeshPoint, prev: PadSegment, base_center: MeshPoint
@@ -424,7 +431,9 @@ class PadSegment:
 
         # Base segment
         mesh.add_quad(self.p6, prev.p6, prev.p7, self.p7)
-        # mesh.add_tri(self.p7, prev.p7, base_center)
+        mesh.add_quad(self.p7, prev.p7, prev.p8, self.p8)
+        mesh.add_quad(self.p8, prev.p8, prev.p9, self.p9)
+        mesh.add_tri(self.p9, prev.p9, base_center)
 
 
 class PadHolder:
@@ -434,6 +443,9 @@ class PadHolder:
     I've been using these gel pads for 15+ years and fortunately they continue
     to be easily available to purchase.
     """
+
+    wall_thickness = 4.0
+
     def __init__(self, kbd: Keyboard) -> None:
         self.mesh = cad.Mesh()
         self.beveler = blender_util.Beveler()
@@ -461,9 +473,6 @@ class PadHolder:
 
         self.gen_upper_segments()
         self.align_pad_holder()
-        self.base_center = self.mesh.add_xyz(
-            self.top_center.x, self.top_center.y, 0.0
-        )
         self.gen_base()
         self.gen_faces()
 
@@ -483,14 +492,17 @@ class PadHolder:
     def gen_upper_segments(self) -> None:
         perim = self.gen_perim()
         self.top_center = self.mesh.add_xyz(0.0, 0.0, 0.0)
+        self.top_inner_center = self.mesh.add_xyz(
+            0.0, 0.0, -PadSegment.bottom_thickness
+        )
 
         for x, y in perim:
-            self.segments.append(PadSegment(self.mesh, x, y, 0.0))
+            self.segments.append(PadSegment(self.mesh, x, y))
 
     def gen_faces(self) -> None:
         for idx, seg in enumerate(self.segments):
             prev = self.segments[idx - 1]
-            seg.gen_faces(self.top_center, prev, self.base_center)
+            seg.gen_faces(self.top_center, prev, self.top_inner_center)
             self.beveler.bevel_edge(seg.p5, prev.p5, 1.0)
 
     def gen_perim(self) -> List[float, float]:
@@ -550,16 +562,20 @@ class PadHolder:
             if fr_idx is None and segment.p5.x >= kbd_fr.x:
                 fr_idx = idx - 1
 
+        self.fr = self.segments[fr_idx]
+        self.left = self.segments[left_idx]
+        self.left_idx = left_idx
+
         # Make the front left corner extend out to meet where the keyboard
         # thumb section joins the main body
-        self.segments[left_idx].p6.point.x = self.kbd.bu0.x
-        self.segments[left_idx].p6.point.y = self.kbd.bu0.y
-        self.segments[left_idx].p6.point.z = self.kbd.bu0.z
+        self.left.p6.point.x = self.kbd.bu0.x
+        self.left.p6.point.y = self.kbd.bu0.y
+        self.left.p6.point.z = self.kbd.bu0.z
 
         # On the right hand side, adjust the point just before the end of the
         # keyboard to align exactly with the right side of the keyboard.
-        self.segments[fr_idx].p6.point.x = kbd_fr.x
-        self.segments[fr_idx].p6.point.y = kbd_fr.y
+        self.fr.p6.point.x = kbd_fr.x
+        self.fr.p6.point.y = kbd_fr.y
 
         # Tweaks to the front edge that interfaces with the keyboard
         front_indices = list(range(left_idx + 1, len(self.segments))) + list(
@@ -573,10 +589,7 @@ class PadHolder:
 
             # Make the p6 Z rise gradually from the thumb connector
             x_pct = (seg.p6.x - self.kbd.bu0.x) / (kbd_fr.x - self.kbd.bu0.x)
-            z_off = 0.0
-            # z_off = 10 * (1.0 - (x_pct ** 2))
-            #z_off = 10 * (1.0 - (x_pct ** 3))
-            z_off = -(1 / ((-6.0 * (x_pct ** 2)) - .075) )
+            z_off = -(1 / ((-6.0 * (x_pct ** 2)) - 0.075))
             seg.p6.point.z -= z_off
 
             # Apply a minor bevel on the front face above the keyboard
@@ -584,14 +597,70 @@ class PadHolder:
                 prev = self.segments[idx - 1]
                 self.beveler.bevel_edge(seg.p6, prev.p6, 0.5)
 
-        self.beveler.bevel_edge(
-            self.segments[left_idx].p6, self.segments[left_idx].p5
-        )
+        self.beveler.bevel_edge(self.left.p6, self.left.p5)
 
     def gen_base(self) -> None:
         self.tweak_front_face()
+
+        inner_roof = cad.Plane(
+            self.left.p9.point, self.fr.p9.point, self.top_inner_center.point
+        )
+
+        # Outer ground points
         for segment in self.segments:
             segment.p7 = self.mesh.add_xyz(segment.p6.x, segment.p6.y, 0.0)
+
+        # Inner ground points
+        for idx, segment in enumerate(self.segments):
+            prev_p7 = self.segments[idx - 1].p7
+            next_idx = idx + 1
+            if next_idx >= len(self.segments):
+                next_idx = 0
+            next_p7 = self.segments[next_idx].p7
+
+            # Compute the inner wall from this segment to the previous and next
+            # segments.  Find the point where they intersect and set that as
+            # segment.p8
+            prev_wall_out = cad.Plane(
+                segment.p6.point, segment.p7.point, prev_p7.point
+            )
+            next_wall_out = cad.Plane(
+                segment.p7.point, segment.p6.point, next_p7.point
+            )
+            prev_wall_in = prev_wall_out.shifted_along_normal(
+                self.wall_thickness
+            )
+            next_wall_in = next_wall_out.shifted_along_normal(
+                self.wall_thickness
+            )
+
+            intersect_result = prev_wall_in.intersect_plane(next_wall_in)
+            if intersect_result is None:
+                # The previous and next walls are in a straight line,
+                # so share the same normal.  Just move in along this normal
+                # from p7.
+                p = segment.p7.point + (
+                    prev_wall_out.normal() * self.wall_thickness
+                )
+                segment.p8 = self.mesh.add_point(p)
+            else:
+                p0, p1 = intersect_result
+                segment.p8 = self.mesh.add_xyz(p0.x, p0.y, 0.0)
+
+            # Compute the location of the inside upper point.
+            # In most cases we want this to be directly above p8.
+            # However, near the left corner which we moved to be close to the
+            # keyboard thumb connection, this would protrude through the outer
+            # wall.
+            # TODO: it would be nicer to automatically decide which segments
+            # need which, rather than using this hard-coded index range.
+            # Between this value computed here and the original p9 value,
+            # we want to use the one closer to self.top_inner_center
+            if idx < self.left_idx or idx > self.left_idx + 15:
+                in_p = segment.p8.point
+                segment.p9 = self.mesh.add_xyz(
+                    in_p.x, in_p.y, inner_roof.z_intersect(in_p.x, in_p.y)
+                )
 
 
 def load_reference_image() -> None:
