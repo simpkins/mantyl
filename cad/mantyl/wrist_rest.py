@@ -362,7 +362,8 @@ def right(kbd: Optional[Keyboard] = None) -> bpy.types.Object:
     holder = PadHolder(kbd)
     blend_mesh = blender_util.blender_mesh("wrist_rest_mesh", holder.mesh)
     obj = blender_util.new_mesh_obj("wrist_rest", blend_mesh)
-    holder.beveler.apply_bevels(obj)
+
+    holder.finalize_object(obj)
 
     return obj
 
@@ -662,6 +663,49 @@ class PadHolder:
                     in_p.x, in_p.y, inner_roof.z_intersect(in_p.x, in_p.y)
                 )
 
+    def finalize_object(self, obj: bpy.types.Object) -> None:
+        self.beveler.apply_bevels(obj)
+        self.add_feet(obj)
+        self.add_screw_holes(obj)
+
+    def add_feet(self, obj: bpy.types.Object) -> None:
+        add_foot(
+            obj, self.left.p8.x, self.left.p8.y, 320, 0
+        )
+
+        num_segments = len(self.segments)
+        bl_idx = int(num_segments * 0.63)
+        bl = self.segments[bl_idx]
+        add_foot(
+            obj, bl.p8.x - 2.0, bl.p8.y - 2.0, 45, 0
+        )
+
+        br_idx = int(num_segments * 0.42)
+        br = self.segments[br_idx]
+        add_foot(
+            obj, br.p8.x + 0.2, br.p8.y - 3, 120, 0
+        )
+
+        tr_idx = int(num_segments * 0.19)
+        tr = self.segments[tr_idx]
+        add_foot(
+            obj, tr.p8.x + 1.30, tr.p8.y + 1.30, 215, 0
+        )
+
+    def add_screw_holes(self, obj: bpy.types.Object) -> None:
+        def add_screw_hole(x: float, z: float) -> None:
+            screw_hole = gen_screw_hole(self.wall_thickness)
+            blender_util.apply_to_wall(
+                screw_hole, self.kbd.fr.out2, self.kbd.fl.out2, x=x, z=z
+            )
+            blender_util.difference(obj, screw_hole)
+
+        x_spacing = 45
+        add_screw_hole(x=x_spacing * -0.5, z=8)
+        add_screw_hole(x=x_spacing * 0.5, z=8)
+        add_screw_hole(x=x_spacing * -0.5, z=22)
+        add_screw_hole(x=x_spacing * 0.5, z=22)
+
 
 def load_reference_image() -> None:
     import math
@@ -683,4 +727,6 @@ def load_reference_image() -> None:
 
 def test() -> None:
     # load_reference_image()
-    right()
+    obj = right()
+    with blender_util.TransformContext(obj) as ctx:
+        ctx.triangulate()
