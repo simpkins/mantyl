@@ -17,7 +17,7 @@ from . import wrist_rest
 
 
 def test_full() -> None:
-    from bcad import blender_util
+    from bpycad import blender_util
 
     show_halves = True
     show_numpad = True

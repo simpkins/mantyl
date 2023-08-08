@@ -10,9 +10,9 @@ import bpy
 import math
 from typing import List
 
-from bcad import blender_util
-from bcad import cad
-from bcad.cad import MeshPoint
+from bpycad import blender_util
+from bpycad import cad
+from bpycad.cad import MeshPoint
 from .keyboard import Keyboard
 
 

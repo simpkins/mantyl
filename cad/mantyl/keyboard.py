@@ -24,10 +24,10 @@ from typing import (
 
 import bpy
 
-from bcad import blender_util
-from bcad import cad
-from bcad.blender_util import blender_mesh, new_mesh_obj
-from bcad.cad import Mesh, MeshPoint, Point, Transform
+from bpycad import blender_util
+from bpycad import cad
+from bpycad.blender_util import blender_mesh, new_mesh_obj
+from bpycad.cad import Mesh, MeshPoint, Point, Transform
 
 
 T = TypeVar("T")

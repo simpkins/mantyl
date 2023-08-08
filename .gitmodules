@@ -1,0 +1,3 @@
+[submodule "cad/bpycad"]
+	path = cad/bpycad
+	url = https://github.com/simpkins/bpycad.git

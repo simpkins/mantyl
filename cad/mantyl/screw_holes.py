@@ -10,8 +10,8 @@ import bpy
 import math
 from typing import List
 
-from bcad import blender_util
-from bcad import cad
+from bpycad import blender_util
+from bpycad import cad
 from .keyboard import Keyboard
 
 
