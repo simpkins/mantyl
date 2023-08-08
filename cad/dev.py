@@ -13,7 +13,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "bpycad"))
 sys.path.insert(0, str(Path(__file__).parent))
 
-from bpycad import auto_update, blender_util
+from bpycad import dev_main
 
-blender_util.set_view_distance(350)
-auto_update.main("mantyl.dev.test", ["bpycad", "mantyl"])
+dev_main.main(["bpycad", "mantyl"], "mantyl.dev.test")
