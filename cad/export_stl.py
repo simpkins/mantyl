@@ -27,7 +27,7 @@ from mantyl import (
     usb_cutout,
 )
 
-models: Dict[str, Callable[[], bpy.types.Object]] = {
+models: export_stl.ModelDict = {
     "right_shell": kbd_halves.right_shell,
     "right_underlay": kbd_halves.right_socket_underlay,
     "right_thumb_underlay": kbd_halves.right_thumb_underlay,
