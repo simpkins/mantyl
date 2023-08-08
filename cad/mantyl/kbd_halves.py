@@ -315,7 +315,7 @@ def left_thumb_underlay() -> bpy.types.Object:
     return thumb_underlay(Keyboard(), mirror=True)
 
 
-def right_full(kbd: Keyboard) -> List[bpy.types.Object]:
+def right_full(kbd: Optional[Keyboard] = None) -> List[bpy.types.Object]:
     if kbd is None:
         kbd = Keyboard()
         kbd.gen_mesh()
