@@ -1,3 +1,4 @@
 _*
 .mypy_cache
 /.pyre
+/kicad/**/*-backups
