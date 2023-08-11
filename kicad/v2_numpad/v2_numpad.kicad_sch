@@ -6,13 +6,13 @@
 
   (lib_symbols
     (symbol "Connector_Generic:Conn_02x08_Top_Bottom" (pin_names (offset 1.016) hide) (in_bom yes) (on_board yes)
-      (property "Reference" "J" (at 1.27 10.16 0)
+      (property "Reference" "J1" (at 1.27 13.97 0)
         (effects (font (size 1.27 1.27)))
       )
-      (property "Value" "Conn_02x08_Top_Bottom" (at 1.27 -12.7 0)
+      (property "Value" "Conn_02x08_Top_Bottom" (at 1.27 11.43 0)
         (effects (font (size 1.27 1.27)))
       )
-      (property "Footprint" "" (at 0 0 0)
+      (property "Footprint" "Connector_IDC:IDC-Header_2x08_P2.54mm_Horizontal" (at 0 0 0)
         (effects (font (size 1.27 1.27)) hide)
       )
       (property "Datasheet" "~" (at 0 0 0)
@@ -96,7 +96,7 @@
           (stroke (width 0.1524) (type default))
           (fill (type none))
         )
-        (pin passive line (at -5.08 7.62 0) (length 3.81)
+        (pin power_out line (at -5.08 7.62 0) (length 3.81)
           (name "Pin_1" (effects (font (size 1.27 1.27))))
           (number "1" (effects (font (size 1.27 1.27))))
         )
@@ -156,7 +156,7 @@
           (name "Pin_8" (effects (font (size 1.27 1.27))))
           (number "8" (effects (font (size 1.27 1.27))))
         )
-        (pin passive line (at 7.62 7.62 180) (length 3.81)
+        (pin power_out line (at 7.62 7.62 180) (length 3.81)
           (name "Pin_9" (effects (font (size 1.27 1.27))))
           (number "9" (effects (font (size 1.27 1.27))))
         )
@@ -337,7 +337,7 @@
       (property "Value" "SK6812 Mini-E" (at 1.27 -5.715 0)
         (effects (font (size 1.27 1.27)) (justify left top))
       )
-      (property "Footprint" "" (at 1.27 -7.62 0)
+      (property "Footprint" "mantyl:SK6812-MINI-E" (at 1.27 -7.62 0)
         (effects (font (size 1.27 1.27)) (justify left top) hide)
       )
       (property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4960/4960_SK6812MINI-E_REV02_EN.pdf" (at 2.54 -9.525 0)
@@ -425,21 +425,73 @@
         )
       )
       (symbol "SK6812 Mini-E_1_1"
-        (pin power_in line (at 0 -7.62 90) (length 2.54)
-          (name "VSS" (effects (font (size 1.27 1.27))))
-          (number "1" (effects (font (size 1.27 1.27))))
-        )
-        (pin input line (at -7.62 0 0) (length 2.54)
-          (name "DIN" (effects (font (size 1.27 1.27))))
-          (number "2" (effects (font (size 1.27 1.27))))
-        )
         (pin power_in line (at 0 7.62 270) (length 2.54)
           (name "VDD" (effects (font (size 1.27 1.27))))
-          (number "3" (effects (font (size 1.27 1.27))))
+          (number "1" (effects (font (size 1.27 1.27))))
         )
         (pin output line (at 7.62 0 180) (length 2.54)
           (name "DOUT" (effects (font (size 1.27 1.27))))
+          (number "2" (effects (font (size 1.27 1.27))))
+        )
+        (pin power_in line (at 0 -7.62 90) (length 2.54)
+          (name "VSS" (effects (font (size 1.27 1.27))))
+          (number "3" (effects (font (size 1.27 1.27))))
+        )
+        (pin input line (at -7.62 0 0) (length 2.54)
+          (name "DIN" (effects (font (size 1.27 1.27))))
           (number "4" (effects (font (size 1.27 1.27))))
+        )
+      )
+    )
+    (symbol "power:+5V" (power) (pin_names (offset 0)) (in_bom yes) (on_board yes)
+      (property "Reference" "#PWR" (at 0 -3.81 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property "Value" "+5V" (at 0 3.556 0)
+        (effects (font (size 1.27 1.27)))
+      )
+      (property "Footprint" "" (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property "Datasheet" "" (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property "ki_keywords" "global power" (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (property "ki_description" "Power symbol creates a global label with name \"+5V\"" (at 0 0 0)
+        (effects (font (size 1.27 1.27)) hide)
+      )
+      (symbol "+5V_0_1"
+        (polyline
+          (pts
+            (xy -0.762 1.27)
+            (xy 0 2.54)
+          )
+          (stroke (width 0) (type default))
+          (fill (type none))
+        )
+        (polyline
+          (pts
+            (xy 0 0)
+            (xy 0 2.54)
+          )
+          (stroke (width 0) (type default))
+          (fill (type none))
+        )
+        (polyline
+          (pts
+            (xy 0 2.54)
+            (xy 0.762 1.27)
+          )
+          (stroke (width 0) (type default))
+          (fill (type none))
+        )
+      )
+      (symbol "+5V_1_1"
+        (pin power_in line (at 0 0 90) (length 0) hide
+          (name "+5V" (effects (font (size 1.27 1.27))))
+          (number "1" (effects (font (size 1.27 1.27))))
         )
       )
     )
@@ -608,6 +660,10 @@
   (junction (at 83.82 76.2) (diameter 0) (color 0 0 0 0)
     (uuid fb44b35e-2c65-409e-8966-77abc2726592)
   )
+
+  (no_connect (at 231.14 44.45) (uuid c435204e-1369-4715-bf9f-5e6460fce1ef))
+  (no_connect (at 231.14 46.99) (uuid e03b5036-b6bb-48a1-b6ff-bbde5c45604b))
+  (no_connect (at 165.1 38.1) (uuid fd46fd74-58da-404a-9af3-3057084a1041))
 
   (wire (pts (xy 205.74 46.99) (xy 212.09 46.99))
     (stroke (width 0) (type default))
@@ -833,7 +889,7 @@
     (stroke (width 0) (type default))
     (uuid 46bd6b8a-80b6-4c67-8218-2fc3d319e009)
   )
-  (wire (pts (xy 224.79 34.29) (xy 231.14 34.29))
+  (wire (pts (xy 224.79 34.29) (xy 234.95 34.29))
     (stroke (width 0) (type default))
     (uuid 47721f75-b359-4d18-a407-d6b92e957b83)
   )
@@ -1238,10 +1294,6 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 3b55de89-1511-4062-bdc3-2fb92fe9999c)
   )
-  (label "V_LED" (at 231.14 34.29 0) (fields_autoplaced)
-    (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid 3c37cfb3-f4fd-49aa-984b-15cd6f8bc770)
-  )
   (label "R5" (at 25.4 55.88 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 42da9ee1-00f0-4428-9d9d-0613450cd3f6)
@@ -1274,10 +1326,6 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 753d9185-d7c5-48ff-bf2b-272da9189a9f)
   )
-  (label "R10" (at 231.14 44.45 0) (fields_autoplaced)
-    (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid 8225ecd9-5855-4f38-a569-b0845cbf269e)
-  )
   (label "R3" (at 25.4 81.28 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 8939d473-d74b-4b43-b304-d6d60e304ec3)
@@ -1297,10 +1345,6 @@
   (label "LED_Data" (at 149.86 165.1 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid a1c8ff3d-cce5-4f66-9536-ff8660a69a6c)
-  )
-  (label "R11" (at 231.14 46.99 0) (fields_autoplaced)
-    (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid a6503123-a2af-4c1b-9e9f-a97feb2adcb5)
   )
   (label "R1" (at 25.4 106.68 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left bottom))
@@ -1330,11 +1374,7 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid cd65e96e-72fd-4029-afef-c6337201a998)
   )
-  (label "V_LED" (at 139.7 172.72 0) (fields_autoplaced)
-    (effects (font (size 1.27 1.27)) (justify left bottom))
-    (uuid d045d314-c416-40a4-a621-e9935447e5e1)
-  )
-  (label "R9" (at 231.14 41.91 0) (fields_autoplaced)
+  (label "LED_Data" (at 231.14 41.91 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid f8ff404d-0d06-4608-9bd5-63ab5aea26f9)
   )
@@ -1342,7 +1382,7 @@
   (symbol (lib_id "Diode:1N4148W") (at 114.3 46.99 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 0105ff4f-90c2-4b6b-80f9-3a6cdfdd9af4)
-    (property "Reference" "D16" (at 116.84 45.72 90)
+    (property "Reference" "D4" (at 116.84 45.72 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148W" (at 116.84 48.26 90)
@@ -1363,9 +1403,9 @@
     (pin "1" (uuid 8c8008ea-f536-4a7f-92b5-b7b5feb8225a))
     (pin "2" (uuid 161f4fe1-0745-4e29-91b4-b84a978da747))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D16") (unit 1)
+          (reference "D4") (unit 1)
         )
       )
     )
@@ -1374,13 +1414,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 121.92 33.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 0bf2eb94-c2bb-494c-9e4d-0c23b82b67af)
-    (property "Reference" "SW_Minus" (at 121.92 31.75 0)
+    (property "Reference" "SW_Minus1" (at 121.92 31.75 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 121.92 33.02 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 121.92 33.02 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 121.92 33.02 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 121.92 33.02 0)
@@ -1389,9 +1429,9 @@
     (pin "1" (uuid 2fca9e9c-88de-4c47-a008-e85018486d7c))
     (pin "2" (uuid 2bf7250d-0532-48cd-a2b4-7249b1dded02))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "SW_Minus") (unit 1)
+          (reference "SW_Minus1") (unit 1)
         )
       )
     )
@@ -1421,7 +1461,7 @@
     (pin "1" (uuid 45bd1192-4571-43a7-b61e-1840da1f47f8))
     (pin "2" (uuid 087465a9-c441-4fc6-89e6-2215a6d8326d))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "D5") (unit 1)
         )
@@ -1453,7 +1493,7 @@
     (pin "1" (uuid 68f63b81-96e0-4f74-be07-e1f1fcdf19dc))
     (pin "2" (uuid 67e9f5fc-4c4a-478e-a8a0-488aab313a74))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "D1") (unit 1)
         )
@@ -1464,7 +1504,7 @@
   (symbol (lib_id "Diode:1N4148W") (at 88.9 148.59 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 1c3ff01a-3f9d-4fb2-9c21-737ae37b947c)
-    (property "Reference" "D18" (at 91.44 147.32 90)
+    (property "Reference" "D17" (at 91.44 147.32 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148W" (at 91.44 149.86 90)
@@ -1485,9 +1525,9 @@
     (pin "1" (uuid 1a11f2af-85f3-48a3-934f-a7c58f13b14d))
     (pin "2" (uuid 2a993734-eaa5-4b57-915f-1ac1abf6e154))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D18") (unit 1)
+          (reference "D17") (unit 1)
         )
       )
     )
@@ -1496,13 +1536,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 121.92 96.52 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 285b9d27-f60e-463a-b47f-9562e32b3277)
-    (property "Reference" "SW_Enter" (at 121.92 95.25 0)
+    (property "Reference" "SW_Enter1" (at 121.92 95.25 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 121.92 96.52 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 121.92 96.52 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 121.92 96.52 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 121.92 96.52 0)
@@ -1511,9 +1551,9 @@
     (pin "1" (uuid 52581458-56f9-41db-bd13-c79154d6deaf))
     (pin "2" (uuid eb58b3f0-beda-4260-b494-96150ec6ae79))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "SW_Enter") (unit 1)
+          (reference "SW_Enter1") (unit 1)
         )
       )
     )
@@ -1528,7 +1568,7 @@
     (property "Value" "~" (at 45.72 83.82 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 45.72 83.82 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 45.72 83.82 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 45.72 83.82 0)
@@ -1537,7 +1577,7 @@
     (pin "1" (uuid 9bc70140-2825-4d87-ba11-933c393d56cb))
     (pin "2" (uuid cadb1c03-8fd8-4eda-80ee-787963590d70))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "SW_NP4") (unit 1)
         )
@@ -1554,7 +1594,7 @@
     (property "Value" "~" (at 96.52 83.82 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 96.52 83.82 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 96.52 83.82 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 96.52 83.82 0)
@@ -1563,7 +1603,7 @@
     (pin "1" (uuid f8632654-bd03-4132-8d08-e7161e5599d8))
     (pin "2" (uuid ae6fa255-e62d-4d42-a011-2202dd5eff80))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "SW_NP6") (unit 1)
         )
@@ -1588,7 +1628,7 @@
     )
     (pin "1" (uuid fd545004-ecd5-4739-9248-8d95c715219d))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "#PWR01") (unit 1)
         )
@@ -1605,7 +1645,7 @@
     (property "Value" "~" (at 71.12 58.42 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 71.12 58.42 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 71.12 58.42 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 71.12 58.42 0)
@@ -1614,7 +1654,7 @@
     (pin "1" (uuid a761492b-5a5c-4207-aac0-74e4505e2513))
     (pin "2" (uuid 35646974-d667-4948-a9f8-a2d135858b4f))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "SW_NP8") (unit 1)
         )
@@ -1625,13 +1665,13 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 157.48 139.7 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 451922ae-071d-4fb6-a8ee-a46065a3017f)
-    (property "Reference" "D_ScrollLock" (at 171.45 136.0521 0)
+    (property "Reference" "D_ScrollLock1" (at 171.45 136.0521 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 171.45 138.5921 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 158.75 147.32 0)
+    (property "Footprint" "mantyl:SK6812-MINI-E" (at 158.75 147.32 0)
       (effects (font (size 1.27 1.27)) (justify left top) hide)
     )
     (property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4960/4960_SK6812MINI-E_REV02_EN.pdf" (at 160.02 149.225 0)
@@ -1642,9 +1682,9 @@
     (pin "3" (uuid e543b33b-c1a4-4e13-be7a-2ec410e75064))
     (pin "4" (uuid add61669-de6a-42a1-b643-7a5eba68f054))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D_ScrollLock") (unit 1)
+          (reference "D_ScrollLock1") (unit 1)
         )
       )
     )
@@ -1668,7 +1708,7 @@
     (pin "1" (uuid 8fa0784f-2a03-4356-a797-c56c5274caae))
     (pin "2" (uuid 52673781-f573-4f5b-bb9e-4ca7db4b5d6e))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "C3") (unit 1)
         )
@@ -1679,13 +1719,13 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 157.48 38.1 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 487a38fb-bc87-47ac-a7da-cf34b14f6824)
-    (property "Reference" "D_Power" (at 171.45 34.4521 0)
+    (property "Reference" "D_Power1" (at 171.45 34.4521 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 171.45 36.9921 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 158.75 45.72 0)
+    (property "Footprint" "mantyl:SK6812-MINI-E" (at 158.75 45.72 0)
       (effects (font (size 1.27 1.27)) (justify left top) hide)
     )
     (property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4960/4960_SK6812MINI-E_REV02_EN.pdf" (at 160.02 47.625 0)
@@ -1696,9 +1736,9 @@
     (pin "3" (uuid d7e59f9c-6ed0-4d16-960b-9fff56f8529b))
     (pin "4" (uuid d368829b-92d5-43c1-96cc-99dc54850a03))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D_Power") (unit 1)
+          (reference "D_Power1") (unit 1)
         )
       )
     )
@@ -1713,7 +1753,7 @@
     (property "Value" "~" (at 96.52 109.22 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 96.52 109.22 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 96.52 109.22 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 96.52 109.22 0)
@@ -1722,7 +1762,7 @@
     (pin "1" (uuid 80a758ec-01ea-4c67-becb-7955b828613e))
     (pin "2" (uuid c7a11cfb-36fa-4d7f-9898-fa2424ff56e6))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "SW_NP3") (unit 1)
         )
@@ -1739,7 +1779,7 @@
     (property "Value" "~" (at 96.52 58.42 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 96.52 58.42 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 96.52 58.42 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 96.52 58.42 0)
@@ -1748,7 +1788,7 @@
     (pin "1" (uuid 99cf5e4c-b746-41e1-8a3e-238797af51b3))
     (pin "2" (uuid aa572380-ad94-431c-b21f-49cff6c81356))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "SW_NP9") (unit 1)
         )
@@ -1774,7 +1814,7 @@
     (pin "1" (uuid 386adffd-8e9c-4d13-bd00-895043220b11))
     (pin "2" (uuid f80d2481-4bfc-42d1-94e3-609aa2b27ea6))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "C1") (unit 1)
         )
@@ -1785,7 +1825,7 @@
   (symbol (lib_id "Diode:1N4148W") (at 38.1 123.19 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 5131f2dc-879f-4f77-9512-b46e4ecbc53f)
-    (property "Reference" "D7" (at 40.64 121.92 90)
+    (property "Reference" "D13" (at 40.64 121.92 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148W" (at 40.64 124.46 90)
@@ -1806,9 +1846,9 @@
     (pin "1" (uuid 48ab2845-62d8-464d-9ecb-2d7721fa01f0))
     (pin "2" (uuid f4aa427b-fc45-4b57-b0b2-1b80a1102395))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D7") (unit 1)
+          (reference "D13") (unit 1)
         )
       )
     )
@@ -1823,7 +1863,7 @@
     (property "Value" "~" (at 45.72 58.42 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 45.72 58.42 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 45.72 58.42 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 45.72 58.42 0)
@@ -1832,7 +1872,7 @@
     (pin "1" (uuid 1b220b0b-10de-4c71-a0c7-6bbd420a3d15))
     (pin "2" (uuid 3a5c1422-6d97-4d94-bbbf-c1bf42bde901))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "SW_NP7") (unit 1)
         )
@@ -1843,7 +1883,7 @@
   (symbol (lib_id "Diode:1N4148W") (at 88.9 46.99 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 5e5351d4-f9d5-44ba-a1d3-7f6a3123c4c1)
-    (property "Reference" "D4" (at 91.44 45.72 90)
+    (property "Reference" "D3" (at 91.44 45.72 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148W" (at 91.44 48.26 90)
@@ -1864,9 +1904,9 @@
     (pin "1" (uuid 2b3956eb-d253-4930-bfbd-4c29318c12f4))
     (pin "2" (uuid e1ca6033-894c-4c7b-99e4-9369cb32f501))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D4") (unit 1)
+          (reference "D3") (unit 1)
         )
       )
     )
@@ -1875,13 +1915,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 96.52 134.62 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 649946bc-e170-4b43-a0cf-9c7e8ba5d7e5)
-    (property "Reference" "SW_Dot" (at 96.52 133.35 0)
+    (property "Reference" "SW_Dot1" (at 96.52 133.35 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 96.52 134.62 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 96.52 134.62 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 96.52 134.62 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 96.52 134.62 0)
@@ -1890,9 +1930,9 @@
     (pin "1" (uuid f686415c-f503-4a58-b963-ddde378adfe2))
     (pin "2" (uuid 06cd4576-3baa-40db-9228-08c48276be5f))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "SW_Dot") (unit 1)
+          (reference "SW_Dot1") (unit 1)
         )
       )
     )
@@ -1901,13 +1941,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 96.52 33.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 6f90fa40-6997-48d3-b94a-43ea165404cd)
-    (property "Reference" "SW_Star" (at 96.52 31.75 0)
+    (property "Reference" "SW_Star1" (at 96.52 31.75 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 96.52 33.02 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 96.52 33.02 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 96.52 33.02 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 96.52 33.02 0)
@@ -1916,9 +1956,9 @@
     (pin "1" (uuid 8a1616ad-d9c2-44eb-b5ad-f00cba253095))
     (pin "2" (uuid 18ec67df-0310-4352-aaf0-ab655baab2c1))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "SW_Star") (unit 1)
+          (reference "SW_Star1") (unit 1)
         )
       )
     )
@@ -1927,13 +1967,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 45.72 33.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 6fc2ffc8-2dd7-4d17-962e-e9b52b3e9294)
-    (property "Reference" "SW_Extra" (at 45.72 31.75 0)
+    (property "Reference" "SW_Extra1" (at 45.72 31.75 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 45.72 33.02 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 45.72 33.02 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 45.72 33.02 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 45.72 33.02 0)
@@ -1942,9 +1982,9 @@
     (pin "1" (uuid 581f05d1-6f58-4df4-b7ea-845865a23c6e))
     (pin "2" (uuid eb58d052-c477-4a7e-9842-eaad2a61b2eb))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "SW_Extra") (unit 1)
+          (reference "SW_Extra1") (unit 1)
         )
       )
     )
@@ -1953,7 +1993,7 @@
   (symbol (lib_id "Diode:1N4148W") (at 38.1 97.79 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 7469c53c-7dfc-449a-8699-9acc9c662449)
-    (property "Reference" "D6" (at 40.64 96.52 90)
+    (property "Reference" "D9" (at 40.64 96.52 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148W" (at 40.64 99.06 90)
@@ -1974,9 +2014,34 @@
     (pin "1" (uuid 59a416b9-064c-4ce8-b1a6-677f9cdb6060))
     (pin "2" (uuid 8b671eed-420d-499b-911b-085be4546c68))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D6") (unit 1)
+          (reference "D9") (unit 1)
+        )
+      )
+    )
+  )
+
+  (symbol (lib_id "power:+5V") (at 139.7 172.72 180) (unit 1)
+    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (uuid 75417e71-e843-45ca-a861-38d73c16fff7)
+    (property "Reference" "#PWR04" (at 139.7 168.91 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Value" "+5V" (at 139.7 177.8 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "" (at 139.7 172.72 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "" (at 139.7 172.72 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid 62de6513-0a8f-4017-af1e-eda4c74bc461))
+    (instances
+      (project "v2_numpad"
+        (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
+          (reference "#PWR04") (unit 1)
         )
       )
     )
@@ -2014,7 +2079,7 @@
     (pin "8" (uuid 91df85aa-9e73-4fa8-bac0-ab0d98473ffe))
     (pin "9" (uuid ed22ae85-03ff-44b2-8c87-fad043c3025d))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "J1") (unit 1)
         )
@@ -2025,7 +2090,7 @@
   (symbol (lib_id "Diode:1N4148W") (at 114.3 72.39 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 7ac57c66-f3c4-477e-ad22-e2610b62fdc2)
-    (property "Reference" "D15" (at 116.84 71.12 90)
+    (property "Reference" "D8" (at 116.84 71.12 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148W" (at 116.84 73.66 90)
@@ -2046,9 +2111,9 @@
     (pin "1" (uuid 804c7ee6-0bd2-49a9-ac49-86f09bcc07ce))
     (pin "2" (uuid 224b293b-90fe-4574-bc9d-3b32ee1716d1))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D15") (unit 1)
+          (reference "D8") (unit 1)
         )
       )
     )
@@ -2072,7 +2137,7 @@
     (pin "1" (uuid c2f724fb-7418-48b8-857f-dc91b0fe0f94))
     (pin "2" (uuid 695ce33d-4b15-4bcb-91b4-c7190e3e80b4))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "C5") (unit 1)
         )
@@ -2098,7 +2163,7 @@
     (pin "1" (uuid 73a161d3-a3d8-4b28-9a8f-ee48d52b3236))
     (pin "2" (uuid a961bb97-5b8e-4995-b4fd-7978efa08811))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "C4") (unit 1)
         )
@@ -2109,7 +2174,7 @@
   (symbol (lib_id "Diode:1N4148W") (at 50.8 148.59 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 85ca1961-3592-4fb2-ab01-fa899bbb26ba)
-    (property "Reference" "D17" (at 53.34 147.32 90)
+    (property "Reference" "D16" (at 53.34 147.32 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148W" (at 53.34 149.86 90)
@@ -2130,9 +2195,9 @@
     (pin "1" (uuid a44d17bb-b786-4992-8581-a4f911e325e5))
     (pin "2" (uuid 1cda6c9d-9a50-45ad-be29-adf5a561eb14))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D17") (unit 1)
+          (reference "D16") (unit 1)
         )
       )
     )
@@ -2141,7 +2206,7 @@
   (symbol (lib_id "Diode:1N4148W") (at 88.9 72.39 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 86e75a51-cd9e-4475-baf7-42aad7f117a9)
-    (property "Reference" "D13" (at 91.44 71.12 90)
+    (property "Reference" "D7" (at 91.44 71.12 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148W" (at 91.44 73.66 90)
@@ -2162,9 +2227,34 @@
     (pin "1" (uuid 2db021dd-42e3-4764-b2f3-1a989faeedc7))
     (pin "2" (uuid 99da6b2d-666f-402c-b9fd-1e4dcd1ccb63))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D13") (unit 1)
+          (reference "D7") (unit 1)
+        )
+      )
+    )
+  )
+
+  (symbol (lib_id "power:+5V") (at 234.95 34.29 270) (unit 1)
+    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (uuid 8fc7801e-4290-4094-8085-8d9584b8177e)
+    (property "Reference" "#PWR03" (at 231.14 34.29 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Value" "+5V" (at 238.76 34.29 90)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Footprint" "" (at 234.95 34.29 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "" (at 234.95 34.29 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid eef65d10-bbd4-480d-846b-5e8830195341))
+    (instances
+      (project "v2_numpad"
+        (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
+          (reference "#PWR03") (unit 1)
         )
       )
     )
@@ -2173,13 +2263,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 121.92 58.42 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 90d11003-0596-46f9-94f5-a5874d1925c9)
-    (property "Reference" "SW_Plus" (at 121.92 57.15 0)
+    (property "Reference" "SW_Plus1" (at 121.92 57.15 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 121.92 58.42 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 121.92 58.42 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 121.92 58.42 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 121.92 58.42 0)
@@ -2188,9 +2278,9 @@
     (pin "1" (uuid 2689d0a1-949e-4c62-8d2e-f1a2e03ad0d5))
     (pin "2" (uuid fbd4d9df-bc89-4bc3-a6db-f142a0427f13))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "SW_Plus") (unit 1)
+          (reference "SW_Plus1") (unit 1)
         )
       )
     )
@@ -2205,7 +2295,7 @@
     (property "Value" "~" (at 71.12 83.82 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 71.12 83.82 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 71.12 83.82 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 71.12 83.82 0)
@@ -2214,7 +2304,7 @@
     (pin "1" (uuid 8ea4ee5d-4022-4434-b051-4c3fa3dd826a))
     (pin "2" (uuid e79f5607-f0d4-4556-8eda-36822c6f9296))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "SW_NP5") (unit 1)
         )
@@ -2225,13 +2315,13 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 157.48 114.3 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid a4ffca88-88a9-420c-8f00-24f2043f142e)
-    (property "Reference" "D_CapsLock" (at 171.45 110.6521 0)
+    (property "Reference" "D_CapsLock1" (at 171.45 110.6521 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 171.45 113.1921 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 158.75 121.92 0)
+    (property "Footprint" "mantyl:SK6812-MINI-E" (at 158.75 121.92 0)
       (effects (font (size 1.27 1.27)) (justify left top) hide)
     )
     (property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4960/4960_SK6812MINI-E_REV02_EN.pdf" (at 160.02 123.825 0)
@@ -2242,9 +2332,9 @@
     (pin "3" (uuid 43ead033-9a74-4480-a41a-51d1f341b528))
     (pin "4" (uuid fed50d05-86cf-4278-a81f-9372511c4d29))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D_CapsLock") (unit 1)
+          (reference "D_CapsLock1") (unit 1)
         )
       )
     )
@@ -2253,13 +2343,13 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 157.48 88.9 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid ab07cc76-5e2e-4545-a22d-10233cb657f5)
-    (property "Reference" "D_NumLock" (at 171.45 85.2521 0)
+    (property "Reference" "D_NumLock1" (at 171.45 85.2521 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 171.45 87.7921 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 158.75 96.52 0)
+    (property "Footprint" "mantyl:SK6812-MINI-E" (at 158.75 96.52 0)
       (effects (font (size 1.27 1.27)) (justify left top) hide)
     )
     (property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4960/4960_SK6812MINI-E_REV02_EN.pdf" (at 160.02 98.425 0)
@@ -2270,9 +2360,9 @@
     (pin "3" (uuid e9c7692b-caf4-4463-93fe-ce7b47c6f446))
     (pin "4" (uuid 6a26901d-1239-46ca-8b4e-84c17abf5b22))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D_NumLock") (unit 1)
+          (reference "D_NumLock1") (unit 1)
         )
       )
     )
@@ -2302,7 +2392,7 @@
     (pin "1" (uuid 19f31be7-c1d3-4d6e-9138-30a4279a55e1))
     (pin "2" (uuid 59663848-e25e-4d01-8111-277d124f9208))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "D10") (unit 1)
         )
@@ -2313,7 +2403,7 @@
   (symbol (lib_id "Diode:1N4148W") (at 63.5 46.99 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid bd524f58-e6a1-4cd1-acf9-66f3e2ef5dad)
-    (property "Reference" "D3" (at 66.04 45.72 90)
+    (property "Reference" "D2" (at 66.04 45.72 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148W" (at 66.04 48.26 90)
@@ -2334,9 +2424,9 @@
     (pin "1" (uuid 560ba51d-481c-4ba7-b5e0-6e8e7eb90da2))
     (pin "2" (uuid 49ab51b1-609e-431c-92ae-d51a696552f7))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D3") (unit 1)
+          (reference "D2") (unit 1)
         )
       )
     )
@@ -2366,7 +2456,7 @@
     (pin "1" (uuid e9960b5f-b84b-4119-8b6f-1c4432e18e6c))
     (pin "2" (uuid cc87eee1-5866-4498-af6a-d54794fa462d))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "D11") (unit 1)
         )
@@ -2377,7 +2467,7 @@
   (symbol (lib_id "Diode:1N4148W") (at 88.9 123.19 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid cd869c96-33e2-4e30-9418-c5f26e89d6cf)
-    (property "Reference" "D9" (at 91.44 121.92 90)
+    (property "Reference" "D15" (at 91.44 121.92 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148W" (at 91.44 124.46 90)
@@ -2398,9 +2488,9 @@
     (pin "1" (uuid 63fdb8a7-5eeb-4635-a6ce-63d34d71f4a9))
     (pin "2" (uuid b255c1ec-9582-415d-a4e7-4bdde106a455))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D9") (unit 1)
+          (reference "D15") (unit 1)
         )
       )
     )
@@ -2415,7 +2505,7 @@
     (property "Value" "~" (at 71.12 109.22 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 71.12 109.22 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 71.12 109.22 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 71.12 109.22 0)
@@ -2424,7 +2514,7 @@
     (pin "1" (uuid 6d995d07-8c11-4ad7-ab38-ef22bd20b01c))
     (pin "2" (uuid 484e1f39-6cfa-49fe-a499-9a0c28ea4d65))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "SW_NP2") (unit 1)
         )
@@ -2435,7 +2525,7 @@
   (symbol (lib_id "Diode:1N4148W") (at 63.5 72.39 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid cffdfd92-8651-41ab-8ddf-db101b0eb1f3)
-    (property "Reference" "D12" (at 66.04 71.12 90)
+    (property "Reference" "D6" (at 66.04 71.12 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148W" (at 66.04 73.66 90)
@@ -2456,9 +2546,9 @@
     (pin "1" (uuid 65a0e274-796c-4ee7-953a-c25cc14f2c60))
     (pin "2" (uuid dadcd597-a188-4264-89ff-1b27dda0737a))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D12") (unit 1)
+          (reference "D6") (unit 1)
         )
       )
     )
@@ -2467,7 +2557,7 @@
   (symbol (lib_id "Diode:1N4148W") (at 63.5 123.19 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid d9139cd1-145e-40c7-b54d-8669978a30d6)
-    (property "Reference" "D8" (at 66.04 121.92 90)
+    (property "Reference" "D14" (at 66.04 121.92 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148W" (at 66.04 124.46 90)
@@ -2488,9 +2578,9 @@
     (pin "1" (uuid e232dce7-012f-49e4-89ac-c535cec54c04))
     (pin "2" (uuid ba960885-27fc-4e15-93f3-ebb23cdaea11))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D8") (unit 1)
+          (reference "D14") (unit 1)
         )
       )
     )
@@ -2499,7 +2589,7 @@
   (symbol (lib_id "Diode:1N4148W") (at 114.3 110.49 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid d9b5d42a-95fc-4cb6-a127-616abd64404d)
-    (property "Reference" "D14" (at 116.84 109.22 90)
+    (property "Reference" "D12" (at 116.84 109.22 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148W" (at 116.84 111.76 90)
@@ -2520,9 +2610,9 @@
     (pin "1" (uuid 022112b0-0a01-4e77-b9b2-437b5a4f29a9))
     (pin "2" (uuid f97e0458-c6fa-4402-aea3-e6a03645035c))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D14") (unit 1)
+          (reference "D12") (unit 1)
         )
       )
     )
@@ -2531,13 +2621,13 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 157.48 63.5 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid db01a79e-6977-411b-95cf-1e25ac782538)
-    (property "Reference" "D_Keymap" (at 171.45 59.8521 0)
+    (property "Reference" "D_Keymap1" (at 171.45 59.8521 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 171.45 62.3921 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 158.75 71.12 0)
+    (property "Footprint" "mantyl:SK6812-MINI-E" (at 158.75 71.12 0)
       (effects (font (size 1.27 1.27)) (justify left top) hide)
     )
     (property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4960/4960_SK6812MINI-E_REV02_EN.pdf" (at 160.02 73.025 0)
@@ -2548,9 +2638,9 @@
     (pin "3" (uuid 454259d7-2ee9-4d19-bc73-e167fbce5fa5))
     (pin "4" (uuid 5d4fcaa6-5bef-471e-8076-3a51f5826cd3))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "D_Keymap") (unit 1)
+          (reference "D_Keymap1") (unit 1)
         )
       )
     )
@@ -2559,13 +2649,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 71.12 33.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid e9175e78-be3b-4e1c-b615-9c713943aaaf)
-    (property "Reference" "SW_Slash" (at 71.12 31.75 0)
+    (property "Reference" "SW_Slash1" (at 71.12 31.75 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 71.12 33.02 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 71.12 33.02 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 71.12 33.02 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 71.12 33.02 0)
@@ -2574,9 +2664,9 @@
     (pin "1" (uuid 1f3ef2c9-d91a-48ae-a70e-883dc1aaf1bc))
     (pin "2" (uuid fba7fefc-cc82-498a-a2ce-f648e0e274b3))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
-          (reference "SW_Slash") (unit 1)
+          (reference "SW_Slash1") (unit 1)
         )
       )
     )
@@ -2591,7 +2681,7 @@
     (property "Value" "~" (at 45.72 109.22 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 45.72 109.22 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 45.72 109.22 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 45.72 109.22 0)
@@ -2600,7 +2690,7 @@
     (pin "1" (uuid 4682de25-2989-4390-a1f2-99bdb6356641))
     (pin "2" (uuid ef15f5ca-3ead-428f-aef0-85eaeb615e2c))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "SW_NP1") (unit 1)
         )
@@ -2626,7 +2716,7 @@
     (pin "1" (uuid 8878d75d-25ba-4a43-ac8e-bd53a26f7c00))
     (pin "2" (uuid 96181d75-f766-4c49-b822-61dbc5d35357))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "C2") (unit 1)
         )
@@ -2643,7 +2733,7 @@
     (property "Value" "~" (at 58.42 134.62 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 58.42 134.62 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 58.42 134.62 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 58.42 134.62 0)
@@ -2652,7 +2742,7 @@
     (pin "1" (uuid 7380314f-8bd6-422a-8c32-4a43486f1331))
     (pin "2" (uuid 7b7f0a18-971e-4ef1-8740-e0263917f9f2))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "SW_NP0") (unit 1)
         )
@@ -2677,7 +2767,7 @@
     )
     (pin "1" (uuid 49663a74-7a2e-4ec6-9b84-15e86200dc4b))
     (instances
-      (project "v2_key_matrix"
+      (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
           (reference "#PWR02") (unit 1)
         )
