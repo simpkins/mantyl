@@ -33,9 +33,7 @@ def test_full() -> None:
         #kbd_halves.right_full(rkbd)
 
     if show_numpad:
-        mesh = blender_util.blender_mesh("numpad_mesh", np.mesh)
-        np_obj = blender_util.new_mesh_obj("numpad", mesh)
-        np.apply_bevels(np_obj)
+        np.gen_object()
 
     if show_wrist_rests:
         rwr = wrist_rest.right()
@@ -59,8 +57,22 @@ def test_full() -> None:
             ctx.translate(0, -41.5, 62.1)
 
 
+def test_np() -> None:
+    rkbd, lkbd, np = kbd_halves.gen_3_sections()
+    np.gen_object()
+
+    from . import soc
+    from bpycad import blender_util
+    esp32 = soc.esp32s3_wroom_devkit_c()
+    with blender_util.TransformContext(esp32) as ctx:
+        ctx.rotate(90, "Z")
+        ctx.rotate(90, "X")
+        ctx.translate(0, 60, 20)
+
+
 def test() -> None:
-    test_full()
+    #test_full()
+    test_np()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()

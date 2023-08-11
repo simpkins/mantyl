@@ -575,3 +575,10 @@ class NumpadSection:
 
     def apply_bevels(self, obj: bpy.types.Object) -> None:
         return self._beveler.apply_bevels(obj)
+
+    def gen_object(self, name: str = "numpad") -> bpy.types.Object:
+        bmesh = blender_util.blender_mesh(f"{name}_mesh", self.mesh)
+        obj = blender_util.new_mesh_obj(name, bmesh)
+        self.apply_bevels(obj)
+
+        return obj
