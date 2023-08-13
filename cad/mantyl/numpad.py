@@ -51,7 +51,13 @@ class NumpadSection:
         self.gen_mesh(rkbd, lkbd)
 
     def _make_key(self, x_offset: float, y_offset: float) -> KeyHole:
-        x_off_mm = x_offset * self.key_size
+        # Our keypad has 4 columns.  We want it to be centered
+        # directly in the middle.  KeyHole creates a key centered on (0, 0),
+        # so we need to move over 1.5 key widths to center on the center edge
+        # between the middle two columns.
+        global_x_offset = self.key_size * -1.5
+
+        x_off_mm = global_x_offset + (x_offset * self.key_size)
         y_off_mm = y_offset * self.key_size
         kh = KeyHole(self.mesh, Transform().translate(x_off_mm, y_off_mm, 0.0))
         kh.inner_walls()
@@ -64,7 +70,7 @@ class NumpadSection:
         self._border_faces()
 
         self.plate_tf = (
-            Transform().rotate(12.0, 0.0, 0.0).translate(-9.5, 15.0, 70.0)
+            Transform().rotate(12.0, 0.0, 0.0).translate(0.0, 15.0, 70.0)
         )
         self.mesh.transform(self.plate_tf)
 
@@ -96,26 +102,26 @@ class NumpadSection:
         self.kp0.dsa_keycap(xratio=2.0, transform=self.plate_tf)
 
     def _init_keys(self) -> None:
-        self.kp1 = self._make_key(-1, -1)
-        self.kp2 = self._make_key(0, -1)
-        self.kp3 = self._make_key(1, -1)
-        self.kp4 = self._make_key(-1, 0)
-        self.kp5 = self._make_key(0, 0)
-        self.kp6 = self._make_key(1, 0)
-        self.kp7 = self._make_key(-1, 1)
-        self.kp8 = self._make_key(0, 1)
-        self.kp9 = self._make_key(1, 1)
+        self.kp1 = self._make_key(0, -1)
+        self.kp2 = self._make_key(1, -1)
+        self.kp3 = self._make_key(2, -1)
+        self.kp4 = self._make_key(0, 0)
+        self.kp5 = self._make_key(1, 0)
+        self.kp6 = self._make_key(2, 0)
+        self.kp7 = self._make_key(0, 1)
+        self.kp8 = self._make_key(1, 1)
+        self.kp9 = self._make_key(2, 1)
 
-        self.kp_extra = self._make_key(-1, 2)
-        self.kp_slash = self._make_key(0, 2)
-        self.kp_star = self._make_key(1, 2)
-        self.kp_minus = self._make_key(2, 2)
+        self.kp_extra = self._make_key(0, 2)
+        self.kp_slash = self._make_key(1, 2)
+        self.kp_star = self._make_key(2, 2)
+        self.kp_minus = self._make_key(3, 2)
 
-        self.kp0 = self._make_key(-0.5, -2)
-        self.kp_dot = self._make_key(1, -2)
+        self.kp0 = self._make_key(0.5, -2)
+        self.kp_dot = self._make_key(2, -2)
 
-        self.kp_plus = self._make_key(2, 0.5)
-        self.kp_enter = self._make_key(2, -1.5)
+        self.kp_plus = self._make_key(3, 0.5)
+        self.kp_enter = self._make_key(3, -1.5)
 
     def _init_corners(self) -> None:
         border_width_x = 2
@@ -128,21 +134,43 @@ class NumpadSection:
         upper_z = self.kp1.u_tl.z
         lower_z = self.kp1.l_tl.z
 
-        u_tl = self.mesh.add_xyz(left_x, top_y, upper_z)
-        u_tr = self.mesh.add_xyz(right_x, top_y, upper_z)
-        u_bl = self.mesh.add_xyz(left_x, bottom_y, upper_z)
-        u_br = self.mesh.add_xyz(right_x, bottom_y, upper_z)
-        l_tl = self.mesh.add_xyz(left_x, top_y, lower_z)
-        l_tr = self.mesh.add_xyz(right_x, top_y, lower_z)
+        self.tl = (
+            self.mesh.add_xyz(left_x, top_y, upper_z),
+            self.mesh.add_xyz(left_x, top_y, lower_z),
+        )
+        self.tr = (
+            self.mesh.add_xyz(right_x, top_y, upper_z),
+            self.mesh.add_xyz(right_x, top_y, lower_z),
+        )
         # Move the lower bottom corners in slightly, to avoid them being
         # to close to the inner walls
-        l_bl = self.mesh.add_xyz(left_x + 1.5, bottom_y + 1.5, lower_z)
-        l_br = self.mesh.add_xyz(right_x - 1.5, bottom_y + 1.5, lower_z)
+        self.bl = (
+            self.mesh.add_xyz(left_x, bottom_y, upper_z),
+            self.mesh.add_xyz(left_x + 1.5, bottom_y + 1.5, lower_z),
+        )
+        self.br = (
+            self.mesh.add_xyz(right_x, bottom_y, upper_z),
+            self.mesh.add_xyz(right_x - 1.5, bottom_y + 1.5, lower_z),
+        )
 
-        self.tl = (u_tl, l_tl)
-        self.tr = (u_tr, l_tr)
-        self.bl = (u_bl, l_bl)
-        self.br = (u_br, l_br)
+        # Add a smaller section in the bottom middle for status LEDs
+        jut_distance = 10.0
+        self.jut_tl = (
+            self.mesh.add_xyz(left_x * 0.5, bottom_y, upper_z),
+            self.mesh.add_xyz(left_x * 0.5, bottom_y, lower_z),
+        )
+        self.jut_tr = (
+            self.mesh.add_xyz(right_x * 0.5, bottom_y, upper_z),
+            self.mesh.add_xyz(right_x * 0.5, bottom_y, lower_z),
+        )
+        self.jut_bl = (
+            self.mesh.add_xyz(left_x * 0.5, bottom_y - jut_distance, upper_z),
+            self.mesh.add_xyz(left_x * 0.5, bottom_y - jut_distance, lower_z),
+        )
+        self.jut_br = (
+            self.mesh.add_xyz(right_x * 0.5, bottom_y - jut_distance, upper_z),
+            self.mesh.add_xyz(right_x * 0.5, bottom_y - jut_distance, lower_z),
+        )
 
         top_y2 = top_y + 5.067
         self.tr_wall = self.mesh.add_xyz(right_x, top_y2, upper_z - 0.75)
@@ -253,10 +281,34 @@ class NumpadSection:
                 self.kp_enter.br,
                 self.kp_enter.bl,
                 self.kp_dot.br,
-                self.kp_dot.bl,
+                self.jut_tr,
             ],
         )
-        self._fan(self.bl, [self.br, self.kp_dot.bl, self.kp0.br, self.kp0.bl])
+        self._fan(
+            self.jut_tr,
+            [
+                self.kp_dot.br,
+                self.kp_dot.bl,
+                self.jut_br,
+            ],
+        )
+        self._fan(
+            self.jut_br,
+            [
+                self.kp_dot.bl,
+                self.kp0.br,
+                self.jut_tl,
+                self.jut_bl,
+            ],
+        )
+        self._fan(
+            self.jut_tl,
+            [
+                self.kp0.br,
+                self.kp0.bl,
+                self.bl,
+            ],
+        )
 
         # Left
         self._fan(
@@ -453,7 +505,15 @@ class NumpadSection:
         )
         self._fan(self.tl, self.perim[13:19])
         self._fan(self.bl, [self.tl] + self.perim[18:])
-        self._wall_quad(self.perim[0], self.perim[-1], self.bl, self.br)
+
+        self._fan(self.jut_br, [self.perim[0], self.br, self.jut_tr])
+        self._fan(self.jut_bl, [self.jut_tl, self.bl, self.perim[-1]])
+        self._wall_quad(self.perim[0], self.perim[-1], self.jut_bl, self.jut_br)
+        self._bevel_edge(self.perim[0][0], self.jut_br[0])
+        self._bevel_edge(self.perim[-1][0], self.jut_bl[0])
+        self._bevel_edge(self.jut_bl[0], self.jut_br[0])
+        self._bevel_edge(self.bl[0], self.jut_bl[0], 0.3)
+        self._bevel_edge(self.br[0], self.jut_br[0], 0.3)
 
         # Vertical wall faces
         for idx in range(len(self.perim)):
@@ -544,7 +604,9 @@ class NumpadSection:
         # Perimeter corner bevels
         if bevel_joins:
             for idx in range(len(self.perim)):
-                self._bevel_edge(self.perim[idx - 1][0], self.perim[idx][0], 0.6)
+                self._bevel_edge(
+                    self.perim[idx - 1][0], self.perim[idx][0], 0.6
+                )
         else:
             # Even with bevel_joins disabled, we still bevel a few of the front
             # edges that are near the thumb section and aren't fully aligned
@@ -571,6 +633,6 @@ class NumpadSection:
     def gen_object(self, name: str = "numpad") -> bpy.types.Object:
         bmesh = blender_util.blender_mesh(f"{name}_mesh", self.mesh)
         obj = blender_util.new_mesh_obj(name, bmesh)
-        self.apply_bevels(obj)
+        # self.apply_bevels(obj)
 
         return obj

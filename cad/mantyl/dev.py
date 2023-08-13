@@ -21,7 +21,7 @@ def test_full() -> None:
 
     show_halves = True
     show_numpad = True
-    show_keycaps = True
+    show_keycaps = False
     show_oled = False
     show_wrist_rests = False
 
@@ -60,6 +60,7 @@ def test_full() -> None:
 def test_np() -> None:
     rkbd, lkbd, np = kbd_halves.gen_3_sections()
     np.gen_object()
+    return
 
     from . import soc
     from bpycad import blender_util
@@ -79,7 +80,7 @@ def test_np() -> None:
 
 def test() -> None:
     test_full()
-    #test_np()
+    # test_np()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()
