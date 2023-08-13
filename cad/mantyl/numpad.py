@@ -37,14 +37,6 @@ class NumpadSection:
     tr: Tuple[MeshPoint, MeshPoint]
     bl: Tuple[MeshPoint, MeshPoint]
     br: Tuple[MeshPoint, MeshPoint]
-    u_tl: MeshPoint
-    u_tr: MeshPoint
-    u_bl: MeshPoint
-    u_br: MeshPoint
-    l_tl: MeshPoint
-    l_tr: MeshPoint
-    l_bl: MeshPoint
-    l_br: MeshPoint
     tr_wall: MeshPoint
     tl_wall: MeshPoint
     perim: List[Tuple[MeshPoint, MeshPoint]]
@@ -136,21 +128,21 @@ class NumpadSection:
         upper_z = self.kp1.u_tl.z
         lower_z = self.kp1.l_tl.z
 
-        self.u_tl = self.mesh.add_xyz(left_x, top_y, upper_z)
-        self.u_tr = self.mesh.add_xyz(right_x, top_y, upper_z)
-        self.u_bl = self.mesh.add_xyz(left_x, bottom_y, upper_z)
-        self.u_br = self.mesh.add_xyz(right_x, bottom_y, upper_z)
-        self.l_tl = self.mesh.add_xyz(left_x, top_y, lower_z)
-        self.l_tr = self.mesh.add_xyz(right_x, top_y, lower_z)
+        u_tl = self.mesh.add_xyz(left_x, top_y, upper_z)
+        u_tr = self.mesh.add_xyz(right_x, top_y, upper_z)
+        u_bl = self.mesh.add_xyz(left_x, bottom_y, upper_z)
+        u_br = self.mesh.add_xyz(right_x, bottom_y, upper_z)
+        l_tl = self.mesh.add_xyz(left_x, top_y, lower_z)
+        l_tr = self.mesh.add_xyz(right_x, top_y, lower_z)
         # Move the lower bottom corners in slightly, to avoid them being
         # to close to the inner walls
-        self.l_bl = self.mesh.add_xyz(left_x + 1.5, bottom_y + 1.5, lower_z)
-        self.l_br = self.mesh.add_xyz(right_x - 1.5, bottom_y + 1.5, lower_z)
+        l_bl = self.mesh.add_xyz(left_x + 1.5, bottom_y + 1.5, lower_z)
+        l_br = self.mesh.add_xyz(right_x - 1.5, bottom_y + 1.5, lower_z)
 
-        self.tl = (self.u_tl, self.l_tl)
-        self.tr = (self.u_tr, self.l_tr)
-        self.bl = (self.u_bl, self.l_bl)
-        self.br = (self.u_br, self.l_br)
+        self.tl = (u_tl, l_tl)
+        self.tr = (u_tr, l_tr)
+        self.bl = (u_bl, l_bl)
+        self.br = (u_br, l_br)
 
         top_y2 = top_y + 5.067
         self.tr_wall = self.mesh.add_xyz(right_x, top_y2, upper_z - 0.75)
