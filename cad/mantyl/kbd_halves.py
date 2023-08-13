@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import bpy
-from typing import cast, List, Optional
+from typing import cast, List, Optional, Tuple
 
 from bpycad import blender_util
 from bpycad import cad
@@ -14,6 +14,7 @@ from .foot import add_feet
 from .i2c_conn import add_i2c_connector
 from .keyboard import Grid2D, Keyboard, KeyHole, gen_keyboard
 from .key_socket_holder import SocketHolder, SocketHolderBuilder, SocketType
+from .numpad import NumpadSection
 from .screw_holes import add_screw_holes
 from . import oled_holder
 from . import numpad

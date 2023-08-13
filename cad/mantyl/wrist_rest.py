@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from bpycad import cad
 from bpycad import blender_util
+from bpycad.cad import MeshPoint
 from .foot import add_foot
 from .keyboard import Keyboard
 from .screw_holes import gen_screw_hole
@@ -378,6 +379,7 @@ def left() -> bpy.types.Object:
 BASE_THICKNESS = 1.0
 
 
+# pyre-fixme[13]: some attributes are not initialized directly in __init__()
 class PadSegment:
     inner_h = 4.0
     lip_w = 3.5
@@ -385,11 +387,14 @@ class PadSegment:
     outer_w = 4.0
     bottom_thickness = 4.0
 
-    def __init__(self, mesh, x: float, y: float) -> None:
+    p7: MeshPoint
+    p8: MeshPoint
+
+    def __init__(self, mesh: cad.Mesh, x: float, y: float) -> None:
         # Bottom outer corner of inset
-        self.p1 = mesh.add_xyz(x, y, 0.0)
+        self.p1: MeshPoint = mesh.add_xyz(x, y, 0.0)
         # Top outer corner of inset
-        self.p2 = mesh.add_xyz(x, y, self.inner_h)
+        self.p2: MeshPoint = mesh.add_xyz(x, y, self.inner_h)
 
         p = cad.Point(x, y, 0.0)
         lip_vec = p.unit() * self.lip_w
@@ -400,13 +405,13 @@ class PadSegment:
         top_z = self.inner_h + self.lip_h
 
         # Bottom corner of lip
-        self.p3 = mesh.add_xyz(in_p.x, in_p.y, self.inner_h)
+        self.p3: MeshPoint = mesh.add_xyz(in_p.x, in_p.y, self.inner_h)
         # Top corner of lip
-        self.p4 = mesh.add_xyz(in_p.x, in_p.y, top_z)
+        self.p4: MeshPoint = mesh.add_xyz(in_p.x, in_p.y, top_z)
         # Top outer corner of lip
-        self.p5 = mesh.add_xyz(out_p.x, out_p.y, top_z)
+        self.p5: MeshPoint = mesh.add_xyz(out_p.x, out_p.y, top_z)
         # Bottom outer corner of lip
-        self.p6 = mesh.add_xyz(out_p.x, out_p.y, 0.0)
+        self.p6: MeshPoint = mesh.add_xyz(out_p.x, out_p.y, 0.0)
 
         # p7 is the outer corner on the ground
         # p8 is the inner corner on the ground
@@ -415,7 +420,7 @@ class PadSegment:
         # points to be in the correct location relative to the keyboard.
 
         # p9 is the upper point on the interior
-        self.p9 = mesh.add_xyz(x, y, -self.bottom_thickness)
+        self.p9: MeshPoint = mesh.add_xyz(x, y, -self.bottom_thickness)
 
     def gen_faces(
         self, bcenter: MeshPoint, prev: PadSegment, base_center: MeshPoint
@@ -437,6 +442,7 @@ class PadSegment:
         mesh.add_tri(self.p9, prev.p9, base_center)
 
 
+# pyre-fixme[13]: some attributes are not initialized directly in __init__()
 class PadHolder:
     """
     A wrist rest designed to hold a Belkin WaveRest wrist pad (F8E244).
@@ -446,6 +452,9 @@ class PadHolder:
     """
 
     wall_thickness = 4.0
+    left: PadSegment
+    left_idx: int
+    fr: PadSegment
 
     def __init__(self, kbd: Keyboard) -> None:
         self.mesh = cad.Mesh()
@@ -506,7 +515,7 @@ class PadHolder:
             seg.gen_faces(self.top_center, prev, self.top_inner_center)
             self.beveler.bevel_edge(seg.p5, prev.p5, 1.0)
 
-    def gen_perim(self) -> List[float, float]:
+    def gen_perim(self) -> List[Tuple[float, float]]:
         # Control points for a cubic bezier cube
         # for each quadrant.
         top = cad.Point(0.0, 29.5)
@@ -563,6 +572,7 @@ class PadHolder:
             if fr_idx is None and segment.p5.x >= kbd_fr.x:
                 fr_idx = idx - 1
 
+        assert fr_idx is not None
         self.fr = self.segments[fr_idx]
         self.left = self.segments[left_idx]
         self.left_idx = left_idx
@@ -717,10 +727,13 @@ def load_reference_image() -> None:
 
     obj = bpy.context.active_object
     obj.name = "reference"
+    # pyre-fixme[16]: the blender type stubs are wrong for obj.scale
     obj.scale.x = scale
+    # pyre-fixme[16]: the blender type stubs are wrong for obj.scale
     obj.scale.y = scale
+    # pyre-fixme[16]: the blender type stubs are wrong for obj.scale
     obj.scale.z = scale
-    obj.rotation_euler = [0, 0, math.radians(-89.3)]
+    obj.rotation_euler = (0, 0, math.radians(-89.3))
     obj.location.x -= 14.8
     obj.location.y += 7
 

@@ -3,5 +3,8 @@
   "source_directories": [
     "cad"
   ],
+  "search_path": [
+    "./cad/bpycad"
+  ],
   "strict": true
 }
