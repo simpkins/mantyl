@@ -326,8 +326,8 @@ class Keyboard:
             tf = tf.rotate(18, 0, 0)
             tf = tf.translate(0, 20.5, 8)
         elif row == 3:
-            tf = tf.rotate(6, 0, 0)
-            tf = tf.translate(0, -1.25, 5)
+            tf = tf.rotate(5, 0, 0)
+            tf = tf.translate(0, -1.25, 4.8)
         elif row == 4:
             tf = tf.rotate(3, 0, 0)
             tf = tf.translate(0, -21, 4)
