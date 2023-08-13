@@ -35,7 +35,9 @@ def left_shell_simple(name: str = "left_keyboard") -> bpy.types.Object:
     return kbd_obj
 
 
-HALF_OFFSET = 140
+# The distance between the closest point of the two keyboard halves,
+# along the X axis at their closest point (at the tip of the thumb sections).
+X_SEPARATION = 35
 
 
 def gen_3_sections() -> Tuple[Keyboard, Keyboard, NumpadSection]:
@@ -43,11 +45,18 @@ def gen_3_sections() -> Tuple[Keyboard, Keyboard, NumpadSection]:
     Generate and return right keyboard half, left keyboard half, and numpad
     section.
     """
-    right_tf = cad.Transform().translate(HALF_OFFSET, 0.0, 0.0)
-    left_tf = cad.Transform().mirror_x().translate(-HALF_OFFSET, 0.0, 0.0)
-
     rkbd = Keyboard()
     rkbd.gen_mesh()
+
+    # Find the leftmost portion of the keyboard.  We have to translate at least
+    # this much along the X axis to have the two halves not overlap in the
+    # middle.
+    min_x_offset = rkbd.thumb_tl.out2.x
+    x_offset = -min_x_offset + (X_SEPARATION * 0.5)
+
+    right_tf = cad.Transform().translate(x_offset, 0.0, 0.0)
+    left_tf = cad.Transform().mirror_x().translate(-x_offset, 0.0, 0.0)
+
     rkbd.transform(right_tf)
 
     lkbd = Keyboard()
