@@ -30,3 +30,21 @@ def esp32s3_wroom_devkit_c() -> bpy.types.Object:
     blender_util.union(obj, antenna)
 
     return obj
+
+
+def numpad_board() -> bpy.types.Object:
+    l = 94
+    w = 80
+    board_d = 1.57
+    obj = blender_util.cube(w, l, board_d, "controller")
+
+    soc_l = 15
+    soc_w = 40
+    overlap_l = 2
+    soc = blender_util.cube(soc_w, soc_l + overlap_l, board_d)
+    with blender_util.TransformContext(soc) as ctx:
+        ctx.translate(0, -(l + soc_l - overlap_l) * 0.5, 0)
+
+    blender_util.union(obj, soc)
+
+    return obj

@@ -21,9 +21,9 @@ def test_full() -> None:
 
     show_halves = True
     show_numpad = True
-    show_keycaps = False
+    show_keycaps = True
     show_oled = False
-    show_wrist_rests = True
+    show_wrist_rests = False
 
     rkbd, lkbd, np = kbd_halves.gen_3_sections()
 
@@ -63,16 +63,23 @@ def test_np() -> None:
 
     from . import soc
     from bpycad import blender_util
-    esp32 = soc.esp32s3_wroom_devkit_c()
-    with blender_util.TransformContext(esp32) as ctx:
-        ctx.rotate(90, "Z")
-        ctx.rotate(90, "X")
-        ctx.translate(0, 60, 20)
+    if False:
+        esp32 = soc.esp32s3_wroom_devkit_c()
+        with blender_util.TransformContext(esp32) as ctx:
+            ctx.rotate(90, "Z")
+            ctx.rotate(90, "X")
+            ctx.translate(0, 60, 20)
+    else:
+        board = soc.numpad_board()
+        with blender_util.TransformContext(board) as ctx:
+            #Transform().rotate(12.0, 0.0, 0.0).translate(-9.5, 15.0, 70.0)
+            ctx.rotate(12, "X")
+            ctx.translate(0, 16, 68)
 
 
 def test() -> None:
-    #test_full()
-    test_np()
+    test_full()
+    #test_np()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()
