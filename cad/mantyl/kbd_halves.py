@@ -79,13 +79,46 @@ def right_shell_obj(
 ) -> bpy.types.Object:
     kbd_obj = gen_keyboard(kbd, name=name)
     add_feet(kbd, kbd_obj)
-    add_i2c_connector(kbd, kbd_obj)
     add_screw_holes(kbd, kbd_obj)
 
-    sx1509_holder.apply_screw_holder(
-        kbd_obj, kbd.left_wall[-5].in3, kbd.left_wall[-1].in3, x=5.0, z=20.0
+    apply_cable_hole(
+        kbd_obj, kbd.left_wall[-5].in3, kbd.left_wall[-2].in3, x=5.0, z=20.0
     )
     return kbd_obj
+
+
+def apply_cable_hole(
+    wall: bpy.types.Object,
+    p1: cad.Point,
+    p2: cad.Point,
+    x: float = 0.0,
+    z: float = 0.0,
+) -> None:
+    """
+    Add a hole to fit a ribbon cable between each keyboard half and the center
+    numpad section.
+    """
+    r = 10
+    bottom = 28
+    top = 38
+    h = Keyboard.wall_thickness + 1
+    hole = blender_util.cylinder(r=r, h=h)
+    with blender_util.TransformContext(hole) as ctx:
+        ctx.translate(0, 0, Keyboard.wall_thickness * 0.5)
+        ctx.rotate(90, "X")
+        ctx.translate(0, 0, top)
+    hole2 = blender_util.cylinder(r=r, h=h)
+    with blender_util.TransformContext(hole2) as ctx:
+        ctx.translate(0, 0, Keyboard.wall_thickness * 0.5)
+        ctx.rotate(90, "X")
+        ctx.translate(0, 0, bottom)
+    hole3 = blender_util.range_cube(
+        (-r, r), (-h, 1.0), (bottom, top)
+    )
+    blender_util.union(hole, hole2)
+    blender_util.union(hole, hole3)
+    blender_util.apply_to_wall(hole, p1, p2, x, z)
+    blender_util.difference(wall, hole)
 
 
 def left_shell() -> bpy.types.Object:

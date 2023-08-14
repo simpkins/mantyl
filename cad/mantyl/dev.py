@@ -79,14 +79,11 @@ def test_np() -> None:
 
 
 def test() -> None:
-    test_full()
+    # test_full()
     # test_np()
 
-    #from . import cover
-    #cover.test()
-
     # kbd_halves.right_full()
-    # kbd_halves.right_shell()
+    kbd_halves.right_shell()
     # kbd_halves.right_socket_underlay()
     # kbd_halves.right_thumb_underlay()
 
@@ -96,7 +93,7 @@ def test() -> None:
     # kbd_halves.left_thumb_underlay()
     # kbd_halves.left_oled_backplate()
 
-    # keyboard.test()
+    # keyboard.main_keys_test()
 
     # kbd_halves.right_shell_simple()
     # wrist_rest.test()

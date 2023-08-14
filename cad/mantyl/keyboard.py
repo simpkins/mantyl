@@ -90,9 +90,9 @@ class Keyboard:
     thumb_bu4: MeshPoint
     bu0: MeshPoint
 
-    def __init__(self) -> None:
-        self.wall_thickness = 4.0
+    wall_thickness: float = 4.0
 
+    def __init__(self) -> None:
         # bevel_joins controls whether we bevel the edges where
         # the separately printed sections of the keyboard join.
         self.bevel_joins = False
@@ -2272,6 +2272,14 @@ def gen_keyboard(kbd: Keyboard, name: str = "keyboard") -> bpy.types.Object:
     # Apply bevels
     kbd.apply_bevels(obj)
     return obj
+
+
+def main_keys_test() -> bpy.types.Object:
+    kbd = Keyboard()
+    kbd.gen_main_grid()
+    kbd.gen_main_grid_edges()
+    mesh = blender_mesh("keyboard_mesh", kbd.mesh)
+    return new_mesh_obj("keyboard", mesh)
 
 
 def test() -> bpy.types.Object:

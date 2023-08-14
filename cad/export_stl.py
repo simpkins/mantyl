@@ -20,6 +20,7 @@ from bpycad import export_stl
 from mantyl import (
     i2c_conn,
     kbd_halves,
+    keyboard,
     oled_holder,
     screw_holes,
     sx1509_holder,
@@ -39,6 +40,7 @@ models: export_stl.ModelDict = {
     "right_wrist_rest": wrist_rest.right,
     "left_wrist_rest": wrist_rest.left,
     "cable_cap": i2c_conn.cable_cap,
+    "right_kbd_test": keyboard.main_keys_test,
 }
 
 export_stl.main(models)
