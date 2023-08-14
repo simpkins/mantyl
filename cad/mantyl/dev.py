@@ -19,7 +19,7 @@ from . import wrist_rest
 def test_full() -> None:
     from bpycad import blender_util
 
-    show_halves = False
+    show_halves = True
     show_numpad = True
     show_keycaps = False
     show_oled = False

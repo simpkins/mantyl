@@ -85,7 +85,7 @@ class NumpadSection:
         self.front_left.x *= -1
 
         y_shift = 12.0
-        angle = 9.0
+        angle = 7.0
 
         import math
 
@@ -158,8 +158,9 @@ class NumpadSection:
         self.kp_enter = self._make_key(3, -1.5)
 
     def _init_corners(self) -> None:
-        border_width_x = 4
+        border_width_x = 7
         border_width_y = 2
+        lower_x_inset = 7
 
         left_x = self.kp_extra.u_tl.x - border_width_x
         right_x = self.kp_minus.u_tr.x + border_width_x
@@ -167,6 +168,9 @@ class NumpadSection:
         bottom_y = self.kp0.u_bl.y - border_width_y
         upper_z = self.kp1.u_tl.z
         lower_z = self.kp1.l_tl.z
+
+        left_lower_x = left_x + lower_x_inset
+        right_lower_x = right_x - lower_x_inset
 
         self.tl = (
             self.mesh.add_xyz(left_x, top_y, upper_z),
@@ -176,15 +180,23 @@ class NumpadSection:
             self.mesh.add_xyz(right_x, top_y, upper_z),
             self.mesh.add_xyz(right_x, top_y, lower_z),
         )
+        self.ml = (
+            self.mesh.add_xyz(left_x, 0.0, upper_z),
+            self.mesh.add_xyz(left_x, 0.0, lower_z),
+        )
+        self.mr = (
+            self.mesh.add_xyz(right_x, 0.0, upper_z),
+            self.mesh.add_xyz(right_x, 0.0, lower_z),
+        )
         # Move the lower bottom corners in slightly, to avoid them being
         # to close to the inner walls
         self.bl = (
-            self.mesh.add_xyz(left_x, bottom_y, upper_z),
-            self.mesh.add_xyz(left_x + 1.5, bottom_y + 1.5, lower_z),
+            self.mesh.add_xyz(left_lower_x, bottom_y, upper_z),
+            self.mesh.add_xyz(left_lower_x + 1.5, bottom_y + 1.5, lower_z),
         )
         self.br = (
-            self.mesh.add_xyz(right_x, bottom_y, upper_z),
-            self.mesh.add_xyz(right_x - 1.5, bottom_y + 1.5, lower_z),
+            self.mesh.add_xyz(right_lower_x, bottom_y, upper_z),
+            self.mesh.add_xyz(right_lower_x - 1.5, bottom_y + 1.5, lower_z),
         )
 
         top_y2 = top_y + 5.067
@@ -276,46 +288,34 @@ class NumpadSection:
 
         # Right
         self._fan(
-            self.tr,
+            self.mr,
             [
+                self.tr,
                 self.kp_minus.tr,
                 self.kp_minus.br,
                 self.kp_plus.tr,
                 self.kp_plus.br,
+                self.kp_enter.tr,
             ],
         )
-        self._fan(
-            self.br,
-            [self.tr, self.kp_plus.br, self.kp_enter.tr, self.kp_enter.br],
-        )
 
-        # Bottom
+        # Bottom Corners
         self._fan(
             self.br, [self.kp_enter.br, self.kp_enter.bl, self.kp_dot.br]
+        )
+        self._fan(
+            self.bl,
+            [self.kp0.bl, self.kp0.tl, self.kp1.bl]
         )
 
         # Left
         self._fan(
-            self.bl,
-            [
-                self.kp0.bl,
-                self.kp0.tl,
-                self.kp1.bl,
-                self.kp1.tl,
-                self.kp4.bl,
-                self.kp4.tl,
-            ],
+            self.ml,
+            [self.kp1.bl, self.kp1.tl, self.kp4.bl, self.kp4.tl, self.kp7.bl, self.kp7.tl]
         )
         self._fan(
             self.tl,
-            [
-                self.bl,
-                self.kp4.tl,
-                self.kp7.bl,
-                self.kp7.tl,
-                self.kp_extra.bl,
-                self.kp_extra.tl,
-            ],
+            [self.ml, self.kp7.tl, self.kp_extra.bl, self.kp_extra.tl]
         )
 
     def _fan(
@@ -476,17 +476,19 @@ class NumpadSection:
         self._compute_perimiters(rkbd, lkbd)
 
         # Top perimeter faces
-        self._fan(self.br, self.perim[0:4] + [self.tr])
-        self._fan(self.tr, self.perim[3:9])
+        self._fan(self.br, self.perim[0:3])
+        self._fan(self.perim[2], [self.mr, self.kp_enter.tr, self.kp_enter.br, self.br])
+        self._fan(self.mr, self.perim[2:5] + [self.tr])
+        self._fan(self.tr, self.perim[4:9])
         self._wall_quad(self.tr, self.perim[10], self.perim[9], self.perim[8])
         self._wall_quad(self.perim[10], self.tr, self.tl, self.perim[11])
         self._wall_quad(
             self.tl, self.perim[13], self.perim[12], self.perim[11]
         )
-        self._fan(self.tl, self.perim[13:19])
-        self._fan(self.bl, [self.tl] + self.perim[18:])
-
-        # Bottom perimeter faces
+        self._fan(self.tl, self.perim[13:18])
+        self._fan(self.ml, [self.tl] + self.perim[17:20])
+        self._fan(self.perim[19], [self.bl, self.kp1.bl, self.ml])
+        self._fan(self.bl, self.perim[19:])
         self._fan(
             self.perim[0],
             [
@@ -563,28 +565,27 @@ class NumpadSection:
             )
 
         # Top face bevels
-        bottom_bevels = [(0, 1.0), (1, 0.4), (2, 0.5), (3, 0.7)]
+        bottom_bevels = [(0, 1.0), (1, 1.0), (2, 0.5)]
         for (idx, weight) in bottom_bevels:
             mirror = len(self.perim) - 1 - idx
             self._bevel_edge(self.br[0], self.perim[idx][0], weight)
             self._bevel_edge(self.bl[0], self.perim[mirror][0], weight)
 
-        top_bevels = [(3, 0.7), (4, 1.0), (5, 1.0), (8, 1.0)]
+        top_bevels = [(4, 1.0), (5, 1.0), (8, 1.0)]
         for (idx, weight) in top_bevels:
             mirror = len(self.perim) - 1 - idx
             self._bevel_edge(self.tr[0], self.perim[idx][0], weight)
             self._bevel_edge(self.tl[0], self.perim[mirror][0], weight)
 
-        self._bevel_edge(self.bl[0], self.br[0], 0.5)
+        # These two edges are flat, but beveling them helps blender
+        # do a better job with beveling at the bl and br corners
+        self._bevel_edge(self.bl[0], self.kp0.bl[0], 0.5)
+        self._bevel_edge(self.br[0], self.kp_dot.br[0], 0.5)
 
-        # Applying bevels to the left and right sides of the numpad plate
-        # unfortunately results in thin/intersecting faces, presumably since
-        # we already have some pretty thin faces here to start with.
-        # This area doesn't really have a very steep gradient, so just leave it
-        # unbeveled.
-        #
-        # self._bevel_edge(self.br[0], self.tr[0], 0.5)
-        # self._bevel_edge(self.bl[0], self.tl[0], 0.5)
+        # These bevels are also simply to improve blender's beveling
+        # at some corners
+        self._bevel_edge(self.mr[0], self.perim[4][0], 0.5)
+        #self._bevel_edge(self.ml[0], self.perim[17][0], 0.5)
 
         # Perimeter corner bevels
         if bevel_joins:
@@ -606,6 +607,8 @@ class NumpadSection:
         self._bevel_edge(self.perim[9][0], self.perim[10][0], 1.0)
         self._bevel_edge(self.perim[10][0], self.perim[11][0], 1.0)
         self._bevel_edge(self.perim[11][0], self.perim[12][0], 1.0)
+        self._bevel_edge(self.perim[10][0], self.tr[0])
+        self._bevel_edge(self.perim[11][0], self.tl[0])
 
     def _bevel_edge(
         self, p0: MeshPoint, p1: MeshPoint, weight: float = 1.0
