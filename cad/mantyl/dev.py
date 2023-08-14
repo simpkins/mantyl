@@ -19,9 +19,9 @@ from . import wrist_rest
 def test_full() -> None:
     from bpycad import blender_util
 
-    show_halves = True
+    show_halves = False
     show_numpad = True
-    show_keycaps = True
+    show_keycaps = False
     show_oled = False
     show_wrist_rests = False
 
@@ -81,6 +81,9 @@ def test_np() -> None:
 def test() -> None:
     test_full()
     # test_np()
+
+    #from . import cover
+    #cover.test()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()

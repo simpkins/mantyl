@@ -69,13 +69,47 @@ class NumpadSection:
         self._join_keys()
         self._border_faces()
 
-        self.plate_tf = (
-            Transform().rotate(12.0, 0.0, 0.0).translate(0.0, 15.0, 70.0)
-        )
+        self.plate_tf = self._compute_plate_transform(rkbd)
         self.mesh.transform(self.plate_tf)
 
-        self.add_walls(rkbd, lkbd)
-        self.add_bevels()
+        self._add_walls(rkbd, lkbd)
+        self._add_bevels()
+
+    def _compute_plate_transform(self, rkbd: Keyboard) -> Transform:
+        self.front_right = Point(
+            rkbd.thumb_tl.out1.x,
+            rkbd.thumb_tl.out1.y,
+            rkbd.thumb_tl.out1.z - 0.85,
+        )
+        self.front_left = self.front_right.copy()
+        self.front_left.x *= -1
+
+        y_shift = 12.0
+        angle = 9.0
+
+        import math
+
+        rise_over_run = math.tan(math.radians(angle))
+        print(f"{rise_over_run=}")
+        run = -self.front_right.y
+        print(f"{run=}")
+        rise = rise_over_run * run
+        print(f"{rise=}")
+        z_height = self.front_right.z + rise
+        print(f"{z_height=}")
+
+        return (
+            Transform()
+            # Translate the numpad plate along the desired Y shift,
+            # and also translate it down so that the top of the key holes
+            # is at 0 on the Z axis.
+            .translate(0.0, y_shift, -KeyHole.height)
+            # Rotate by the desired amount
+            .rotate(angle, 0.0, 0.0)
+            # Now shift upwards along the Z axis to be in line with the front
+            # corners.
+            .translate(0.0, 0.0, z_height)
+        )
 
     def gen_keycaps(self) -> None:
         keys1 = [
@@ -124,7 +158,7 @@ class NumpadSection:
         self.kp_enter = self._make_key(3, -1.5)
 
     def _init_corners(self) -> None:
-        border_width_x = 2
+        border_width_x = 4
         border_width_y = 2
 
         left_x = self.kp_extra.u_tl.x - border_width_x
@@ -151,28 +185,6 @@ class NumpadSection:
         self.br = (
             self.mesh.add_xyz(right_x, bottom_y, upper_z),
             self.mesh.add_xyz(right_x - 1.5, bottom_y + 1.5, lower_z),
-        )
-
-        # Add a smaller section in the bottom middle for status LEDs
-        jut_y = 1.0
-        jut_x_pct = 0.75
-        jut_left = left_x * jut_x_pct
-        jut_right = right_x * jut_x_pct
-        self.jut_tl = (
-            self.mesh.add_xyz(jut_left, bottom_y, upper_z),
-            self.mesh.add_xyz(jut_left, bottom_y, lower_z),
-        )
-        self.jut_tr = (
-            self.mesh.add_xyz(jut_right, bottom_y, upper_z),
-            self.mesh.add_xyz(jut_right, bottom_y, lower_z),
-        )
-        self.jut_bl = (
-            self.mesh.add_xyz(jut_left, bottom_y - jut_y, upper_z),
-            self.mesh.add_xyz(jut_left, bottom_y - jut_y, lower_z),
-        )
-        self.jut_br = (
-            self.mesh.add_xyz(jut_right, bottom_y - jut_y, upper_z),
-            self.mesh.add_xyz(jut_right, bottom_y - jut_y, lower_z),
         )
 
         top_y2 = top_y + 5.067
@@ -279,38 +291,7 @@ class NumpadSection:
 
         # Bottom
         self._fan(
-            self.br,
-            [
-                self.kp_enter.br,
-                self.kp_enter.bl,
-                self.kp_dot.br,
-                self.jut_tr,
-            ],
-        )
-        self._fan(
-            self.jut_tr,
-            [
-                self.kp_dot.br,
-                self.kp_dot.bl,
-                self.jut_br,
-            ],
-        )
-        self._fan(
-            self.jut_br,
-            [
-                self.kp_dot.bl,
-                self.kp0.br,
-                self.jut_tl,
-                self.jut_bl,
-            ],
-        )
-        self._fan(
-            self.jut_tl,
-            [
-                self.kp0.br,
-                self.kp0.bl,
-                self.bl,
-            ],
+            self.br, [self.kp_enter.br, self.kp_enter.bl, self.kp_dot.br]
         )
 
         # Left
@@ -385,14 +366,10 @@ class NumpadSection:
         z = plane.z_intersect(floor_pt.x, floor_pt.y)
         return self.mesh.add_xyz(floor_pt.x, floor_pt.y, z)
 
-    def compute_perimiters(self, rkbd: Keyboard, lkbd: Keyboard) -> None:
+    def _compute_perimiters(self, rkbd: Keyboard, lkbd: Keyboard) -> None:
         # Outer perimeter, right side
         rperim_out = [
-            self.mesh.add_xyz(
-                rkbd.thumb_tl.out1.x,
-                rkbd.thumb_tl.out1.y,
-                rkbd.thumb_tl.out1.z - 0.85,
-            ),
+            self.mesh.add_point(self.front_right),
             # We are skipping rkbd.thumb_tr.out1 since it is in a straight line
             # between thumb_tl.out1 and thumb_bu4, and including it makes it
             # harder to do bevels cleanly.
@@ -495,8 +472,8 @@ class NumpadSection:
         self.perim = rperim + list(reversed(lperim))
         self.perim_floor = rperim_floor + list(reversed(lperim_floor))
 
-    def add_walls(self, rkbd: Keyboard, lkbd: Keyboard) -> None:
-        self.compute_perimiters(rkbd, lkbd)
+    def _add_walls(self, rkbd: Keyboard, lkbd: Keyboard) -> None:
+        self._compute_perimiters(rkbd, lkbd)
 
         # Top perimeter faces
         self._fan(self.br, self.perim[0:4] + [self.tr])
@@ -509,14 +486,19 @@ class NumpadSection:
         self._fan(self.tl, self.perim[13:19])
         self._fan(self.bl, [self.tl] + self.perim[18:])
 
-        self._fan(self.jut_br, [self.perim[0], self.br, self.jut_tr])
-        self._fan(self.jut_bl, [self.jut_tl, self.bl, self.perim[-1]])
-        self._wall_quad(self.perim[0], self.perim[-1], self.jut_bl, self.jut_br)
-        #self._bevel_edge(self.perim[0][0], self.jut_br[0])
-        #self._bevel_edge(self.perim[-1][0], self.jut_bl[0])
-        self._bevel_edge(self.jut_bl[0], self.jut_br[0])
-        self._bevel_edge(self.bl[0], self.jut_bl[0], 0.3)
-        self._bevel_edge(self.br[0], self.jut_br[0], 0.3)
+        # Bottom perimeter faces
+        self._fan(
+            self.perim[0],
+            [
+                self.br,
+                self.kp_dot.br,
+                self.kp_dot.bl,
+                self.kp0.br,
+                self.kp0.bl,
+                self.bl,
+                self.perim[-1],
+            ],
+        )
 
         # Vertical wall faces
         for idx in range(len(self.perim)):
@@ -536,7 +518,7 @@ class NumpadSection:
                 self.perim_floor[idx - 1][1],
             )
 
-    def add_bevels(self) -> None:
+    def _add_bevels(self) -> None:
         # bevel_joins controls whether we bevel the edges where
         # the separately printed sections of the keyboard join.
         bevel_joins = False
