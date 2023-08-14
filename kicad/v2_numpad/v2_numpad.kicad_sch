@@ -226,8 +226,8 @@
       (property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4960/4960_SK6812MINI-E_REV02_EN.pdf" (at 2.54 -9.525 0)
         (effects (font (size 1.27 1.27)) (justify left top) hide)
       )
-      (property "JLCPCB Part" "C5149201" (at 0 0 0)
-        (effects (font (size 1.27 1.27)))
+      (property "JLCPCB Part" "C5149201" (at 6.35 -13.97 0)
+        (effects (font (size 1.27 1.27)) hide)
       )
       (property "ki_keywords" "RGB LED NeoPixel addressable" (at 0 0 0)
         (effects (font (size 1.27 1.27)) hide)
@@ -852,13 +852,13 @@
     (property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4960/4960_SK6812MINI-E_REV02_EN.pdf" (at 160.02 149.225 0)
       (effects (font (size 1.27 1.27)) (justify left top) hide)
     )
-    (property "JLCPCB Part" "C5149201" (at 157.48 139.7 0)
-      (effects (font (size 1.27 1.27)))
+    (property "JLCPCB Part" "C5149201" (at 163.83 153.67 0)
+      (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid eb29528c-dc6d-4315-b80b-64cc8863d26a))
-    (pin "2" (uuid 9cae7037-12b6-4ec2-893c-329e648d9b31))
-    (pin "3" (uuid e543b33b-c1a4-4e13-be7a-2ec410e75064))
-    (pin "4" (uuid add61669-de6a-42a1-b643-7a5eba68f054))
+    (pin "1" (uuid 923dc324-191f-4fb5-acc9-2960c7c24e3a))
+    (pin "2" (uuid d2aed721-97ba-4268-b1a8-60ce266b280d))
+    (pin "3" (uuid b42c807a-4827-4770-8efb-ec6262512f42))
+    (pin "4" (uuid c1eb5b6a-956a-4ed9-83c2-9dc8302d30e3))
     (instances
       (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
@@ -909,13 +909,13 @@
     (property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4960/4960_SK6812MINI-E_REV02_EN.pdf" (at 160.02 47.625 0)
       (effects (font (size 1.27 1.27)) (justify left top) hide)
     )
-    (property "JLCPCB Part" "C5149201" (at 157.48 38.1 0)
-      (effects (font (size 1.27 1.27)))
+    (property "JLCPCB Part" "C5149201" (at 163.83 52.07 0)
+      (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid f6453eb6-cb94-4839-a2b8-a6e5e4f7a92f))
-    (pin "2" (uuid dd2aac0c-4215-4dc6-891f-d55fb24fc04d))
-    (pin "3" (uuid d7e59f9c-6ed0-4d16-960b-9fff56f8529b))
-    (pin "4" (uuid d368829b-92d5-43c1-96cc-99dc54850a03))
+    (pin "1" (uuid 88aea66b-7342-4eee-a26b-044c96773985))
+    (pin "2" (uuid 4e79b583-795a-45b1-bf57-babe6e1dbba8))
+    (pin "3" (uuid 83b9172a-9ef6-4d7a-9256-7addf5e143f0))
+    (pin "4" (uuid ad1271df-3c66-4f2d-9cbe-86c552ffb9d7))
     (instances
       (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
@@ -1108,13 +1108,13 @@
     (property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4960/4960_SK6812MINI-E_REV02_EN.pdf" (at 160.02 123.825 0)
       (effects (font (size 1.27 1.27)) (justify left top) hide)
     )
-    (property "JLCPCB Part" "C5149201" (at 157.48 114.3 0)
-      (effects (font (size 1.27 1.27)))
+    (property "JLCPCB Part" "C5149201" (at 163.83 128.27 0)
+      (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid aa484348-c562-4774-82b4-72c6c4588fe7))
-    (pin "2" (uuid 0ae6b757-3162-4f26-bb3c-a3a193bd459b))
-    (pin "3" (uuid 43ead033-9a74-4480-a41a-51d1f341b528))
-    (pin "4" (uuid fed50d05-86cf-4278-a81f-9372511c4d29))
+    (pin "1" (uuid 7833c73a-57f0-4667-bf51-0c65773991f3))
+    (pin "2" (uuid 01b31854-429b-41c3-99e7-3657de8f7f17))
+    (pin "3" (uuid 98baf2f1-5f67-4282-bbba-3ecbf2f7466a))
+    (pin "4" (uuid 014a0038-68ed-4f03-b759-5b532ac595f6))
     (instances
       (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
@@ -1139,13 +1139,13 @@
     (property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4960/4960_SK6812MINI-E_REV02_EN.pdf" (at 160.02 98.425 0)
       (effects (font (size 1.27 1.27)) (justify left top) hide)
     )
-    (property "JLCPCB Part" "C5149201" (at 157.48 88.9 0)
-      (effects (font (size 1.27 1.27)))
+    (property "JLCPCB Part" "C5149201" (at 163.83 102.87 0)
+      (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid f8fa7d0f-0b51-4a05-b535-00a5b02b51ad))
-    (pin "2" (uuid b62abcb4-ea57-45f9-b6cf-a2ee9a14b2ca))
-    (pin "3" (uuid e9c7692b-caf4-4463-93fe-ce7b47c6f446))
-    (pin "4" (uuid 6a26901d-1239-46ca-8b4e-84c17abf5b22))
+    (pin "1" (uuid ba7f8d4b-e8c3-4ee6-8f6e-5555e2e67f03))
+    (pin "2" (uuid dd7d87a0-a162-423c-84f7-8461828ecc86))
+    (pin "3" (uuid 4b4ba0fb-a1d7-45af-81b5-46fb4077b157))
+    (pin "4" (uuid d29bcd23-c3f4-4fc2-96ed-c95928505ca5))
     (instances
       (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
@@ -1170,13 +1170,13 @@
     (property "Datasheet" "https://cdn-shop.adafruit.com/product-files/4960/4960_SK6812MINI-E_REV02_EN.pdf" (at 160.02 73.025 0)
       (effects (font (size 1.27 1.27)) (justify left top) hide)
     )
-    (property "JLCPCB Part" "C5149201" (at 157.48 63.5 0)
-      (effects (font (size 1.27 1.27)))
+    (property "JLCPCB Part" "C5149201" (at 163.83 77.47 0)
+      (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 9c649ec2-8e00-45e1-8c24-0dac29c96c9d))
-    (pin "2" (uuid 68758be0-c7be-4c28-a88f-5f933d05df0b))
-    (pin "3" (uuid 454259d7-2ee9-4d19-bc73-e167fbce5fa5))
-    (pin "4" (uuid 5d4fcaa6-5bef-471e-8076-3a51f5826cd3))
+    (pin "1" (uuid dd13e3f5-679b-481e-b2c6-d56407a2b8e4))
+    (pin "2" (uuid 6858b723-6d35-415a-a825-abf6d230bd40))
+    (pin "3" (uuid 07c58c2d-6fa7-49b6-bc66-4d4917ef2cf4))
+    (pin "4" (uuid 12b3e9e6-f3b8-45ca-9ca1-13f990de086e))
     (instances
       (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734"
@@ -1267,6 +1267,23 @@
     (instances
       (project "v2_numpad"
         (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734" (page "2"))
+      )
+    )
+  )
+
+  (sheet (at 30.48 130.81) (size 81.28 43.18) (fields_autoplaced)
+    (stroke (width 0.1524) (type solid))
+    (fill (color 0 0 0 0.0000))
+    (uuid c356c2fc-4ba3-446f-a794-9d9b7a55ba34)
+    (property "Sheetname" "CP2102N" (at 30.48 130.0984 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property "Sheetfile" "cp2102n.kicad_sch" (at 30.48 174.5746 0)
+      (effects (font (size 1.27 1.27)) (justify left top))
+    )
+    (instances
+      (project "v2_numpad"
+        (path "/42eee74c-d04d-4a1d-8e02-a7aca1694734" (page "4"))
       )
     )
   )
