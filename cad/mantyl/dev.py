@@ -21,7 +21,7 @@ def test_full() -> None:
 
     show_halves = True
     show_numpad = True
-    show_keycaps = False
+    show_keycaps = True
     show_oled = False
     show_wrist_rests = False
 

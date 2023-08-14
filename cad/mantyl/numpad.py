@@ -154,22 +154,25 @@ class NumpadSection:
         )
 
         # Add a smaller section in the bottom middle for status LEDs
-        jut_distance = 10.0
+        jut_y = 1.0
+        jut_x_pct = 0.75
+        jut_left = left_x * jut_x_pct
+        jut_right = right_x * jut_x_pct
         self.jut_tl = (
-            self.mesh.add_xyz(left_x * 0.5, bottom_y, upper_z),
-            self.mesh.add_xyz(left_x * 0.5, bottom_y, lower_z),
+            self.mesh.add_xyz(jut_left, bottom_y, upper_z),
+            self.mesh.add_xyz(jut_left, bottom_y, lower_z),
         )
         self.jut_tr = (
-            self.mesh.add_xyz(right_x * 0.5, bottom_y, upper_z),
-            self.mesh.add_xyz(right_x * 0.5, bottom_y, lower_z),
+            self.mesh.add_xyz(jut_right, bottom_y, upper_z),
+            self.mesh.add_xyz(jut_right, bottom_y, lower_z),
         )
         self.jut_bl = (
-            self.mesh.add_xyz(left_x * 0.5, bottom_y - jut_distance, upper_z),
-            self.mesh.add_xyz(left_x * 0.5, bottom_y - jut_distance, lower_z),
+            self.mesh.add_xyz(jut_left, bottom_y - jut_y, upper_z),
+            self.mesh.add_xyz(jut_left, bottom_y - jut_y, lower_z),
         )
         self.jut_br = (
-            self.mesh.add_xyz(right_x * 0.5, bottom_y - jut_distance, upper_z),
-            self.mesh.add_xyz(right_x * 0.5, bottom_y - jut_distance, lower_z),
+            self.mesh.add_xyz(jut_right, bottom_y - jut_y, upper_z),
+            self.mesh.add_xyz(jut_right, bottom_y - jut_y, lower_z),
         )
 
         top_y2 = top_y + 5.067
@@ -509,8 +512,8 @@ class NumpadSection:
         self._fan(self.jut_br, [self.perim[0], self.br, self.jut_tr])
         self._fan(self.jut_bl, [self.jut_tl, self.bl, self.perim[-1]])
         self._wall_quad(self.perim[0], self.perim[-1], self.jut_bl, self.jut_br)
-        self._bevel_edge(self.perim[0][0], self.jut_br[0])
-        self._bevel_edge(self.perim[-1][0], self.jut_bl[0])
+        #self._bevel_edge(self.perim[0][0], self.jut_br[0])
+        #self._bevel_edge(self.perim[-1][0], self.jut_bl[0])
         self._bevel_edge(self.jut_bl[0], self.jut_br[0])
         self._bevel_edge(self.bl[0], self.jut_bl[0], 0.3)
         self._bevel_edge(self.br[0], self.jut_br[0], 0.3)
@@ -633,6 +636,6 @@ class NumpadSection:
     def gen_object(self, name: str = "numpad") -> bpy.types.Object:
         bmesh = blender_util.blender_mesh(f"{name}_mesh", self.mesh)
         obj = blender_util.new_mesh_obj(name, bmesh)
-        # self.apply_bevels(obj)
+        self.apply_bevels(obj)
 
         return obj
