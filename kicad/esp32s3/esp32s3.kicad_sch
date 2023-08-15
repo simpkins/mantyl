@@ -1,0 +1,48 @@
+(kicad_sch (version 20230121) (generator eeschema)
+
+  (uuid 102c646f-89e8-474a-be69-05b634400329)
+
+  (paper "A4")
+
+  (lib_symbols
+  )
+
+
+  (sheet (at 24.765 73.025) (size 67.945 41.275) (fields_autoplaced)
+    (stroke (width 0.1524) (type solid))
+    (fill (color 0 0 0 0.0000))
+    (uuid 2bac5195-070c-412d-b76e-85bcf1e6d414)
+    (property "Sheetname" "USB" (at 24.765 72.3134 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property "Sheetfile" "usb.kicad_sch" (at 24.765 114.8846 0)
+      (effects (font (size 1.27 1.27)) (justify left top))
+    )
+    (instances
+      (project "esp32s3"
+        (path "/102c646f-89e8-474a-be69-05b634400329" (page "3"))
+      )
+    )
+  )
+
+  (sheet (at 24.765 22.225) (size 67.945 41.275) (fields_autoplaced)
+    (stroke (width 0.1524) (type solid))
+    (fill (color 0 0 0 0.0000))
+    (uuid 7823ba18-44bd-4775-8b61-284ac8655bf1)
+    (property "Sheetname" "ESP32" (at 24.765 21.5134 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property "Sheetfile" "esp32.kicad_sch" (at 24.765 64.0846 0)
+      (effects (font (size 1.27 1.27)) (justify left top))
+    )
+    (instances
+      (project "esp32s3"
+        (path "/102c646f-89e8-474a-be69-05b634400329" (page "2"))
+      )
+    )
+  )
+
+  (sheet_instances
+    (path "/" (page "1"))
+  )
+)
