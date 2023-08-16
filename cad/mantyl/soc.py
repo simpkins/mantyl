@@ -5,9 +5,13 @@
 
 from __future__ import annotations
 
+from typing import List, Tuple
+
 from bpycad import blender_util
+from bpycad import cad
 
 import bpy
+
 
 def esp32s3_wroom_devkit_c() -> bpy.types.Object:
     # Dimensions datasheet:
@@ -32,19 +36,32 @@ def esp32s3_wroom_devkit_c() -> bpy.types.Object:
     return obj
 
 
-def numpad_board() -> bpy.types.Object:
-    l = 94
-    w = 80
+def numpad_pcb() -> cad.Mesh:
     board_d = 1.57
-    obj = blender_util.cube(w, l, board_d, "controller")
 
-    soc_l = 15
-    soc_w = 40
-    overlap_l = 2
-    soc = blender_util.cube(soc_w, soc_l + overlap_l, board_d)
-    with blender_util.TransformContext(soc) as ctx:
-        ctx.translate(0, -(l + soc_l - overlap_l) * 0.5, 0)
+    mesh = cad.Mesh()
+    perim_xy: List[Tuple[float, float]] = [
+        (43, 47),
+        (-43, 47),
+        (-50, 30),
+        (-50, -32),
+        (-16, -69),
+        (16, -69),
+        (50, -32),
+        (50, 30),
+    ]
+    perim: List[Tuple[cad.MeshPoint, cad.MeshPoint]] = []
+    for x, y in perim_xy:
+        t = mesh.add_xyz(x, y, 0)
+        b = mesh.add_xyz(x, y, -board_d)
+        perim.append((t, b))
 
-    blender_util.union(obj, soc)
+    top_face_indices = [t.index for t, b in reversed(perim)]
+    mesh.faces.append(top_face_indices)
+    bottom_face_indices = [b.index for t, b in perim]
+    mesh.faces.append(bottom_face_indices)
 
-    return obj
+    for idx in range(len(perim)):
+        mesh.add_quad(perim[idx - 1][0], perim[idx][0], perim[idx][1], perim[idx - 1][1])
+
+    return mesh

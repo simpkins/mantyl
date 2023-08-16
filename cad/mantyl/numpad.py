@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import math
+
 import bpy
 from typing import List, Tuple
 
@@ -87,16 +89,10 @@ class NumpadSection:
         y_shift = 12.0
         angle = 7.0
 
-        import math
-
         rise_over_run = math.tan(math.radians(angle))
-        print(f"{rise_over_run=}")
         run = -self.front_right.y
-        print(f"{run=}")
         rise = rise_over_run * run
-        print(f"{rise=}")
         z_height = self.front_right.z + rise
-        print(f"{z_height=}")
 
         return (
             Transform()

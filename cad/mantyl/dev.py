@@ -60,7 +60,6 @@ def test_full() -> None:
 def test_np() -> None:
     rkbd, lkbd, np = kbd_halves.gen_3_sections()
     np.gen_object()
-    return
 
     from . import soc
     from bpycad import blender_util
@@ -71,19 +70,19 @@ def test_np() -> None:
             ctx.rotate(90, "X")
             ctx.translate(0, 60, 20)
     else:
-        board = soc.numpad_board()
-        with blender_util.TransformContext(board) as ctx:
-            #Transform().rotate(12.0, 0.0, 0.0).translate(-9.5, 15.0, 70.0)
-            ctx.rotate(12, "X")
-            ctx.translate(0, 16, 68)
+        mesh = soc.numpad_pcb()
+        mesh.translate(0, 0, -0.5)
+        mesh.transform(np.plate_tf)
+        bmesh = blender_util.blender_mesh(f"pcb_mesh", mesh)
+        obj = blender_util.new_mesh_obj("numpad_pcb", bmesh)
 
 
 def test() -> None:
     # test_full()
-    # test_np()
+    test_np()
 
     # kbd_halves.right_full()
-    kbd_halves.right_shell()
+    # kbd_halves.right_shell()
     # kbd_halves.right_socket_underlay()
     # kbd_halves.right_thumb_underlay()
 
