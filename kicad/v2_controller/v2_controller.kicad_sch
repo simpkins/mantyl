@@ -1,0 +1,82 @@
+(kicad_sch (version 20230121) (generator eeschema)
+
+  (uuid 102c646f-89e8-474a-be69-05b634400329)
+
+  (paper "A4")
+
+  (lib_symbols
+  )
+
+
+  (sheet (at 25.4 69.85) (size 63.5 38.1) (fields_autoplaced)
+    (stroke (width 0.1524) (type solid))
+    (fill (color 0 0 0 0.0000))
+    (uuid 2bac5195-070c-412d-b76e-85bcf1e6d414)
+    (property "Sheetname" "USB" (at 25.4 69.1384 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property "Sheetfile" "usb.kicad_sch" (at 25.4 108.5346 0)
+      (effects (font (size 1.27 1.27)) (justify left top))
+    )
+    (instances
+      (project "v2_controller"
+        (path "/102c646f-89e8-474a-be69-05b634400329" (page "3"))
+      )
+    )
+  )
+
+  (sheet (at 25.4 120.65) (size 63.5 38.1) (fields_autoplaced)
+    (stroke (width 0.1524) (type solid))
+    (fill (color 0 0 0 0.0000))
+    (uuid 4d12fc69-6710-4e1d-82d3-ac3161ebfb20)
+    (property "Sheetname" "Keys" (at 25.4 119.9384 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property "Sheetfile" "keys.kicad_sch" (at 25.4 159.3346 0)
+      (effects (font (size 1.27 1.27)) (justify left top))
+    )
+    (instances
+      (project "v2_controller"
+        (path "/102c646f-89e8-474a-be69-05b634400329" (page "4"))
+      )
+    )
+  )
+
+  (sheet (at 95.25 19.05) (size 63.5 38.1) (fields_autoplaced)
+    (stroke (width 0.1524) (type solid))
+    (fill (color 0 0 0 0.0000))
+    (uuid 58a13171-af4d-4148-bd5d-6db9b6f67a32)
+    (property "Sheetname" "LEDs" (at 95.25 18.3384 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property "Sheetfile" "leds.kicad_sch" (at 95.25 57.7346 0)
+      (effects (font (size 1.27 1.27)) (justify left top))
+    )
+    (instances
+      (project "v2_controller"
+        (path "/102c646f-89e8-474a-be69-05b634400329" (page "5"))
+      )
+    )
+  )
+
+  (sheet (at 25.4 19.05) (size 63.5 38.1) (fields_autoplaced)
+    (stroke (width 0.1524) (type solid))
+    (fill (color 0 0 0 0.0000))
+    (uuid 7823ba18-44bd-4775-8b61-284ac8655bf1)
+    (property "Sheetname" "ESP32" (at 25.4 18.3384 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property "Sheetfile" "esp32.kicad_sch" (at 25.4 57.7346 0)
+      (effects (font (size 1.27 1.27)) (justify left top))
+    )
+    (instances
+      (project "v2_controller"
+        (path "/102c646f-89e8-474a-be69-05b634400329" (page "2"))
+      )
+    )
+  )
+
+  (sheet_instances
+    (path "/" (page "1"))
+  )
+)
