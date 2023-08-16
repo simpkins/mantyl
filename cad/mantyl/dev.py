@@ -3,8 +3,6 @@
 # Copyright (c) 2022, Adam Simpkins
 #
 
-import bpy
-
 from . import i2c_conn
 from . import foot
 from . import kbd_halves
@@ -15,10 +13,12 @@ from . import sx1509_holder
 from . import usb_cutout
 from . import wrist_rest
 
+from bpycad import blender_util
+
+import bpy
+
 
 def test_full() -> None:
-    from bpycad import blender_util
-
     show_halves = True
     show_numpad = True
     show_keycaps = False
@@ -62,19 +62,12 @@ def test_np() -> None:
     np.gen_object()
 
     from . import soc
-    from bpycad import blender_util
-    if False:
-        esp32 = soc.esp32s3_wroom_devkit_c()
-        with blender_util.TransformContext(esp32) as ctx:
-            ctx.rotate(90, "Z")
-            ctx.rotate(90, "X")
-            ctx.translate(0, 60, 20)
-    else:
-        mesh = soc.numpad_pcb()
-        mesh.translate(0, 0, -0.5)
-        mesh.transform(np.plate_tf)
-        bmesh = blender_util.blender_mesh(f"pcb_mesh", mesh)
-        obj = blender_util.new_mesh_obj("numpad_pcb", bmesh)
+
+    mesh = soc.numpad_pcb()
+    mesh.translate(0, 0, -0.5)
+    mesh.transform(np.plate_tf)
+    bmesh = blender_util.blender_mesh(f"pcb_mesh", mesh)
+    obj = blender_util.new_mesh_obj("numpad_pcb", bmesh)
 
 
 def test() -> None:
@@ -104,4 +97,4 @@ def test() -> None:
     #foot.test()
 
     bpy.ops.object.mode_set(mode="EDIT")
-    # blender_util.set_shading_mode("WIREFRAME")
+    blender_util.set_shading_mode("WIREFRAME")

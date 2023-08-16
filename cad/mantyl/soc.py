@@ -41,13 +41,13 @@ def numpad_pcb() -> cad.Mesh:
 
     mesh = cad.Mesh()
     perim_xy: List[Tuple[float, float]] = [
-        (43, 47),
-        (-43, 47),
+        (42, 47),
+        (-42, 47),
         (-50, 30),
-        (-50, -32),
+        (-50, -30),
         (-16, -69),
         (16, -69),
-        (50, -32),
+        (50, -30),
         (50, 30),
     ]
     perim: List[Tuple[cad.MeshPoint, cad.MeshPoint]] = []
