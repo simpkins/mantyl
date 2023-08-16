@@ -629,6 +629,11 @@
     (uuid fc03423a-5a97-476b-b3ea-99f4a2956859)
   )
 
+  (text "Key Switches" (at 133.35 24.13 0)
+    (effects (font (size 5 5) (thickness 1) bold (color 194 0 0 1)) (justify left bottom))
+    (uuid 503d233f-b9c5-4ffb-a7a5-f990b0379bac)
+  )
+
   (label "ROW6" (at 31.75 124.46 180) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify right bottom))
     (uuid 1337cb46-7351-42ab-a996-77d116fca784)
@@ -677,13 +682,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 149.225 67.31 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 029b3c78-321b-4a8a-b7f5-0dba6458a5c8)
-    (property "Reference" "SW10" (at 149.225 66.675 0)
+    (property "Reference" "SW13" (at 149.225 66.04 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 149.225 67.31 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 149.225 67.31 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 149.225 67.31 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 149.225 67.31 0)
@@ -700,7 +705,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW10") (unit 1)
+          (reference "SW13") (unit 1)
         )
       )
     )
@@ -709,13 +714,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 53.975 99.06 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 0641fd42-bdce-4844-8969-b02dd1782486)
-    (property "Reference" "SW11" (at 53.975 98.425 0)
+    (property "Reference" "SW7" (at 53.975 97.79 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 53.975 99.06 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 53.975 99.06 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 53.975 99.06 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 53.975 99.06 0)
@@ -732,7 +737,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW11") (unit 1)
+          (reference "SW7") (unit 1)
         )
       )
     )
@@ -741,7 +746,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 107.95 109.855 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 15245283-0123-467b-bd58-cfc02d7b6691)
-    (property "Reference" "D14" (at 110.49 108.585 90)
+    (property "Reference" "D32" (at 110.49 108.585 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 110.49 111.125 90)
@@ -770,7 +775,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D14") (unit 1)
+          (reference "D32") (unit 1)
         )
       )
     )
@@ -779,7 +784,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 76.2 141.605 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 1c101f19-2346-404b-b87a-38ea870bdddb)
-    (property "Reference" "D16" (at 78.74 140.335 90)
+    (property "Reference" "D29" (at 78.74 140.335 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 78.74 142.875 90)
@@ -808,7 +813,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D16") (unit 1)
+          (reference "D29") (unit 1)
         )
       )
     )
@@ -817,13 +822,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 117.475 35.56 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 1f5637ff-7c77-42ba-8fb5-45d7d20aea03)
-    (property "Reference" "SW5" (at 117.475 34.925 0)
+    (property "Reference" "SW16" (at 117.475 34.29 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 117.475 35.56 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 117.475 35.56 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 117.475 35.56 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 117.475 35.56 0)
@@ -840,7 +845,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW5") (unit 1)
+          (reference "SW16") (unit 1)
         )
       )
     )
@@ -849,13 +854,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 85.725 35.56 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 2009cfec-a863-48de-a6be-255a3a20accd)
-    (property "Reference" "SW4" (at 85.725 34.925 0)
+    (property "Reference" "SW15" (at 85.725 34.29 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 85.725 35.56 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 85.725 35.56 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 85.725 35.56 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 85.725 35.56 0)
@@ -872,7 +877,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW4") (unit 1)
+          (reference "SW15") (unit 1)
         )
       )
     )
@@ -881,7 +886,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 139.7 78.105 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 20b2837d-5731-438e-b515-36c86af1a0fb)
-    (property "Reference" "D11" (at 142.24 76.835 90)
+    (property "Reference" "D36" (at 142.24 76.835 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 142.24 79.375 90)
@@ -910,7 +915,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D11") (unit 1)
+          (reference "D36") (unit 1)
         )
       )
     )
@@ -919,7 +924,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 107.95 173.355 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 338e844a-bcfb-47f3-86a9-5f3e41391960)
-    (property "Reference" "D20" (at 110.49 172.085 90)
+    (property "Reference" "D34" (at 110.49 172.085 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 110.49 174.625 90)
@@ -948,7 +953,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D20") (unit 1)
+          (reference "D34") (unit 1)
         )
       )
     )
@@ -957,7 +962,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 107.95 141.605 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 37aec064-8624-4784-9ac6-fe1476344ae5)
-    (property "Reference" "D17" (at 110.49 140.335 90)
+    (property "Reference" "D33" (at 110.49 140.335 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 110.49 142.875 90)
@@ -986,7 +991,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D17") (unit 1)
+          (reference "D33") (unit 1)
         )
       )
     )
@@ -995,7 +1000,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 44.45 141.605 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 3d1a99bf-a88c-4ee0-b9f7-8205fb8cac94)
-    (property "Reference" "D15" (at 46.99 140.335 90)
+    (property "Reference" "D24" (at 46.99 140.335 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 46.99 142.875 90)
@@ -1024,7 +1029,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D15") (unit 1)
+          (reference "D24") (unit 1)
         )
       )
     )
@@ -1033,13 +1038,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 149.225 35.56 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 44996c47-b6fa-494e-9aa5-e4ab433007ca)
-    (property "Reference" "SW6" (at 149.225 34.925 0)
+    (property "Reference" "SW17" (at 149.225 34.29 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 149.225 35.56 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 149.225 35.56 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 149.225 35.56 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 149.225 35.56 0)
@@ -1056,7 +1061,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW6") (unit 1)
+          (reference "SW17") (unit 1)
         )
       )
     )
@@ -1065,7 +1070,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 107.95 78.105 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 4948fdcf-72a5-45ab-8ca4-60edbf7da594)
-    (property "Reference" "D10" (at 110.49 76.835 90)
+    (property "Reference" "D31" (at 110.49 76.835 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 110.49 79.375 90)
@@ -1094,7 +1099,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D10") (unit 1)
+          (reference "D31") (unit 1)
         )
       )
     )
@@ -1103,13 +1108,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 53.975 35.56 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 4e27d96c-a3ce-403c-9d22-2ee1cf710041)
-    (property "Reference" "SW3" (at 53.975 34.925 0)
+    (property "Reference" "SW14" (at 53.975 34.29 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 53.975 35.56 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 53.975 35.56 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 53.975 35.56 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 53.975 35.56 0)
@@ -1126,7 +1131,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW3") (unit 1)
+          (reference "SW14") (unit 1)
         )
       )
     )
@@ -1135,13 +1140,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 53.975 162.56 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 505f0c11-3682-4318-89f5-f997bcb5b851)
-    (property "Reference" "SW18" (at 53.975 161.925 0)
+    (property "Reference" "SW1" (at 53.975 161.29 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 53.975 162.56 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 53.975 162.56 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 53.975 162.56 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 53.975 162.56 0)
@@ -1158,7 +1163,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW18") (unit 1)
+          (reference "SW1") (unit 1)
         )
       )
     )
@@ -1167,13 +1172,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 85.725 67.31 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 5273bf15-b165-4bc7-84ec-b7429349fbaf)
-    (property "Reference" "SW8" (at 85.725 66.675 0)
+    (property "Reference" "SW11" (at 85.725 66.04 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 85.725 67.31 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 85.725 67.31 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 85.725 67.31 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 85.725 67.31 0)
@@ -1190,7 +1195,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW8") (unit 1)
+          (reference "SW11") (unit 1)
         )
       )
     )
@@ -1199,13 +1204,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 53.975 67.31 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 56f4f5e8-883e-4074-a3fa-d2206e9c4dbe)
-    (property "Reference" "SW7" (at 53.975 66.675 0)
+    (property "Reference" "SW10" (at 53.975 66.04 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 53.975 67.31 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 53.975 67.31 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 53.975 67.31 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 53.975 67.31 0)
@@ -1222,7 +1227,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW7") (unit 1)
+          (reference "SW10") (unit 1)
         )
       )
     )
@@ -1231,13 +1236,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 85.725 130.81 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 5ca5b9da-5ec6-433d-a301-4cefbecdc588)
-    (property "Reference" "SW15" (at 85.725 130.175 0)
+    (property "Reference" "SW4" (at 85.725 129.54 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 85.725 130.81 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 85.725 130.81 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 85.725 130.81 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 85.725 130.81 0)
@@ -1254,7 +1259,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW15") (unit 1)
+          (reference "SW4") (unit 1)
         )
       )
     )
@@ -1263,13 +1268,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 149.225 130.81 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 6509c391-32eb-40ec-9437-8382ca2d0d91)
-    (property "Reference" "SW17" (at 149.225 130.175 0)
+    (property "Reference" "SW6" (at 149.225 129.54 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 149.225 130.81 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 149.225 130.81 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 149.225 130.81 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 149.225 130.81 0)
@@ -1286,7 +1291,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW17") (unit 1)
+          (reference "SW6") (unit 1)
         )
       )
     )
@@ -1295,13 +1300,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 117.475 130.81 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 657b7ab3-bafd-4984-ac82-6976f369280c)
-    (property "Reference" "SW16" (at 117.475 130.175 0)
+    (property "Reference" "SW5" (at 117.475 129.54 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 117.475 130.81 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 117.475 130.81 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 117.475 130.81 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 117.475 130.81 0)
@@ -1318,7 +1323,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW16") (unit 1)
+          (reference "SW5") (unit 1)
         )
       )
     )
@@ -1327,7 +1332,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 76.2 78.105 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 6af73004-9fbc-4335-8fbc-cf09e631aec6)
-    (property "Reference" "D9" (at 78.74 76.835 90)
+    (property "Reference" "D27" (at 78.74 76.835 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 78.74 79.375 90)
@@ -1356,7 +1361,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D9") (unit 1)
+          (reference "D27") (unit 1)
         )
       )
     )
@@ -1365,7 +1370,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 139.7 46.355 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 75551734-a4ba-4ba4-a40c-299107763d61)
-    (property "Reference" "D7" (at 142.24 45.085 90)
+    (property "Reference" "D35" (at 142.24 45.085 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 142.24 47.625 90)
@@ -1394,7 +1399,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D7") (unit 1)
+          (reference "D35") (unit 1)
         )
       )
     )
@@ -1403,13 +1408,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 85.725 99.06 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 8eb462b9-3afa-487d-9a17-27332f45cea2)
-    (property "Reference" "SW12" (at 85.725 98.425 0)
+    (property "Reference" "SW8" (at 85.725 97.79 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 85.725 99.06 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 85.725 99.06 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 85.725 99.06 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 85.725 99.06 0)
@@ -1426,7 +1431,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW12") (unit 1)
+          (reference "SW8") (unit 1)
         )
       )
     )
@@ -1435,7 +1440,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 44.45 46.355 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 96b1a554-4753-4e59-a7dd-0748b77b7f61)
-    (property "Reference" "D4" (at 46.99 45.085 90)
+    (property "Reference" "D21" (at 46.99 45.085 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 46.99 47.625 90)
@@ -1464,7 +1469,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D4") (unit 1)
+          (reference "D21") (unit 1)
         )
       )
     )
@@ -1473,7 +1478,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 44.45 78.105 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 9a4f067e-3c6a-46da-965b-e87b9f45e219)
-    (property "Reference" "D8" (at 46.99 76.835 90)
+    (property "Reference" "D22" (at 46.99 76.835 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 46.99 79.375 90)
@@ -1502,7 +1507,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D8") (unit 1)
+          (reference "D22") (unit 1)
         )
       )
     )
@@ -1511,13 +1516,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 117.475 99.06 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid a405cb1c-d2ea-4d9d-8502-fb47168ccbf6)
-    (property "Reference" "SW13" (at 117.475 98.425 0)
+    (property "Reference" "SW9" (at 117.475 97.79 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 117.475 99.06 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 117.475 99.06 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 117.475 99.06 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 117.475 99.06 0)
@@ -1534,7 +1539,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW13") (unit 1)
+          (reference "SW9") (unit 1)
         )
       )
     )
@@ -1543,7 +1548,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 44.45 173.355 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid a5483329-c318-4bd3-b3e1-948c7db47a24)
-    (property "Reference" "D19" (at 46.99 172.085 90)
+    (property "Reference" "D25" (at 46.99 172.085 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 46.99 174.625 90)
@@ -1572,7 +1577,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D19") (unit 1)
+          (reference "D25") (unit 1)
         )
       )
     )
@@ -1581,13 +1586,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 117.475 67.31 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid ab909233-e2bc-41af-a834-2cf363e6dc9a)
-    (property "Reference" "SW9" (at 117.475 66.675 0)
+    (property "Reference" "SW12" (at 117.475 66.04 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 117.475 67.31 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 117.475 67.31 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 117.475 67.31 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 117.475 67.31 0)
@@ -1604,7 +1609,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW9") (unit 1)
+          (reference "SW12") (unit 1)
         )
       )
     )
@@ -1613,13 +1618,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 117.475 162.56 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid af94eaaa-b631-4e88-a3d0-99d6669ca845)
-    (property "Reference" "SW19" (at 117.475 161.925 0)
+    (property "Reference" "SW2" (at 117.475 161.29 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 117.475 162.56 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 117.475 162.56 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 117.475 162.56 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 117.475 162.56 0)
@@ -1636,7 +1641,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW19") (unit 1)
+          (reference "SW2") (unit 1)
         )
       )
     )
@@ -1645,7 +1650,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 107.95 46.355 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid b019851e-df44-4421-807c-d7a8f0dc1b07)
-    (property "Reference" "D6" (at 110.49 45.085 90)
+    (property "Reference" "D30" (at 110.49 45.085 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 110.49 47.625 90)
@@ -1674,7 +1679,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D6") (unit 1)
+          (reference "D30") (unit 1)
         )
       )
     )
@@ -1683,7 +1688,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 44.45 109.855 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid ba594d5b-4547-42a4-9833-920e8bac2b33)
-    (property "Reference" "D12" (at 46.99 108.585 90)
+    (property "Reference" "D23" (at 46.99 108.585 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 46.99 111.125 90)
@@ -1712,7 +1717,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D12") (unit 1)
+          (reference "D23") (unit 1)
         )
       )
     )
@@ -1721,7 +1726,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 76.2 46.355 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid cf227cd9-004f-4aa4-9bd6-b6175f53aaa4)
-    (property "Reference" "D5" (at 78.74 45.085 90)
+    (property "Reference" "D26" (at 78.74 45.085 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 78.74 47.625 90)
@@ -1750,7 +1755,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D5") (unit 1)
+          (reference "D26") (unit 1)
         )
       )
     )
@@ -1759,7 +1764,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 139.7 141.605 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid e14b4982-25a6-4360-939a-ae9e184060fe)
-    (property "Reference" "D18" (at 142.24 140.335 90)
+    (property "Reference" "D37" (at 142.24 140.335 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 142.24 142.875 90)
@@ -1788,7 +1793,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D18") (unit 1)
+          (reference "D37") (unit 1)
         )
       )
     )
@@ -1797,7 +1802,7 @@
   (symbol (lib_id "Diode:1N4148WS") (at 76.2 109.855 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid ebfbc8fe-72ff-4726-9373-61ba85a56495)
-    (property "Reference" "D13" (at 78.74 108.585 90)
+    (property "Reference" "D28" (at 78.74 108.585 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "1N4148WS" (at 78.74 111.125 90)
@@ -1826,7 +1831,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "D13") (unit 1)
+          (reference "D28") (unit 1)
         )
       )
     )
@@ -1835,13 +1840,13 @@
   (symbol (lib_id "mantyl:Kailh_MX_Socket") (at 53.975 130.81 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid f9439959-ed3a-4775-9f32-478c0cfc2d22)
-    (property "Reference" "SW14" (at 53.975 130.175 0)
+    (property "Reference" "SW3" (at 53.975 129.54 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "~" (at 53.975 130.81 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 53.975 130.81 0)
+    (property "Footprint" "mantyl:Kailh_socket_MX_platemount" (at 53.975 130.81 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (at 53.975 130.81 0)
@@ -1858,7 +1863,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
-          (reference "SW14") (unit 1)
+          (reference "SW3") (unit 1)
         )
       )
     )

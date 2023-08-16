@@ -710,6 +710,11 @@
     (uuid fef3dce8-1540-495d-9e4b-bba3c8731809)
   )
 
+  (text "Key LEDs" (at 220.345 26.035 0)
+    (effects (font (size 5 5) (thickness 1) bold (color 194 0 0 1)) (justify left bottom))
+    (uuid a5c5660f-4d5c-451e-93d2-b5620ee60e82)
+  )
+
   (label "VCC_5V" (at 82.55 82.55 180) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify right bottom))
     (uuid 001df3d3-890a-4ac0-82b4-eeca9090e630)
@@ -790,7 +795,7 @@
   (symbol (lib_id "power:GND") (at 40.64 104.14 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 06238507-3865-49b4-9ad1-1e0d2119ff5d)
-    (property "Reference" "#PWR038" (at 46.99 104.14 0)
+    (property "Reference" "#PWR032" (at 46.99 104.14 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 44.45 104.14 90)
@@ -806,7 +811,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR038") (unit 1)
+          (reference "#PWR032") (unit 1)
         )
       )
     )
@@ -815,7 +820,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 127 33.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 085979bf-f7ce-4f78-9025-33126d19a436)
-    (property "Reference" "D23" (at 116.205 22.86 0)
+    (property "Reference" "D16" (at 116.205 22.86 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 116.205 25.4 0)
@@ -837,7 +842,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D23") (unit 1)
+          (reference "D16") (unit 1)
         )
       )
     )
@@ -846,7 +851,7 @@
   (symbol (lib_id "Device:C") (at 179.705 57.15 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 0a63ee35-cf06-4263-8a36-6dfb8a173078)
-    (property "Reference" "C19" (at 179.705 49.53 90)
+    (property "Reference" "C34" (at 179.705 49.53 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 179.705 52.07 90)
@@ -869,7 +874,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C19") (unit 1)
+          (reference "C34") (unit 1)
         )
       )
     )
@@ -878,7 +883,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 82.55 64.77 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 0aa1478b-963e-4b44-a926-72cf6ba7e660)
-    (property "Reference" "D26" (at 71.755 54.61 0)
+    (property "Reference" "D11" (at 71.755 54.61 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 71.755 57.15 0)
@@ -900,7 +905,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D26") (unit 1)
+          (reference "D11") (unit 1)
         )
       )
     )
@@ -909,7 +914,7 @@
   (symbol (lib_id "Device:C") (at 135.255 25.4 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 0b97156f-2b94-4582-aba6-db56b93814d2)
-    (property "Reference" "C14" (at 135.255 17.78 90)
+    (property "Reference" "C28" (at 135.255 17.78 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 135.255 20.32 90)
@@ -932,7 +937,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C14") (unit 1)
+          (reference "C28") (unit 1)
         )
       )
     )
@@ -941,7 +946,7 @@
   (symbol (lib_id "power:GND") (at 52.07 152.4 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 125f6958-2c68-45c9-bf70-b5ff131fc7dc)
-    (property "Reference" "#PWR053" (at 58.42 152.4 0)
+    (property "Reference" "#PWR039" (at 58.42 152.4 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 55.245 152.4 90)
@@ -957,7 +962,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR053") (unit 1)
+          (reference "#PWR039") (unit 1)
         )
       )
     )
@@ -966,7 +971,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 38.1 33.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 17aea782-4d12-4736-80cb-6c29b0d29b0f)
-    (property "Reference" "D21" (at 27.305 22.86 0)
+    (property "Reference" "D14" (at 27.305 22.86 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 27.305 25.4 0)
@@ -988,7 +993,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D21") (unit 1)
+          (reference "D14") (unit 1)
         )
       )
     )
@@ -997,7 +1002,7 @@
   (symbol (lib_id "Device:C") (at 135.255 152.4 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 1dcb05ac-0bd8-4a6c-8296-07a70091fb14)
-    (property "Reference" "C28" (at 135.255 144.78 90)
+    (property "Reference" "C32" (at 135.255 144.78 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 135.255 147.32 90)
@@ -1020,7 +1025,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C28") (unit 1)
+          (reference "C32") (unit 1)
         )
       )
     )
@@ -1029,7 +1034,7 @@
   (symbol (lib_id "power:GND") (at 140.97 57.15 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 2483a242-78b6-4564-a216-5ce0d036e8f6)
-    (property "Reference" "#PWR035" (at 147.32 57.15 0)
+    (property "Reference" "#PWR054" (at 147.32 57.15 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 144.145 57.15 90)
@@ -1045,7 +1050,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR035") (unit 1)
+          (reference "#PWR054") (unit 1)
         )
       )
     )
@@ -1054,7 +1059,7 @@
   (symbol (lib_id "power:GND") (at 140.97 25.4 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 2b70b878-c7b4-4671-83f8-f35811f5f1c1)
-    (property "Reference" "#PWR027" (at 147.32 25.4 0)
+    (property "Reference" "#PWR053" (at 147.32 25.4 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 144.145 25.4 90)
@@ -1070,7 +1075,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR027") (unit 1)
+          (reference "#PWR053") (unit 1)
         )
       )
     )
@@ -1079,7 +1084,7 @@
   (symbol (lib_id "power:GND") (at 129.54 167.64 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 2d3a25f5-49e1-479f-83c2-b0b71c84df9e)
-    (property "Reference" "#PWR054" (at 135.89 167.64 0)
+    (property "Reference" "#PWR052" (at 135.89 167.64 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 133.35 167.64 90)
@@ -1095,7 +1100,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR054") (unit 1)
+          (reference "#PWR052") (unit 1)
         )
       )
     )
@@ -1104,7 +1109,7 @@
   (symbol (lib_id "power:GND") (at 40.64 40.64 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 31ae8c66-35ab-44f4-b050-adc0cef94b14)
-    (property "Reference" "#PWR023" (at 46.99 40.64 0)
+    (property "Reference" "#PWR030" (at 46.99 40.64 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 44.45 40.64 90)
@@ -1120,7 +1125,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR023") (unit 1)
+          (reference "#PWR030") (unit 1)
         )
       )
     )
@@ -1129,7 +1134,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 38.1 128.27 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 366f5da0-a362-4e3b-84ef-70b3a058f7cf)
-    (property "Reference" "D32" (at 27.305 118.11 0)
+    (property "Reference" "D3" (at 27.305 118.11 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 27.305 120.65 0)
@@ -1151,7 +1156,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D32") (unit 1)
+          (reference "D3") (unit 1)
         )
       )
     )
@@ -1160,7 +1165,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 127 96.52 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 38732108-f150-47bd-98a0-02791eec4e48)
-    (property "Reference" "D31" (at 116.205 86.36 0)
+    (property "Reference" "D9" (at 116.205 86.36 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 116.205 88.9 0)
@@ -1182,7 +1187,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D31") (unit 1)
+          (reference "D9") (unit 1)
         )
       )
     )
@@ -1191,7 +1196,7 @@
   (symbol (lib_id "power:GND") (at 85.09 135.89 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 3982dda5-e626-447b-91ea-14c8f04f67a8)
-    (property "Reference" "#PWR046" (at 91.44 135.89 0)
+    (property "Reference" "#PWR043" (at 91.44 135.89 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 88.9 135.89 90)
@@ -1207,7 +1212,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR046") (unit 1)
+          (reference "#PWR043") (unit 1)
         )
       )
     )
@@ -1216,7 +1221,7 @@
   (symbol (lib_id "power:GND") (at 96.52 88.9 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 3c741cf4-bb87-42ba-ace7-7129d2100a86)
-    (property "Reference" "#PWR041" (at 102.87 88.9 0)
+    (property "Reference" "#PWR046" (at 102.87 88.9 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 99.695 88.9 90)
@@ -1232,7 +1237,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR041") (unit 1)
+          (reference "#PWR046") (unit 1)
         )
       )
     )
@@ -1241,7 +1246,7 @@
   (symbol (lib_id "power:GND") (at 85.09 40.64 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 3e7aec57-23da-4ef7-8c21-79efd4166989)
-    (property "Reference" "#PWR024" (at 91.44 40.64 0)
+    (property "Reference" "#PWR040" (at 91.44 40.64 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 88.9 40.64 90)
@@ -1257,7 +1262,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR024") (unit 1)
+          (reference "#PWR040") (unit 1)
         )
       )
     )
@@ -1266,7 +1271,7 @@
   (symbol (lib_id "power:GND") (at 85.09 104.14 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 4bc95c8f-887f-4817-a077-10df97d1135d)
-    (property "Reference" "#PWR040" (at 91.44 104.14 0)
+    (property "Reference" "#PWR042" (at 91.44 104.14 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 88.9 104.14 90)
@@ -1282,7 +1287,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR040") (unit 1)
+          (reference "#PWR042") (unit 1)
         )
       )
     )
@@ -1291,7 +1296,7 @@
   (symbol (lib_id "power:GND") (at 173.99 135.89 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 4f6c6dbe-e7af-4dcc-97b7-032bfd15f479)
-    (property "Reference" "#PWR050" (at 180.34 135.89 0)
+    (property "Reference" "#PWR060" (at 180.34 135.89 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 177.8 135.89 90)
@@ -1307,7 +1312,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR050") (unit 1)
+          (reference "#PWR060") (unit 1)
         )
       )
     )
@@ -1316,7 +1321,7 @@
   (symbol (lib_id "Device:C") (at 179.705 25.4 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 5337efb1-aadc-405e-a702-4d1167290099)
-    (property "Reference" "C15" (at 179.705 17.78 90)
+    (property "Reference" "C33" (at 179.705 17.78 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 179.705 20.32 90)
@@ -1339,7 +1344,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C15") (unit 1)
+          (reference "C33") (unit 1)
         )
       )
     )
@@ -1348,7 +1353,7 @@
   (symbol (lib_id "power:GND") (at 40.64 72.39 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 572898fc-4917-4081-ab07-aa021eb54cfb)
-    (property "Reference" "#PWR030" (at 46.99 72.39 0)
+    (property "Reference" "#PWR031" (at 46.99 72.39 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 44.45 72.39 90)
@@ -1364,7 +1369,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR030") (unit 1)
+          (reference "#PWR031") (unit 1)
         )
       )
     )
@@ -1373,7 +1378,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 171.45 33.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 591c48b7-bcd6-4d87-bab3-54e95b19d6c0)
-    (property "Reference" "D24" (at 160.655 22.86 0)
+    (property "Reference" "D17" (at 160.655 22.86 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 160.655 25.4 0)
@@ -1395,7 +1400,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D24") (unit 1)
+          (reference "D17") (unit 1)
         )
       )
     )
@@ -1404,7 +1409,7 @@
   (symbol (lib_id "Device:C") (at 179.705 120.65 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 596031ed-3fa4-4762-85ef-7b54938cd362)
-    (property "Reference" "C26" (at 179.705 113.03 90)
+    (property "Reference" "C35" (at 179.705 113.03 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 179.705 115.57 90)
@@ -1427,7 +1432,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C26") (unit 1)
+          (reference "C35") (unit 1)
         )
       )
     )
@@ -1436,7 +1441,7 @@
   (symbol (lib_id "power:GND") (at 52.07 88.9 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 5e514fa0-5dd7-4764-aed2-82f86ddc2676)
-    (property "Reference" "#PWR039" (at 58.42 88.9 0)
+    (property "Reference" "#PWR037" (at 58.42 88.9 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 55.245 88.9 90)
@@ -1452,7 +1457,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR039") (unit 1)
+          (reference "#PWR037") (unit 1)
         )
       )
     )
@@ -1461,7 +1466,7 @@
   (symbol (lib_id "Device:C") (at 90.805 120.65 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 5f691369-3bf2-490b-aea4-dff2eed6bc9f)
-    (property "Reference" "C24" (at 90.805 113.03 90)
+    (property "Reference" "C27" (at 90.805 113.03 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 90.805 115.57 90)
@@ -1484,7 +1489,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C24") (unit 1)
+          (reference "C27") (unit 1)
         )
       )
     )
@@ -1493,7 +1498,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 82.55 96.52 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 607b0793-7e3d-4005-9a56-9540cc39be8f)
-    (property "Reference" "D30" (at 71.755 86.36 0)
+    (property "Reference" "D8" (at 71.755 86.36 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 71.755 88.9 0)
@@ -1515,7 +1520,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D30") (unit 1)
+          (reference "D8") (unit 1)
         )
       )
     )
@@ -1524,7 +1529,7 @@
   (symbol (lib_id "power:GND") (at 40.64 167.64 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 636be4f9-c4ab-420a-a8ad-8f5d828022ee)
-    (property "Reference" "#PWR052" (at 46.99 167.64 0)
+    (property "Reference" "#PWR034" (at 46.99 167.64 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 44.45 167.64 90)
@@ -1540,7 +1545,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR052") (unit 1)
+          (reference "#PWR034") (unit 1)
         )
       )
     )
@@ -1549,7 +1554,7 @@
   (symbol (lib_id "power:GND") (at 85.09 72.39 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 74e8eeb3-bb82-4ddd-b7d3-503684b98c2e)
-    (property "Reference" "#PWR032" (at 91.44 72.39 0)
+    (property "Reference" "#PWR041" (at 91.44 72.39 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 88.9 72.39 90)
@@ -1565,7 +1570,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR032") (unit 1)
+          (reference "#PWR041") (unit 1)
         )
       )
     )
@@ -1574,7 +1579,7 @@
   (symbol (lib_id "power:GND") (at 52.07 25.4 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 76e07835-a3d0-4545-9066-1d128682ae42)
-    (property "Reference" "#PWR022" (at 58.42 25.4 0)
+    (property "Reference" "#PWR035" (at 58.42 25.4 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 55.245 25.4 90)
@@ -1590,7 +1595,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR022") (unit 1)
+          (reference "#PWR035") (unit 1)
         )
       )
     )
@@ -1599,7 +1604,7 @@
   (symbol (lib_id "Device:C") (at 135.255 57.15 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 7c877958-6e14-4ff8-a3cf-e6b9afaa86f6)
-    (property "Reference" "C18" (at 135.255 49.53 90)
+    (property "Reference" "C29" (at 135.255 49.53 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 135.255 52.07 90)
@@ -1622,7 +1627,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C18") (unit 1)
+          (reference "C29") (unit 1)
         )
       )
     )
@@ -1631,7 +1636,7 @@
   (symbol (lib_id "power:GND") (at 140.97 120.65 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 8d93df7f-0940-4c07-9be4-448bfc743f7f)
-    (property "Reference" "#PWR049" (at 147.32 120.65 0)
+    (property "Reference" "#PWR056" (at 147.32 120.65 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 144.145 120.65 90)
@@ -1647,7 +1652,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR049") (unit 1)
+          (reference "#PWR056") (unit 1)
         )
       )
     )
@@ -1656,7 +1661,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 171.45 64.77 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 91a654f7-3d47-4c97-b1fd-2cd00f39a6ce)
-    (property "Reference" "D28" (at 160.655 54.61 0)
+    (property "Reference" "D13" (at 160.655 54.61 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 160.655 57.15 0)
@@ -1678,7 +1683,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D28") (unit 1)
+          (reference "D13") (unit 1)
         )
       )
     )
@@ -1687,7 +1692,7 @@
   (symbol (lib_id "power:GND") (at 52.07 120.65 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 928e582d-d119-484f-ae00-b567c54acbe9)
-    (property "Reference" "#PWR045" (at 58.42 120.65 0)
+    (property "Reference" "#PWR038" (at 58.42 120.65 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 55.245 120.65 90)
@@ -1703,7 +1708,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR045") (unit 1)
+          (reference "#PWR038") (unit 1)
         )
       )
     )
@@ -1712,7 +1717,7 @@
   (symbol (lib_id "power:GND") (at 129.54 40.64 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 9b4893d6-b9d7-47c8-9f44-7e46aca7794e)
-    (property "Reference" "#PWR026" (at 135.89 40.64 0)
+    (property "Reference" "#PWR048" (at 135.89 40.64 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 133.35 40.64 90)
@@ -1728,7 +1733,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR026") (unit 1)
+          (reference "#PWR048") (unit 1)
         )
       )
     )
@@ -1762,7 +1767,7 @@
   (symbol (lib_id "power:GND") (at 52.07 57.15 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid a4ac53ed-ad57-47d9-9078-a3f4cb23859f)
-    (property "Reference" "#PWR031" (at 58.42 57.15 0)
+    (property "Reference" "#PWR036" (at 58.42 57.15 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 55.245 57.15 90)
@@ -1778,7 +1783,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR031") (unit 1)
+          (reference "#PWR036") (unit 1)
         )
       )
     )
@@ -1787,7 +1792,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 38.1 64.77 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid ab851565-bd50-4e97-876e-d29e2e0a6b13)
-    (property "Reference" "D25" (at 27.305 54.61 0)
+    (property "Reference" "D10" (at 27.305 54.61 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 27.305 57.15 0)
@@ -1809,7 +1814,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D25") (unit 1)
+          (reference "D10") (unit 1)
         )
       )
     )
@@ -1818,7 +1823,7 @@
   (symbol (lib_id "Device:C") (at 135.255 88.9 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid abec6fc7-7ff9-4a8c-9bc1-f1e0b9486eb6)
-    (property "Reference" "C22" (at 135.255 81.28 90)
+    (property "Reference" "C30" (at 135.255 81.28 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 135.255 83.82 90)
@@ -1841,7 +1846,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C22") (unit 1)
+          (reference "C30") (unit 1)
         )
       )
     )
@@ -1850,7 +1855,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 127 160.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid add75139-b31b-4584-8c52-90336e3ec12d)
-    (property "Reference" "D37" (at 116.205 149.86 0)
+    (property "Reference" "D2" (at 116.205 149.86 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 116.205 152.4 0)
@@ -1872,7 +1877,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D37") (unit 1)
+          (reference "D2") (unit 1)
         )
       )
     )
@@ -1881,7 +1886,7 @@
   (symbol (lib_id "Device:C") (at 46.355 25.4 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid af0b3c20-c1d5-426d-a42a-8986895e075a)
-    (property "Reference" "C12" (at 46.355 17.78 90)
+    (property "Reference" "C19" (at 46.355 17.78 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 46.355 20.32 90)
@@ -1904,7 +1909,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C12") (unit 1)
+          (reference "C19") (unit 1)
         )
       )
     )
@@ -1913,7 +1918,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 38.1 160.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid afb696f9-eda8-40d6-a9c0-b7a0085e4fe8)
-    (property "Reference" "D36" (at 27.305 149.86 0)
+    (property "Reference" "D1" (at 27.305 149.86 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 27.305 152.4 0)
@@ -1935,7 +1940,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D36") (unit 1)
+          (reference "D1") (unit 1)
         )
       )
     )
@@ -1944,7 +1949,7 @@
   (symbol (lib_id "Device:C") (at 46.355 57.15 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid b53a35ca-75c1-4069-a736-1311707a63ed)
-    (property "Reference" "C16" (at 46.355 49.53 90)
+    (property "Reference" "C20" (at 46.355 49.53 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 46.355 52.07 90)
@@ -1967,7 +1972,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C16") (unit 1)
+          (reference "C20") (unit 1)
         )
       )
     )
@@ -1976,7 +1981,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 171.45 128.27 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid ba8f31d3-f3b4-459a-bb6b-9ec95fb645c6)
-    (property "Reference" "D35" (at 160.655 118.11 0)
+    (property "Reference" "D6" (at 160.655 118.11 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 160.655 120.65 0)
@@ -1998,7 +2003,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D35") (unit 1)
+          (reference "D6") (unit 1)
         )
       )
     )
@@ -2007,7 +2012,7 @@
   (symbol (lib_id "power:GND") (at 129.54 135.89 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid bdd6a5f3-1413-4501-a7e6-0ff8d4cea908)
-    (property "Reference" "#PWR048" (at 135.89 135.89 0)
+    (property "Reference" "#PWR051" (at 135.89 135.89 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 133.35 135.89 90)
@@ -2023,7 +2028,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR048") (unit 1)
+          (reference "#PWR051") (unit 1)
         )
       )
     )
@@ -2032,7 +2037,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 82.55 33.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid c0673358-d36a-4cdc-81c4-29ed3ccc986c)
-    (property "Reference" "D22" (at 71.755 22.86 0)
+    (property "Reference" "D15" (at 71.755 22.86 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 71.755 25.4 0)
@@ -2054,7 +2059,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D22") (unit 1)
+          (reference "D15") (unit 1)
         )
       )
     )
@@ -2063,7 +2068,7 @@
   (symbol (lib_id "Device:C") (at 46.355 88.9 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid c16eec9a-413c-41a6-a8dd-2ed059ac7af4)
-    (property "Reference" "C20" (at 46.355 81.28 90)
+    (property "Reference" "C21" (at 46.355 81.28 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 46.355 83.82 90)
@@ -2086,7 +2091,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C20") (unit 1)
+          (reference "C21") (unit 1)
         )
       )
     )
@@ -2095,7 +2100,7 @@
   (symbol (lib_id "power:GND") (at 185.42 120.65 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid c4111997-efe9-4c55-bf49-db477c1242d5)
-    (property "Reference" "#PWR051" (at 191.77 120.65 0)
+    (property "Reference" "#PWR063" (at 191.77 120.65 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 188.595 120.65 90)
@@ -2111,7 +2116,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR051") (unit 1)
+          (reference "#PWR063") (unit 1)
         )
       )
     )
@@ -2120,7 +2125,7 @@
   (symbol (lib_id "Device:C") (at 90.805 88.9 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid c6832428-91b8-42d6-8be6-b70d7f4ccc6d)
-    (property "Reference" "C21" (at 90.805 81.28 90)
+    (property "Reference" "C26" (at 90.805 81.28 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 90.805 83.82 90)
@@ -2143,7 +2148,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C21") (unit 1)
+          (reference "C26") (unit 1)
         )
       )
     )
@@ -2152,7 +2157,7 @@
   (symbol (lib_id "power:GND") (at 96.52 25.4 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid c7a352cb-ea03-4f7b-81cd-ec2511b27df2)
-    (property "Reference" "#PWR025" (at 102.87 25.4 0)
+    (property "Reference" "#PWR044" (at 102.87 25.4 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 99.695 25.4 90)
@@ -2168,7 +2173,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR025") (unit 1)
+          (reference "#PWR044") (unit 1)
         )
       )
     )
@@ -2177,7 +2182,7 @@
   (symbol (lib_id "power:GND") (at 129.54 72.39 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid c836d5cd-7e13-4277-a029-fdd2b9d8492c)
-    (property "Reference" "#PWR034" (at 135.89 72.39 0)
+    (property "Reference" "#PWR049" (at 135.89 72.39 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 133.35 72.39 90)
@@ -2193,7 +2198,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR034") (unit 1)
+          (reference "#PWR049") (unit 1)
         )
       )
     )
@@ -2202,7 +2207,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 82.55 128.27 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid c8562ea8-aca8-4e91-994e-fa5371892000)
-    (property "Reference" "D33" (at 71.755 118.11 0)
+    (property "Reference" "D4" (at 71.755 118.11 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 71.755 120.65 0)
@@ -2224,7 +2229,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D33") (unit 1)
+          (reference "D4") (unit 1)
         )
       )
     )
@@ -2233,7 +2238,7 @@
   (symbol (lib_id "Device:C") (at 46.355 120.65 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid cbc88b9f-bff1-450f-94ce-7ae659cd2cb6)
-    (property "Reference" "C23" (at 46.355 113.03 90)
+    (property "Reference" "C22" (at 46.355 113.03 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 46.355 115.57 90)
@@ -2256,7 +2261,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C23") (unit 1)
+          (reference "C22") (unit 1)
         )
       )
     )
@@ -2265,7 +2270,7 @@
   (symbol (lib_id "Device:C") (at 90.805 57.15 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid d38eb632-f467-444d-819b-28c62944c6ef)
-    (property "Reference" "C17" (at 90.805 49.53 90)
+    (property "Reference" "C25" (at 90.805 49.53 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 90.805 52.07 90)
@@ -2288,7 +2293,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C17") (unit 1)
+          (reference "C25") (unit 1)
         )
       )
     )
@@ -2297,7 +2302,7 @@
   (symbol (lib_id "power:GND") (at 140.97 88.9 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid d689900f-f904-4a3f-bf1c-705f326409ae)
-    (property "Reference" "#PWR043" (at 147.32 88.9 0)
+    (property "Reference" "#PWR055" (at 147.32 88.9 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 144.145 88.9 90)
@@ -2313,7 +2318,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR043") (unit 1)
+          (reference "#PWR055") (unit 1)
         )
       )
     )
@@ -2322,7 +2327,7 @@
   (symbol (lib_id "power:GND") (at 96.52 57.15 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid d76807df-d081-4d13-b153-89e9793f83f2)
-    (property "Reference" "#PWR033" (at 102.87 57.15 0)
+    (property "Reference" "#PWR045" (at 102.87 57.15 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 99.695 57.15 90)
@@ -2338,7 +2343,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR033") (unit 1)
+          (reference "#PWR045") (unit 1)
         )
       )
     )
@@ -2347,7 +2352,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 38.1 96.52 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid d99753b1-1b05-4e84-a955-cffe52261f34)
-    (property "Reference" "D29" (at 27.305 86.36 0)
+    (property "Reference" "D7" (at 27.305 86.36 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 27.305 88.9 0)
@@ -2369,7 +2374,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D29") (unit 1)
+          (reference "D7") (unit 1)
         )
       )
     )
@@ -2378,7 +2383,7 @@
   (symbol (lib_id "power:GND") (at 185.42 25.4 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid d9cf5ca6-fde4-4153-8565-5d8fc7712e46)
-    (property "Reference" "#PWR029" (at 191.77 25.4 0)
+    (property "Reference" "#PWR061" (at 191.77 25.4 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 188.595 25.4 90)
@@ -2394,7 +2399,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR029") (unit 1)
+          (reference "#PWR061") (unit 1)
         )
       )
     )
@@ -2403,7 +2408,7 @@
   (symbol (lib_id "Device:C") (at 135.255 120.65 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid e6d6fe2a-1fee-4c1c-bf73-70a9cb2e4fe9)
-    (property "Reference" "C25" (at 135.255 113.03 90)
+    (property "Reference" "C31" (at 135.255 113.03 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 135.255 115.57 90)
@@ -2426,7 +2431,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C25") (unit 1)
+          (reference "C31") (unit 1)
         )
       )
     )
@@ -2435,7 +2440,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 127 128.27 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid e8cc990a-a4a1-4e5c-a23a-3831681dabc0)
-    (property "Reference" "D34" (at 116.205 118.11 0)
+    (property "Reference" "D5" (at 116.205 118.11 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 116.205 120.65 0)
@@ -2457,7 +2462,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D34") (unit 1)
+          (reference "D5") (unit 1)
         )
       )
     )
@@ -2466,7 +2471,7 @@
   (symbol (lib_id "power:GND") (at 173.99 72.39 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid eaa83193-7518-4219-a15a-232dcd965695)
-    (property "Reference" "#PWR036" (at 180.34 72.39 0)
+    (property "Reference" "#PWR059" (at 180.34 72.39 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 177.8 72.39 90)
@@ -2482,7 +2487,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR036") (unit 1)
+          (reference "#PWR059") (unit 1)
         )
       )
     )
@@ -2491,7 +2496,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 127 64.77 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid ec08c0d6-d168-460b-a652-97893dd88391)
-    (property "Reference" "D27" (at 116.205 54.61 0)
+    (property "Reference" "D12" (at 116.205 54.61 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 116.205 57.15 0)
@@ -2513,7 +2518,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D27") (unit 1)
+          (reference "D12") (unit 1)
         )
       )
     )
@@ -2522,7 +2527,7 @@
   (symbol (lib_id "Device:C") (at 46.355 152.4 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid eecfd16c-5df8-4fa4-939a-ac63bc72d2e8)
-    (property "Reference" "C27" (at 46.355 144.78 90)
+    (property "Reference" "C23" (at 46.355 144.78 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 46.355 147.32 90)
@@ -2545,7 +2550,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C27") (unit 1)
+          (reference "C23") (unit 1)
         )
       )
     )
@@ -2554,7 +2559,7 @@
   (symbol (lib_id "power:GND") (at 129.54 104.14 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid f97357de-dd29-46e1-846c-0a7ae745ec36)
-    (property "Reference" "#PWR042" (at 135.89 104.14 0)
+    (property "Reference" "#PWR050" (at 135.89 104.14 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 133.35 104.14 90)
@@ -2570,7 +2575,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR042") (unit 1)
+          (reference "#PWR050") (unit 1)
         )
       )
     )
@@ -2579,7 +2584,7 @@
   (symbol (lib_id "power:GND") (at 40.64 135.89 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid fa025afd-a623-48c6-a6c5-9491de958b7b)
-    (property "Reference" "#PWR044" (at 46.99 135.89 0)
+    (property "Reference" "#PWR033" (at 46.99 135.89 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 44.45 135.89 90)
@@ -2595,7 +2600,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR044") (unit 1)
+          (reference "#PWR033") (unit 1)
         )
       )
     )
@@ -2604,7 +2609,7 @@
   (symbol (lib_id "power:GND") (at 140.97 152.4 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid fc3d4ed6-c2d9-4a1d-99ba-9a193870a69b)
-    (property "Reference" "#PWR055" (at 147.32 152.4 0)
+    (property "Reference" "#PWR057" (at 147.32 152.4 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 144.145 152.4 90)
@@ -2620,7 +2625,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR055") (unit 1)
+          (reference "#PWR057") (unit 1)
         )
       )
     )
@@ -2629,7 +2634,7 @@
   (symbol (lib_id "Device:R") (at 39.37 177.8 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid fcddd300-6922-4520-a6f4-bc2efd6b9283)
-    (property "Reference" "R14" (at 39.37 172.085 90)
+    (property "Reference" "R18" (at 39.37 172.085 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "470" (at 39.37 174.625 90)
@@ -2652,7 +2657,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "R14") (unit 1)
+          (reference "R18") (unit 1)
         )
       )
     )
@@ -2661,7 +2666,7 @@
   (symbol (lib_id "power:GND") (at 173.99 40.64 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid fea2aec9-e8c4-46ac-9078-573bee492eb5)
-    (property "Reference" "#PWR028" (at 180.34 40.64 0)
+    (property "Reference" "#PWR058" (at 180.34 40.64 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 177.8 40.64 90)
@@ -2677,7 +2682,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR028") (unit 1)
+          (reference "#PWR058") (unit 1)
         )
       )
     )
@@ -2686,7 +2691,7 @@
   (symbol (lib_id "Device:C") (at 90.805 25.4 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid fee267aa-3bb3-4548-93e9-09d2fc57d8ca)
-    (property "Reference" "C13" (at 90.805 17.78 90)
+    (property "Reference" "C24" (at 90.805 17.78 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 90.805 20.32 90)
@@ -2709,7 +2714,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "C13") (unit 1)
+          (reference "C24") (unit 1)
         )
       )
     )
@@ -2718,7 +2723,7 @@
   (symbol (lib_id "power:GND") (at 185.42 57.15 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid ff4f03bd-c721-4382-baf4-e500decc6a66)
-    (property "Reference" "#PWR037" (at 191.77 57.15 0)
+    (property "Reference" "#PWR062" (at 191.77 57.15 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (at 188.595 57.15 90)
@@ -2734,7 +2739,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "#PWR037") (unit 1)
+          (reference "#PWR062") (unit 1)
         )
       )
     )
