@@ -76,7 +76,8 @@ def test_np() -> None:
 
 
 def test() -> None:
-    test_full()
+    wrist_rest.right()
+    # test_full()
     # test_np()
     # cover.cover_clip()
 

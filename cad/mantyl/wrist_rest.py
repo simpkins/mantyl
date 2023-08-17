@@ -19,6 +19,11 @@ import math
 
 
 class WristRestSimple:
+    """A simple rectangular wrist rest.
+
+    See PadHolder below for a nicer custom wrist rest.
+    """
+
     def __init__(self, kbd: Keyboard) -> None:
         self.depth = 70.0
         self.back_z_drop = 14
@@ -423,7 +428,11 @@ class PadSegment:
         self.p9: MeshPoint = mesh.add_xyz(x, y, -self.bottom_thickness)
 
     def gen_faces(
-        self, bcenter: MeshPoint, prev: PadSegment, base_center: MeshPoint
+        self,
+        bcenter: MeshPoint,
+        prev: PadSegment,
+        base_center: MeshPoint,
+        skip_inner: bool = False,
     ) -> None:
         mesh = bcenter.mesh
 
@@ -438,7 +447,8 @@ class PadSegment:
         # Base segment
         mesh.add_quad(self.p6, prev.p6, prev.p7, self.p7)
         mesh.add_quad(self.p7, prev.p7, prev.p8, self.p8)
-        mesh.add_quad(self.p8, prev.p8, prev.p9, self.p9)
+        if not skip_inner:
+            mesh.add_quad(self.p8, prev.p8, prev.p9, self.p9)
         mesh.add_tri(self.p9, prev.p9, base_center)
 
 
@@ -478,6 +488,9 @@ class PadHolder:
             fr.point,
             cad.Point(fr.x, fr.y - right_edge_run, fr.z - right_edge_rise),
         )
+        self.inner_ceiling_plane = self.top_plane.shifted_along_normal(
+            -PadSegment.bottom_thickness
+        )
 
         self.segments: List[PadSegment] = []
 
@@ -512,8 +525,39 @@ class PadHolder:
     def gen_faces(self) -> None:
         for idx, seg in enumerate(self.segments):
             prev = self.segments[idx - 1]
-            seg.gen_faces(self.top_center, prev, self.top_inner_center)
+            # The front left inside corner needs special treatment,
+            # which is done below.  Skip generating the normal inner walls
+            # in this region.
+            skip_inner = idx >= self.left_idx and idx < self.left_idx + 16
+            seg.gen_faces(
+                self.top_center,
+                prev,
+                self.top_inner_center,
+                skip_inner=skip_inner,
+            )
             self.beveler.bevel_edge(seg.p5, prev.p5, 1.0)
+
+        # Deal with the front left inner corner
+        # Add an additional point near the corner, and connect the inner walls
+        # to this.
+        midp = self.mesh.add_xyz(self.left.p8.x, self.left.p8.y, 20)
+        for idx in range(self.left_idx, self.left_idx + 16):
+            seg = self.segments[idx]
+            prev = self.segments[idx - 1]
+            self.mesh.add_tri(seg.p8, prev.p8, midp)
+            self.mesh.add_tri(seg.p9, midp, prev.p9)
+
+        prev = self.segments[self.left_idx - 1]
+        self.mesh.add_tri(prev.p8, prev.p9, midp)
+        next = self.segments[self.left_idx + 15]
+        self.mesh.add_tri(midp, next.p9, next.p8)
+
+        self.beveler.bevel_edge(self.left.p8, midp, 1.0)
+        self.beveler.bevel_edge(self.left.p9, midp, 0.5)
+
+        # Minor tweaks to straighten out one area of the front left corner
+        self.left.p9.point.x += 1
+        self.segments[self.left_idx + 1].p9.point.x += 0.5
 
     def gen_perim(self) -> List[Tuple[float, float]]:
         # Control points for a cubic bezier cube
@@ -613,10 +657,6 @@ class PadHolder:
     def gen_base(self) -> None:
         self.tweak_front_face()
 
-        inner_roof = cad.Plane(
-            self.left.p9.point, self.fr.p9.point, self.top_inner_center.point
-        )
-
         # Outer ground points
         for segment in self.segments:
             segment.p7 = self.mesh.add_xyz(segment.p6.x, segment.p6.y, 0.0)
@@ -669,8 +709,10 @@ class PadHolder:
             # we want to use the one closer to self.top_inner_center
             if idx < self.left_idx or idx > self.left_idx + 15:
                 in_p = segment.p8.point
-                segment.p9 = self.mesh.add_xyz(
-                    in_p.x, in_p.y, inner_roof.z_intersect(in_p.x, in_p.y)
+                segment.p9.point.x = in_p.x
+                segment.p9.point.y = in_p.y
+                segment.p9.point.z = self.inner_ceiling_plane.z_intersect(
+                    in_p.x, in_p.y
                 )
 
     def finalize_object(self, obj: bpy.types.Object) -> None:
@@ -679,28 +721,20 @@ class PadHolder:
         self.add_screw_holes(obj)
 
     def add_feet(self, obj: bpy.types.Object) -> None:
-        add_foot(
-            obj, self.left.p8.x, self.left.p8.y, 320, 0
-        )
+        add_foot(obj, self.left.p8.x, self.left.p8.y, 320, 0)
 
         num_segments = len(self.segments)
         bl_idx = int(num_segments * 0.63)
         bl = self.segments[bl_idx]
-        add_foot(
-            obj, bl.p8.x - 2.0, bl.p8.y - 2.0, 45, 0
-        )
+        add_foot(obj, bl.p8.x - 2.0, bl.p8.y - 2.0, 45, 0)
 
         br_idx = int(num_segments * 0.42)
         br = self.segments[br_idx]
-        add_foot(
-            obj, br.p8.x + 0.2, br.p8.y - 3, 120, 0
-        )
+        add_foot(obj, br.p8.x + 0.2, br.p8.y - 3, 120, 0)
 
         tr_idx = int(num_segments * 0.19)
         tr = self.segments[tr_idx]
-        add_foot(
-            obj, tr.p8.x + 1.30, tr.p8.y + 1.30, 215, 0
-        )
+        add_foot(obj, tr.p8.x + 1.30, tr.p8.y + 1.30, 215, 0)
 
     def add_screw_holes(self, obj: bpy.types.Object) -> None:
         def add_screw_hole(x: float, z: float) -> None:
