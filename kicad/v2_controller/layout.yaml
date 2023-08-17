@@ -1,0 +1,110 @@
+origin: [90, 86]
+components:
+    SW3:  # KP1
+        location: [28.5, 19]
+        flip: True
+        rotation: 180
+    D3:  # KP1 LED
+        location: [28.5, 24.08]
+    D24:  # KP1 Diode
+        location: [22.5, 20]
+        rotation: -90
+    SW4:  # KP2
+        location: [9.5, 19]
+        flip: True
+        rotation: 180
+    D4:  # KP2
+        location: [9.5, 24.08]
+    SW5:  # KP3
+        location: [-9.5, 19]
+        flip: True
+        rotation: 180
+    D5:  # KP2
+        location: [-9.5, 24.08]
+    SW7:  # KP4
+        location: [28.5, 0]
+        flip: True
+        rotation: 180
+    D7:  # KP4
+        location: [28.5, 5.08]
+    SW8:  # KP5
+        location: [9.5, 0]
+        flip: True
+        rotation: 180
+    D8:  # KP5
+        location: [9.5, 5.08]
+    SW9:  # KP6
+        location: [-9.5, 0]
+        flip: True
+        rotation: 180
+    D9:  # KP6
+        location: [-9.5, 5.08]
+    SW10:  # KP7
+        location: [28.5, -19]
+        flip: True
+        rotation: 180
+    D10:  # KP7
+        location: [28.5, -13.92]
+    SW11:  # KP8
+        location: [9.5, -19]
+        flip: True
+        rotation: 180
+    D11:  # KP8
+        location: [9.5, -13.92]
+    SW12:  # KP9
+        location: [-9.5, -19]
+        flip: True
+        rotation: 180
+    D12:  # KP9
+        location: [-9.5, -13.92]
+
+    SW14:  # KP_Extra
+        location: [28.5, -38]
+        flip: True
+        rotation: 180
+    D14:  # KP_Extra
+        location: [28.5, -32.92]
+    SW15:  # KP_Slash
+        location: [9.5, -38]
+        flip: True
+        rotation: 180
+    D15:  # KP_Slash
+        location: [9.5, -32.92]
+    SW16:  # KP_Star
+        location: [-9.5, -38]
+        flip: True
+        rotation: 180
+    D16:  # KP_Star
+        location: [-9.5, -32.92]
+    SW17:  # KP_Minus
+        location: [-28.5, -38]
+        flip: True
+        rotation: 180
+    D17:  # KP_Minus
+        location: [-28.5, -32.29]
+
+    SW1:  # KP0
+        location: [19, 38]
+        flip: True
+        rotation: 180
+    D1:  # KP0
+        location: [19, 43.08]
+    SW2:  # KP_Dot
+        location: [-9.5, 38]
+        flip: True
+        rotation: 180
+    D2:  # KP_Dot
+        location: [-9.5, 43.08]
+
+    SW13:  # KP_Plus
+        location: [-28.5, -9.5]
+        flip: True
+        rotation: 180
+    D13:  # KP_Plus
+        location: [-28.5, -4.42]
+    SW6:  # KP_Enter
+        location: [-28.5, 28.5]
+        flip: True
+        rotation: 180
+    D6:  # KP_Enter
+        location: [-28.5, 33.58]
