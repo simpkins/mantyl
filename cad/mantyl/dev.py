@@ -60,6 +60,7 @@ def test_full() -> None:
 def test_np() -> None:
     rkbd, lkbd, np = kbd_halves.gen_3_sections()
     np.gen_object()
+    return
 
     from . import soc
 
@@ -85,16 +86,5 @@ def test() -> None:
     # kbd_halves.left_thumb_underlay()
     # kbd_halves.left_oled_backplate()
 
-    # keyboard.main_keys_test()
-
-    # kbd_halves.right_shell_simple()
-    # wrist_rest.test()
-
-    # sx1509_holder.test_screw_holder()
-    # oled_holder.test()
-    # usb_cutout.test()
-    # i2c_conn.cable_cap_test()
-    #foot.test()
-
     bpy.ops.object.mode_set(mode="EDIT")
-    blender_util.set_shading_mode("WIREFRAME")
+    #blender_util.set_shading_mode("WIREFRAME")

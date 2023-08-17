@@ -13,6 +13,7 @@ from typing import List, Tuple
 from bpycad import blender_util
 from bpycad.cad import Mesh, MeshPoint, Plane, Point, Transform
 from .keyboard import Keyboard, KeyHole
+from .foot import add_foot
 
 
 # pyre-fixme[13]: pyre complains that various members are uninitialized, since
@@ -614,9 +615,51 @@ class NumpadSection:
     def apply_bevels(self, obj: bpy.types.Object) -> None:
         return self._beveler.apply_bevels(obj)
 
-    def gen_object(self, name: str = "numpad") -> bpy.types.Object:
+    def gen_object_simple(self, name: str = "numpad", bevel: bool=True) -> bpy.types.Object:
+        """
+        Generate just the basic numpad shell, without applying feet or internal
+        board holders.
+        """
         bmesh = blender_util.blender_mesh(f"{name}_mesh", self.mesh)
         obj = blender_util.new_mesh_obj(name, bmesh)
-        self.apply_bevels(obj)
+        if bevel:
+            self.apply_bevels(obj)
+
+        return obj
+
+    def _add_feet(self, obj: bpy.types.Object) -> None:
+        br = self.perim_floor[9][1]
+        add_foot(
+            obj,
+            br.x - 0.4, br.y - 0.5,
+            -145.0,
+            2.0,
+        )
+        bl = self.perim_floor[12][1]
+        add_foot(
+            obj,
+            bl.x + 0.4, bl.y - 0.5,
+            -35.0,
+            2.0,
+        )
+
+        fr = self.perim_floor[1][1]
+        add_foot(
+            obj,
+            fr.x + 1, fr.y - 1,
+            140.0,
+            0.0,
+        )
+        fl = self.perim_floor[-2][1]
+        add_foot(
+            obj,
+            fl.x - 1, fl.y - 1,
+            40.0,
+            0.0,
+        )
+
+    def gen_object(self, name: str = "numpad") -> bpy.types.Object:
+        obj = self.gen_object_simple(name=name)
+        self._add_feet(obj)
 
         return obj
