@@ -76,10 +76,10 @@ def test_np() -> None:
 
 
 def test() -> None:
-    wrist_rest.right()
+    # wrist_rest.right()
     # test_full()
     # test_np()
-    # cover.cover_clip()
+    cover.cover_clip()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()

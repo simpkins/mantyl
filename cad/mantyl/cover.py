@@ -23,24 +23,26 @@ class CoverClip:
 
         # The thickness of the "spring" handle
         self.clip_thickness = 2.0
-        self.clip_width = 20
+        self.clip_width = 10
         # The height of the clip, above the floor
         self.clip_height = 25
         # The length that the clip handle extends below the floor
-        self.handle_len = 4.0
+        self.handle_len = 3.5
         # The gap between the front and back sides of the clip
-        self.clip_gap = 8.0
+        self.clip_gap = 4.0
 
         # The dimensions of the triangular protrusion that clips into the wall
-        self.clip_protrusion = 2.0
-        self.protrusion_h = 4.0
+        self.clip_protrusion = 4.0
+        self.protrusion_h = 8.0
 
         # The gap between the handle and the surrounding floor (on each side)
         self.handle_gap = 3.0
         self.base_inner_thickness = 3.0
-        self.base_lip_x = 10
-        self.base_lip_y = 10
         self.base_z_thickness = 3.0
+
+        # How much the clip extends over the floor
+        self.base_lip_x = 4
+        self.base_lip_y = 4
 
         self.total_base_thickness: float = (
             self.floor_thickness
@@ -55,10 +57,12 @@ class CoverClip:
         # This will be computed later, in _gen_clip()
         self.clip_back_x = 0.0
 
+        self.protrusion_ymin = self.floor_thickness * -0.5
+
     def gen(self, name: str = "clip") -> bpy.types.Object:
         clip = self._gen_clip()
         base = self._gen_base(name)
-        blender_util.union(base, clip)
+        blender_util.union(base, clip, dissolve_angle=0.1)
         return base
 
     def _gen_base(self, name: str) -> bpy.types.Object:
@@ -126,7 +130,7 @@ class CoverClip:
         ymax = self.floor_thickness * 0.5 + self.clip_height - clip_outer_r
         obj = blender_util.range_cube(
             (0, self.clip_thickness),
-            (-self.handle_len, ymax + 0.1),
+            (self.protrusion_ymin - self.handle_len, ymax + 0.1),
             (self.clip_width * -0.5, self.clip_width * 0.5),
         )
         lip = self._gen_protrusion()
@@ -158,11 +162,7 @@ class CoverClip:
         self.clip_back_x = clip_back_xmin + lower_outer_r
         with blender_util.TransformContext(l_outer_c) as ctx:
             ctx.rotate(180, "Z")
-            ctx.translate(
-                self.clip_back_x,
-                lower_outer_r + base_ymin,
-                0,
-            )
+            ctx.translate(self.clip_back_x, lower_outer_r + base_ymin, 0)
 
         # Back wall of clip
         clip_back_ymin = lower_outer_r + base_ymin - 0.1
@@ -198,11 +198,10 @@ class CoverClip:
 
     def _gen_protrusion(self) -> bpy.types.Object:
         lip = cad.Mesh()
-        ymin = self.floor_thickness * -0.5
         lip_xy = [
-            (-self.clip_protrusion, ymin),
-            (0.1, ymin),
-            (0.1, ymin + self.protrusion_h),
+            (-self.clip_protrusion, self.protrusion_ymin),
+            (0.1, self.protrusion_ymin),
+            (0.1, self.protrusion_ymin + self.protrusion_h),
         ]
         lip_points: List[Tuple[cad.MeshPoint, cad.MeshPoint]] = []
         for x, y in lip_xy:
