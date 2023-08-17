@@ -57,8 +57,12 @@ def numpad_pcb() -> cad.Mesh:
         perim.append((t, b))
 
     top_face_indices = [t.index for t, b in reversed(perim)]
+    # pyre-fixme[6]: we are letting blender deal with a polygon face here,
+    #     but we did not declare typing in cad.Mesh to allow polygon faces
     mesh.faces.append(top_face_indices)
     bottom_face_indices = [b.index for t, b in perim]
+    # pyre-fixme[6]: we are letting blender deal with a polygon face here,
+    #     but we did not declare typing in cad.Mesh to allow polygon faces
     mesh.faces.append(bottom_face_indices)
 
     for idx in range(len(perim)):

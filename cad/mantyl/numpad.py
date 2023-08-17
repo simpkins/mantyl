@@ -40,10 +40,15 @@ class NumpadSection:
     tr: Tuple[MeshPoint, MeshPoint]
     bl: Tuple[MeshPoint, MeshPoint]
     br: Tuple[MeshPoint, MeshPoint]
+    ml: Tuple[MeshPoint, MeshPoint]
+    mr: Tuple[MeshPoint, MeshPoint]
     tr_wall: MeshPoint
     tl_wall: MeshPoint
     perim: List[Tuple[MeshPoint, MeshPoint]]
     perim_floor: List[Tuple[MeshPoint, MeshPoint]]
+
+    front_right: Point
+    front_left: Point
 
     wall_thickness: float = 4.0
 

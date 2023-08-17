@@ -40,6 +40,23 @@ def left_shell_simple(name: str = "left_keyboard") -> bpy.types.Object:
 X_SEPARATION = 35
 
 
+def get_x_offset(kbd: Keyboard) -> float:
+    """
+    Return the X offset that the keyboard needs to be adjusted for placing at
+    the correct location for fully assembling the keyboard and numpad section
+    together.
+
+    The keyboard object was modeled with it at the origin, as was the numpad.
+    To place them together, the (right) keyboard needs to be moved to the right
+    kf the numpad.
+    """
+    # Find the leftmost portion of the keyboard.  We have to translate at least
+    # this much along the X axis to have the two halves not overlap in the
+    # middle.
+    min_x_offset = kbd.thumb_tl.out2.x
+    return -min_x_offset + (X_SEPARATION * 0.5)
+
+
 def gen_3_sections() -> Tuple[Keyboard, Keyboard, NumpadSection]:
     """
     Generate and return right keyboard half, left keyboard half, and numpad
@@ -48,11 +65,7 @@ def gen_3_sections() -> Tuple[Keyboard, Keyboard, NumpadSection]:
     rkbd = Keyboard()
     rkbd.gen_mesh()
 
-    # Find the leftmost portion of the keyboard.  We have to translate at least
-    # this much along the X axis to have the two halves not overlap in the
-    # middle.
-    min_x_offset = rkbd.thumb_tl.out2.x
-    x_offset = -min_x_offset + (X_SEPARATION * 0.5)
+    x_offset = get_x_offset(rkbd)
 
     right_tf = cad.Transform().translate(x_offset, 0.0, 0.0)
     left_tf = cad.Transform().mirror_x().translate(-x_offset, 0.0, 0.0)

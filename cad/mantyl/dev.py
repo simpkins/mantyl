@@ -24,7 +24,7 @@ def test_full() -> None:
     show_numpad = True
     show_keycaps = False
     show_oled = False
-    show_wrist_rests = False
+    show_wrist_rests = True
 
     rkbd, lkbd, np = kbd_halves.gen_3_sections()
 
@@ -34,15 +34,18 @@ def test_full() -> None:
         #kbd_halves.right_full(rkbd)
 
     if show_numpad:
-        np.gen_object()
+        np.gen_object_simple()
 
     if show_wrist_rests:
         rwr = wrist_rest.right()
+        orig_kbd = keyboard.Keyboard()
+        orig_kbd.gen_mesh()
+        x_offset = kbd_halves.get_x_offset(orig_kbd)
         with blender_util.TransformContext(rwr) as ctx:
-            ctx.translate(kbd_halves.HALF_OFFSET, 0, 0)
+            ctx.translate(x_offset, 0, 0)
         lwr = wrist_rest.left()
         with blender_util.TransformContext(lwr) as ctx:
-            ctx.translate(-kbd_halves.HALF_OFFSET, 0, 0)
+            ctx.translate(-x_offset, 0, 0)
 
     if show_keycaps:
         rkbd.gen_keycaps()
@@ -73,9 +76,9 @@ def test_np() -> None:
 
 
 def test() -> None:
-    # test_full()
+    test_full()
     # test_np()
-    cover.cover_clip()
+    # cover.cover_clip()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()
