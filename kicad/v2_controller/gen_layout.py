@@ -7,6 +7,11 @@ from __future__ import annotations
 import sys
 from typing import TextIO
 
+extra = """\
+    U1:
+        location: [-34.25, 9.5]
+"""
+
 class Key:
     key_size = 19
 
@@ -73,6 +78,8 @@ def main() -> None:
     out.write("components:\n")
     for key in keys:
         key.write(out)
+
+    out.write(extra)
 
 
 if __name__ == "__main__":

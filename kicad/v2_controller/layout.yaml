@@ -187,3 +187,5 @@ components:
         location: [-28.5, 33.58]
     C35: # KP_Enter LED capacitor
         location: [-34.0, 34.33]
+    U1:
+        location: [-34.25, 9.5]

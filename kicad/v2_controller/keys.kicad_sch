@@ -1045,8 +1045,8 @@
     (property "LCSC Part #" "C5156480" (at 53.975 44.45 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 7b37a850-c849-4bfe-a970-eb31564af3d8))
-    (pin "2" (uuid 8c804a70-ff70-4c19-95d4-08bf8b31063b))
+    (pin "1" (uuid e6f219df-2992-430b-96eb-243b6b4e3c43))
+    (pin "2" (uuid 6bd9f1a8-de85-4208-a2e5-cd878ca71e88))
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/4d12fc69-6710-4e1d-82d3-ac3161ebfb20"
