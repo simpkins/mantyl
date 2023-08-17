@@ -3,6 +3,7 @@
 # Copyright (c) 2022, Adam Simpkins
 #
 
+from . import cover
 from . import i2c_conn
 from . import foot
 from . import kbd_halves
@@ -73,7 +74,8 @@ def test_np() -> None:
 
 def test() -> None:
     # test_full()
-    test_np()
+    # test_np()
+    cover.cover_clip()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()

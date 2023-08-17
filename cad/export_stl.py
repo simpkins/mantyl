@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from bpycad import export_stl
 
 from mantyl import (
+    cover,
     i2c_conn,
     kbd_halves,
     keyboard,
@@ -41,6 +42,7 @@ models: export_stl.ModelDict = {
     "left_wrist_rest": wrist_rest.left,
     "cable_cap": i2c_conn.cable_cap,
     "right_kbd_test": keyboard.main_keys_test,
+    "cover_clip": cover.cover_clip,
 }
 
 export_stl.main(models)
