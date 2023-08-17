@@ -1,110 +1,189 @@
 origin: [90, 86]
 components:
-    SW3:  # KP1
+    SW3: # KP1
         location: [28.5, 19]
         flip: True
         rotation: 180
-    D3:  # KP1 LED
+    D23: # KP1 diode
+        location: [22.75, 19]
+        rotation: 270
+    D3: # KP1 LED
         location: [28.5, 24.08]
-    D24:  # KP1 Diode
-        location: [22.5, 20]
-        rotation: -90
-    SW4:  # KP2
+    C22: # KP1 LED capacitor
+        location: [23.0, 24.83]
+    SW4: # KP2
         location: [9.5, 19]
         flip: True
         rotation: 180
-    D4:  # KP2
+    D24: # KP2 diode
+        location: [3.75, 19]
+        rotation: 270
+    D4: # KP2 LED
         location: [9.5, 24.08]
-    SW5:  # KP3
+    C27: # KP2 LED capacitor
+        location: [4.0, 24.83]
+    SW5: # KP3
         location: [-9.5, 19]
         flip: True
         rotation: 180
-    D5:  # KP2
+    D25: # KP3 diode
+        location: [-15.25, 19]
+        rotation: 270
+    D5: # KP3 LED
         location: [-9.5, 24.08]
-    SW7:  # KP4
+    C31: # KP3 LED capacitor
+        location: [-15.0, 24.83]
+    SW7: # KP4
         location: [28.5, 0]
         flip: True
         rotation: 180
-    D7:  # KP4
+    D27: # KP4 diode
+        location: [22.75, 0]
+        rotation: 270
+    D7: # KP4 LED
         location: [28.5, 5.08]
-    SW8:  # KP5
+    C21: # KP4 LED capacitor
+        location: [23.0, 5.83]
+    SW8: # KP5
         location: [9.5, 0]
         flip: True
         rotation: 180
-    D8:  # KP5
+    D28: # KP5 diode
+        location: [3.75, 0]
+        rotation: 270
+    D8: # KP5 LED
         location: [9.5, 5.08]
-    SW9:  # KP6
+    C26: # KP5 LED capacitor
+        location: [4.0, 5.83]
+    SW9: # KP6
         location: [-9.5, 0]
         flip: True
         rotation: 180
-    D9:  # KP6
+    D29: # KP6 diode
+        location: [-15.25, 0]
+        rotation: 270
+    D9: # KP6 LED
         location: [-9.5, 5.08]
-    SW10:  # KP7
+    C30: # KP6 LED capacitor
+        location: [-15.0, 5.83]
+    SW10: # KP7
         location: [28.5, -19]
         flip: True
         rotation: 180
-    D10:  # KP7
+    D30: # KP7 diode
+        location: [22.75, -19]
+        rotation: 270
+    D10: # KP7 LED
         location: [28.5, -13.92]
-    SW11:  # KP8
+    C20: # KP7 LED capacitor
+        location: [23.0, -13.17]
+    SW11: # KP8
         location: [9.5, -19]
         flip: True
         rotation: 180
-    D11:  # KP8
+    D31: # KP8 diode
+        location: [3.75, -19]
+        rotation: 270
+    D11: # KP8 LED
         location: [9.5, -13.92]
-    SW12:  # KP9
+    C25: # KP8 LED capacitor
+        location: [4.0, -13.17]
+    SW12: # KP9
         location: [-9.5, -19]
         flip: True
         rotation: 180
-    D12:  # KP9
+    D32: # KP9 diode
+        location: [-15.25, -19]
+        rotation: 270
+    D12: # KP9 LED
         location: [-9.5, -13.92]
-
-    SW14:  # KP_Extra
+    C29: # KP9 LED capacitor
+        location: [-15.0, -13.17]
+    SW14: # KP_Extra
         location: [28.5, -38]
         flip: True
         rotation: 180
-    D14:  # KP_Extra
+    D34: # KP_Extra diode
+        location: [22.75, -38]
+        rotation: 270
+    D14: # KP_Extra LED
         location: [28.5, -32.92]
-    SW15:  # KP_Slash
+    C19: # KP_Extra LED capacitor
+        location: [23.0, -32.17]
+    SW15: # KP_Slash
         location: [9.5, -38]
         flip: True
         rotation: 180
-    D15:  # KP_Slash
+    D35: # KP_Slash diode
+        location: [3.75, -38]
+        rotation: 270
+    D15: # KP_Slash LED
         location: [9.5, -32.92]
-    SW16:  # KP_Star
+    C24: # KP_Slash LED capacitor
+        location: [4.0, -32.17]
+    SW16: # KP_Star
         location: [-9.5, -38]
         flip: True
         rotation: 180
-    D16:  # KP_Star
+    D36: # KP_Star diode
+        location: [-15.25, -38]
+        rotation: 270
+    D16: # KP_Star LED
         location: [-9.5, -32.92]
-    SW17:  # KP_Minus
+    C28: # KP_Star LED capacitor
+        location: [-15.0, -32.17]
+    SW17: # KP_Minus
         location: [-28.5, -38]
         flip: True
         rotation: 180
-    D17:  # KP_Minus
-        location: [-28.5, -32.29]
-
-    SW1:  # KP0
-        location: [19, 38]
+    D37: # KP_Minus diode
+        location: [-34.25, -38]
+        rotation: 270
+    D17: # KP_Minus LED
+        location: [-28.5, -32.92]
+    C33: # KP_Minus LED capacitor
+        location: [-34.0, -32.17]
+    SW1: # KP0
+        location: [19.0, 38]
         flip: True
         rotation: 180
-    D1:  # KP0
-        location: [19, 43.08]
-    SW2:  # KP_Dot
+    D21: # KP0 diode
+        location: [13.25, 38]
+        rotation: 270
+    D1: # KP0 LED
+        location: [19.0, 43.08]
+    C23: # KP0 LED capacitor
+        location: [13.5, 43.83]
+    SW2: # KP_Dot
         location: [-9.5, 38]
         flip: True
         rotation: 180
-    D2:  # KP_Dot
+    D22: # KP_Dot diode
+        location: [-15.25, 38]
+        rotation: 270
+    D2: # KP_Dot LED
         location: [-9.5, 43.08]
-
-    SW13:  # KP_Plus
+    C32: # KP_Dot LED capacitor
+        location: [-15.0, 43.83]
+    SW13: # KP_Plus
         location: [-28.5, -9.5]
         flip: True
         rotation: 180
-    D13:  # KP_Plus
+    D33: # KP_Plus diode
+        location: [-34.25, -9.5]
+        rotation: 270
+    D13: # KP_Plus LED
         location: [-28.5, -4.42]
-    SW6:  # KP_Enter
+    C34: # KP_Plus LED capacitor
+        location: [-34.0, -3.67]
+    SW6: # KP_Enter
         location: [-28.5, 28.5]
         flip: True
         rotation: 180
-    D6:  # KP_Enter
+    D26: # KP_Enter diode
+        location: [-34.25, 28.5]
+        rotation: 270
+    D6: # KP_Enter LED
         location: [-28.5, 33.58]
+    C35: # KP_Enter LED capacitor
+        location: [-34.0, 34.33]
