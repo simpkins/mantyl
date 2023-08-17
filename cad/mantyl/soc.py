@@ -36,15 +36,56 @@ def esp32s3_wroom_devkit_c() -> bpy.types.Object:
     return obj
 
 
-def numpad_pcb() -> cad.Mesh:
-    board_d = 1.57
+def esp32s3_wroom_1() -> bpy.types.Object:
+    l = 25.5
+    w = 18
+    pcb_d = .8
+    antenna_len = 6
+    obj = blender_util.cube(w, l, pcb_d, "ESP32-S3-WROOM-1")
+    with blender_util.TransformContext(obj) as ctx:
+        ctx.translate(0, antenna_len * 0.5, pcb_d * 0.5)
 
+    mod_w = 15.8
+    mod_l = 17.6
+    mod_d = 3.1 - pcb_d
+    d_overlap = pcb_d * 0.5
+    module = blender_util.cube(mod_w, mod_l, mod_d + d_overlap)
+    with blender_util.TransformContext(module) as ctx:
+        ctx.translate(0, 0, pcb_d + (mod_d - d_overlap) * 0.5)
+
+    blender_util.union(obj, module)
+    return obj
+
+
+def esp32s3_wroom_1u() -> bpy.types.Object:
+    l = 19.2
+    w = 18
+    pcb_d = .8
+    obj = blender_util.cube(w, l, pcb_d, "ESP32-S3-WROOM-1")
+
+    mod_w = 15.65
+    mod_l = 17.5
+    mod_d = 3.2 - pcb_d
+    d_overlap = pcb_d * 0.5
+    module = blender_util.cube(mod_w, mod_l, mod_d + d_overlap)
+    with blender_util.TransformContext(module) as ctx:
+        ctx.translate(0, 0, pcb_d + (mod_d - d_overlap) * 0.5)
+
+    blender_util.union(obj, module)
+    return obj
+
+PCB_THICKNESS = 1.6
+
+
+def numpad_pcb_mesh() -> cad.Mesh:
     mesh = cad.Mesh()
     perim_xy: List[Tuple[float, float]] = [
         (42, 47),
         (-42, 47),
         (-50, 30),
-        (-50, -30),
+        (-50, 0),
+        (-44, 0),
+        (-44, -30),
         (-16, -69),
         (16, -69),
         (50, -30),
@@ -52,8 +93,8 @@ def numpad_pcb() -> cad.Mesh:
     ]
     perim: List[Tuple[cad.MeshPoint, cad.MeshPoint]] = []
     for x, y in perim_xy:
-        t = mesh.add_xyz(x, y, 0)
-        b = mesh.add_xyz(x, y, -board_d)
+        t = mesh.add_xyz(x, y, PCB_THICKNESS)
+        b = mesh.add_xyz(x, y, 0)
         perim.append((t, b))
 
     top_face_indices = [t.index for t, b in reversed(perim)]
@@ -69,3 +110,18 @@ def numpad_pcb() -> cad.Mesh:
         mesh.add_quad(perim[idx - 1][0], perim[idx][0], perim[idx][1], perim[idx - 1][1])
 
     return mesh
+
+
+def numpad_pcb() -> bpy.types.Object:
+    mesh = numpad_pcb_mesh()
+    bmesh = blender_util.blender_mesh(f"pcb_mesh", mesh)
+    obj = blender_util.new_mesh_obj("numpad_pcb", bmesh)
+
+    mod = esp32s3_wroom_1()
+    with blender_util.TransformContext(mod) as ctx:
+        ctx.rotate(90, "Z")
+        ctx.translate(-34, -9.5, PCB_THICKNESS)
+
+    blender_util.union(obj, mod)
+
+    return obj

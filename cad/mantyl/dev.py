@@ -10,6 +10,7 @@ from . import kbd_halves
 from . import keyboard
 from . import numpad
 from . import oled_holder
+from . import soc
 from . import sx1509_holder
 from . import usb_cutout
 from . import wrist_rest
@@ -64,22 +65,19 @@ def test_full() -> None:
 def test_np() -> None:
     rkbd, lkbd, np = kbd_halves.gen_3_sections()
     np.gen_object()
-    return
 
-    from . import soc
-
-    mesh = soc.numpad_pcb()
-    mesh.translate(0, 0, -0.5)
-    mesh.transform(np.plate_tf)
-    bmesh = blender_util.blender_mesh(f"pcb_mesh", mesh)
-    obj = blender_util.new_mesh_obj("numpad_pcb", bmesh)
+    pcb = soc.numpad_pcb()
+    with blender_util.TransformContext(pcb) as ctx:
+        ctx.rotate(180, "Y")
+        ctx.translate(0, 0, -0.5)
+        ctx.transform(np.plate_tf)
 
 
 def test() -> None:
     # wrist_rest.right()
     # test_full()
-    # test_np()
-    cover.cover_clip()
+    test_np()
+    # cover.cover_clip()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()
