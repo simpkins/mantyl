@@ -2064,7 +2064,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 260.35 83.82 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 775b92a2-2541-4a15-ada3-6def77498311)
-    (property "Reference" "D39" (at 249.555 73.66 0)
+    (property "Reference" "D41" (at 249.555 73.66 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 249.555 76.2 0)
@@ -2086,7 +2086,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D39") (unit 1)
+          (reference "D41") (unit 1)
         )
       )
     )
@@ -2340,7 +2340,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 215.9 115.57 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid a9c79139-3c2e-4476-944c-e53c2f7c4e10)
-    (property "Reference" "D40" (at 205.105 105.41 0)
+    (property "Reference" "D38" (at 205.105 105.41 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 205.105 107.95 0)
@@ -2362,7 +2362,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D40") (unit 1)
+          (reference "D38") (unit 1)
         )
       )
     )
@@ -2617,7 +2617,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 260.35 115.57 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid b88cc789-abd1-44e4-bc5c-374de0ab068f)
-    (property "Reference" "D41" (at 249.555 105.41 0)
+    (property "Reference" "D39" (at 249.555 105.41 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 249.555 107.95 0)
@@ -2639,7 +2639,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D41") (unit 1)
+          (reference "D39") (unit 1)
         )
       )
     )
@@ -2937,7 +2937,7 @@
   (symbol (lib_id "mantyl:SK6812 Mini-E") (at 215.9 83.82 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid d1aa358b-b3cf-4a53-9434-d8f556763248)
-    (property "Reference" "D38" (at 205.105 73.66 0)
+    (property "Reference" "D40" (at 205.105 73.66 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SK6812 Mini-E" (at 205.105 76.2 0)
@@ -2959,7 +2959,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "D38") (unit 1)
+          (reference "D40") (unit 1)
         )
       )
     )
