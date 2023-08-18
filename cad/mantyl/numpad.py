@@ -164,13 +164,14 @@ class NumpadSection:
 
     def _init_corners(self) -> None:
         border_width_x = 7
-        border_width_y = 2
+        border_width_y_top = 2
+        border_width_y_bottom = 5
         lower_x_inset = 7
 
         left_x = self.kp_extra.u_tl.x - border_width_x
         right_x = self.kp_minus.u_tr.x + border_width_x
-        top_y = self.kp_extra.u_tl.y + border_width_y
-        bottom_y = self.kp0.u_bl.y - border_width_y
+        top_y = self.kp_extra.u_tl.y + border_width_y_top
+        bottom_y = self.kp0.u_bl.y - border_width_y_bottom
         upper_z = self.kp1.u_tl.z
         lower_z = self.kp1.l_tl.z
 
@@ -570,7 +571,7 @@ class NumpadSection:
             )
 
         # Top face bevels
-        bottom_bevels = [(0, 1.0), (1, 1.0), (2, 0.5)]
+        bottom_bevels = [(0, 1.0), (2, 0.5)]
         for (idx, weight) in bottom_bevels:
             mirror = len(self.perim) - 1 - idx
             self._bevel_edge(self.br[0], self.perim[idx][0], weight)
@@ -582,14 +583,11 @@ class NumpadSection:
             self._bevel_edge(self.tr[0], self.perim[idx][0], weight)
             self._bevel_edge(self.tl[0], self.perim[mirror][0], weight)
 
-        # These two edges are flat, but beveling them helps blender
-        # do a better job with beveling at the bl and br corners
-        self._bevel_edge(self.bl[0], self.kp0.bl[0], 0.5)
-        self._bevel_edge(self.br[0], self.kp_dot.br[0], 0.5)
-
         # These bevels are also simply to improve blender's beveling
         # at some corners
         self._bevel_edge(self.mr[0], self.perim[4][0], 0.5)
+        # For some reason the bevels are not symmtrical, and the same bevel
+        # on the left side looks worse.
         #self._bevel_edge(self.ml[0], self.perim[17][0], 0.5)
 
         # Perimeter corner bevels

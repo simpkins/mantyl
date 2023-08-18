@@ -83,16 +83,16 @@ PCB_THICKNESS = 1.6
 def numpad_pcb_mesh() -> cad.Mesh:
     mesh = cad.Mesh()
     perim_xy: List[Tuple[float, float]] = [
-        (42, 59),
-        (-42, 59),
-        (-50, 42),
-        (-50, 12),
-        (-44, 12),
-        (-44, -18),
+        (44, 59),
+        (-44, 59),
+        (-53, 33),
+        (-53, 14),
+        (-47, 14),
+        (-47, -22.65),
         (-16, -57),
         (16, -57),
-        (50, -18),
-        (50, 42),
+        (53, -16),
+        (53, 33),
     ]
     perim: List[Tuple[cad.MeshPoint, cad.MeshPoint]] = []
     for x, y in perim_xy:
@@ -123,10 +123,10 @@ def numpad_pcb() -> bpy.types.Object:
     obj = blender_util.new_mesh_obj("numpad_pcb", bmesh)
 
     mod = esp32s3_wroom_1()
-    y_offset = NumpadSection.global_y_offset - (0.5 * NumpadSection.key_size)
+    y_offset = NumpadSection.global_y_offset - (0.5 * NumpadSection.key_size) + 2
     with blender_util.TransformContext(mod) as ctx:
         ctx.rotate(90, "Z")
-        ctx.translate(-34, y_offset, PCB_THICKNESS)
+        ctx.translate(-37, y_offset, PCB_THICKNESS)
 
     blender_util.union(obj, mod)
 
