@@ -21,11 +21,12 @@ import bpy
 
 
 def test_full() -> None:
-    show_halves = True
+    show_halves = False
     show_numpad = True
     show_keycaps = False
+    show_controller = True
     show_oled = False
-    show_wrist_rests = True
+    show_wrist_rests = False
 
     rkbd, lkbd, np = kbd_halves.gen_3_sections()
 
@@ -36,6 +37,13 @@ def test_full() -> None:
 
     if show_numpad:
         np.gen_object_simple()
+
+    if show_controller:
+        pcb = soc.numpad_pcb()
+        with blender_util.TransformContext(pcb) as ctx:
+            ctx.rotate(180, "Y")
+            ctx.translate(0, 0, -0.5)
+            ctx.transform(np.plate_tf)
 
     if show_wrist_rests:
         rwr = wrist_rest.right()
@@ -75,8 +83,8 @@ def test_np() -> None:
 
 def test() -> None:
     # wrist_rest.right()
-    # test_full()
-    test_np()
+    test_full()
+    # test_np()
     # cover.cover_clip()
 
     # kbd_halves.right_full()

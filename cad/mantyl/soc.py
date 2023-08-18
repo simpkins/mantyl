@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from .numpad import NumpadSection
+
 from typing import List, Tuple
 
 from bpycad import blender_util
@@ -39,7 +41,7 @@ def esp32s3_wroom_devkit_c() -> bpy.types.Object:
 def esp32s3_wroom_1() -> bpy.types.Object:
     l = 25.5
     w = 18
-    pcb_d = .8
+    pcb_d = 0.8
     antenna_len = 6
     obj = blender_util.cube(w, l, pcb_d, "ESP32-S3-WROOM-1")
     with blender_util.TransformContext(obj) as ctx:
@@ -60,7 +62,7 @@ def esp32s3_wroom_1() -> bpy.types.Object:
 def esp32s3_wroom_1u() -> bpy.types.Object:
     l = 19.2
     w = 18
-    pcb_d = .8
+    pcb_d = 0.8
     obj = blender_util.cube(w, l, pcb_d, "ESP32-S3-WROOM-1")
 
     mod_w = 15.65
@@ -74,22 +76,23 @@ def esp32s3_wroom_1u() -> bpy.types.Object:
     blender_util.union(obj, module)
     return obj
 
+
 PCB_THICKNESS = 1.6
 
 
 def numpad_pcb_mesh() -> cad.Mesh:
     mesh = cad.Mesh()
     perim_xy: List[Tuple[float, float]] = [
-        (42, 47),
-        (-42, 47),
-        (-50, 30),
-        (-50, 0),
-        (-44, 0),
-        (-44, -30),
-        (-16, -69),
-        (16, -69),
-        (50, -30),
-        (50, 30),
+        (42, 59),
+        (-42, 59),
+        (-50, 42),
+        (-50, 12),
+        (-44, 12),
+        (-44, -18),
+        (-16, -57),
+        (16, -57),
+        (50, -18),
+        (50, 42),
     ]
     perim: List[Tuple[cad.MeshPoint, cad.MeshPoint]] = []
     for x, y in perim_xy:
@@ -107,7 +110,9 @@ def numpad_pcb_mesh() -> cad.Mesh:
     mesh.faces.append(bottom_face_indices)
 
     for idx in range(len(perim)):
-        mesh.add_quad(perim[idx - 1][0], perim[idx][0], perim[idx][1], perim[idx - 1][1])
+        mesh.add_quad(
+            perim[idx - 1][0], perim[idx][0], perim[idx][1], perim[idx - 1][1]
+        )
 
     return mesh
 
@@ -118,9 +123,10 @@ def numpad_pcb() -> bpy.types.Object:
     obj = blender_util.new_mesh_obj("numpad_pcb", bmesh)
 
     mod = esp32s3_wroom_1()
+    y_offset = NumpadSection.global_y_offset - (0.5 * NumpadSection.key_size)
     with blender_util.TransformContext(mod) as ctx:
         ctx.rotate(90, "Z")
-        ctx.translate(-34, -9.5, PCB_THICKNESS)
+        ctx.translate(-34, y_offset, PCB_THICKNESS)
 
     blender_util.union(obj, mod)
 

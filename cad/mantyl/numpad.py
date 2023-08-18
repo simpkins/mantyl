@@ -51,10 +51,15 @@ class NumpadSection:
     front_left: Point
 
     wall_thickness: float = 4.0
+    key_size: float = 19.0
+
+    # This "Y" offset controls the placement of the numpad keys along the
+    # Y-ish axis along the top numpad plate.  Increasing the value moves the
+    # keys farther towards the back of the keyboard.
+    global_y_offset: float = 12.0
 
     def __init__(self, rkbd: Keyboard, lkbd: Keyboard) -> None:
         self.mesh = Mesh()
-        self.key_size = 19.0
         self._beveler = blender_util.Beveler()
         self.gen_mesh(rkbd, lkbd)
 
@@ -66,7 +71,7 @@ class NumpadSection:
         global_x_offset = self.key_size * -1.5
 
         x_off_mm = global_x_offset + (x_offset * self.key_size)
-        y_off_mm = y_offset * self.key_size
+        y_off_mm = self.global_y_offset + (y_offset * self.key_size)
         kh = KeyHole(self.mesh, Transform().translate(x_off_mm, y_off_mm, 0.0))
         kh.inner_walls()
         return kh
@@ -92,7 +97,6 @@ class NumpadSection:
         self.front_left = self.front_right.copy()
         self.front_left.x *= -1
 
-        y_shift = 12.0
         angle = 7.0
 
         rise_over_run = math.tan(math.radians(angle))
@@ -102,10 +106,9 @@ class NumpadSection:
 
         return (
             Transform()
-            # Translate the numpad plate along the desired Y shift,
-            # and also translate it down so that the top of the key holes
+            # Translate the numpad down so that the top of the key holes
             # is at 0 on the Z axis.
-            .translate(0.0, y_shift, -KeyHole.height)
+            .translate(0.0, 0.0, -KeyHole.height)
             # Rotate by the desired amount
             .rotate(angle, 0.0, 0.0)
             # Now shift upwards along the Z axis to be in line with the front
