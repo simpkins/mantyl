@@ -353,7 +353,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/96b1a554-4753-4e59-a7dd-0748b77b7f61")
     (attr smd)
-    (fp_text reference "D34" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D34" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 97471dd2-f464-42b1-8b06-22a053ae4c48)
     )
@@ -906,7 +906,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/7c877958-6e14-4ff8-a3cf-e6b9afaa86f6")
     (attr smd)
-    (fp_text reference "C29" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C29" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 562e0a71-b12b-48a9-89f2-54ccafcc342e)
     )
@@ -1072,7 +1072,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/591c48b7-bcd6-4d87-bab3-54e95b19d6c0")
     (attr through_hole)
-    (fp_text reference "D17" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D17" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp 38be8904-92b3-4ba6-84e4-b168532ff561)
     )
@@ -1331,7 +1331,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/607b0793-7e3d-4005-9a56-9540cc39be8f")
     (attr through_hole)
-    (fp_text reference "D8" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D8" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp 07949ff8-4763-4916-94a8-f8826c66a7d7)
     )
@@ -1449,7 +1449,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/20b2837d-5731-438e-b515-36c86af1a0fb")
     (attr smd)
-    (fp_text reference "D33" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D33" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 9c53aaa6-29f8-455f-a67c-c0d5e050307a)
     )
@@ -1575,7 +1575,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/b53a35ca-75c1-4069-a736-1311707a63ed")
     (attr smd)
-    (fp_text reference "C20" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C20" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 5638d4b3-6ee9-4ba9-a9c9-9586770baf36)
     )
@@ -1689,7 +1689,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/a5483329-c318-4bd3-b3e1-948c7db47a24")
     (attr smd)
-    (fp_text reference "D21" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D21" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 30c0bf82-d44d-4875-aa4e-9ca5392ad37e)
     )
@@ -1756,7 +1756,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/d99753b1-1b05-4e84-a955-cffe52261f34")
     (attr through_hole)
-    (fp_text reference "D7" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D7" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp 0c2aa85c-dc44-4605-bb85-845ee308565c)
     )
@@ -1813,7 +1813,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/ec08c0d6-d168-460b-a652-97893dd88391")
     (attr through_hole)
-    (fp_text reference "D12" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D12" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp a910d64a-2d1c-45a4-936c-3fc29e83f245)
     )
@@ -2117,7 +2117,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/d38eb632-f467-444d-819b-28c62944c6ef")
     (attr smd)
-    (fp_text reference "C25" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C25" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp b7027e82-067f-4d4f-9860-7817da238cf8)
     )
@@ -2485,7 +2485,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/fee267aa-3bb3-4548-93e9-09d2fc57d8ca")
     (attr smd)
-    (fp_text reference "C24" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C24" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp a0734519-6637-42e6-aae2-d4174c00cb4d)
     )
@@ -2598,7 +2598,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/c6832428-91b8-42d6-8be6-b70d7f4ccc6d")
     (attr smd)
-    (fp_text reference "C26" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C26" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 99244d1a-1c0d-43fd-8e9c-ba7b9764227c)
     )
@@ -2654,7 +2654,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/c16eec9a-413c-41a6-a8dd-2ed059ac7af4")
     (attr smd)
-    (fp_text reference "C21" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C21" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp d4111576-8352-4b98-bc84-5de28111c489)
     )
@@ -2712,7 +2712,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/75551734-a4ba-4ba4-a40c-299107763d61")
     (attr smd)
-    (fp_text reference "D37" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D37" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 4c407e1d-c2e5-4df2-b533-061c307e1c5f)
     )
@@ -2974,7 +2974,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/1dcb05ac-0bd8-4a6c-8296-07a70091fb14")
     (attr smd)
-    (fp_text reference "C32" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C32" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 0f4b0265-d506-4e1a-8e58-5cf30abbacde)
     )
@@ -3264,7 +3264,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/4948fdcf-72a5-45ab-8ca4-60edbf7da594")
     (attr smd)
-    (fp_text reference "D32" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D32" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp de3120c3-1648-41ab-925a-6db81df34984)
     )
@@ -3331,7 +3331,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/c0673358-d36a-4cdc-81c4-29ed3ccc986c")
     (attr through_hole)
-    (fp_text reference "D15" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D15" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp 59af788e-8446-487f-adf7-c4614c05595c)
     )
@@ -3393,7 +3393,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/37aec064-8624-4784-9ac6-fe1476344ae5")
     (attr smd)
-    (fp_text reference "D25" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D25" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 7f0b6cb8-a761-48b5-8d92-707c2076c8af)
     )
@@ -3460,7 +3460,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/38732108-f150-47bd-98a0-02791eec4e48")
     (attr through_hole)
-    (fp_text reference "D9" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D9" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp 84b4909b-9a22-4adb-8a50-eb0350447238)
     )
@@ -3520,7 +3520,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/cbc88b9f-bff1-450f-94ce-7ae659cd2cb6")
     (attr smd)
-    (fp_text reference "C22" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C22" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 7da11ba1-0101-4387-b790-b0c3d1422b4f)
     )
@@ -3629,7 +3629,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/add75139-b31b-4584-8c52-90336e3ec12d")
     (attr through_hole)
-    (fp_text reference "D2" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D2" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp 383f9ab2-48df-4434-b906-b01611597dd5)
     )
@@ -3691,7 +3691,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/3d1a99bf-a88c-4ee0-b9f7-8205fb8cac94")
     (attr smd)
-    (fp_text reference "D23" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D23" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 34674ca7-4acc-44ee-b90b-cd0517141db4)
     )
@@ -3995,7 +3995,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/9a4f067e-3c6a-46da-965b-e87b9f45e219")
     (attr smd)
-    (fp_text reference "D30" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D30" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp d911a86c-4e1d-41f1-ad80-2d695e8ebf04)
     )
@@ -4065,7 +4065,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/af0b3c20-c1d5-426d-a42a-8986895e075a")
     (attr smd)
-    (fp_text reference "C19" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C19" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp e4d65d17-b35a-40a4-9118-97ead2d4bf1b)
     )
@@ -4123,7 +4123,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/ba594d5b-4547-42a4-9833-920e8bac2b33")
     (attr smd)
-    (fp_text reference "D27" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D27" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 5994cbef-1f9e-46fd-ac2f-bfeabaaaf338)
     )
@@ -4365,7 +4365,7 @@
     (property "ki_keywords" "diode Schottky")
     (path "/2bac5195-070c-412d-b76e-85bcf1e6d414/5a755bf2-d618-48f7-9df2-ba4023016317")
     (attr smd)
-    (fp_text reference "D19" (at 0 -1.85) (layer "F.SilkS")
+    (fp_text reference "D19" (at 0 -1.85) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 428b0337-e68e-495c-8bc5-d1496f890f93)
     )
@@ -4679,7 +4679,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/338e844a-bcfb-47f3-86a9-5f3e41391960")
     (attr smd)
-    (fp_text reference "D22" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D22" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp dd15f99a-6cd8-48a2-9952-a8c466789330)
     )
@@ -4805,7 +4805,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/e6d6fe2a-1fee-4c1c-bf73-70a9cb2e4fe9")
     (attr smd)
-    (fp_text reference "C31" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C31" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp d55b109b-14eb-4d6e-97aa-ccae948c9409)
     )
@@ -4861,7 +4861,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/0b97156f-2b94-4582-aba6-db56b93814d2")
     (attr smd)
-    (fp_text reference "C28" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C28" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 48c405e6-235f-4643-a90a-4867db3995fe)
     )
@@ -5082,7 +5082,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/91a654f7-3d47-4c97-b1fd-2cd00f39a6ce")
     (attr through_hole)
-    (fp_text reference "D13" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D13" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp 001f0e4a-2c18-4414-8b7c-444e89b9b22b)
     )
@@ -5318,7 +5318,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/596031ed-3fa4-4762-85ef-7b54938cd362")
     (attr smd)
-    (fp_text reference "C35" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C35" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp da494fe8-91cc-4897-9054-cde1adc19168)
     )
@@ -5376,7 +5376,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/15245283-0123-467b-bd58-cfc02d7b6691")
     (attr smd)
-    (fp_text reference "D29" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D29" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp fe6b0660-3b84-4e52-81ca-0e7bb1231efe)
     )
@@ -5446,7 +5446,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/5337efb1-aadc-405e-a702-4d1167290099")
     (attr smd)
-    (fp_text reference "C33" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C33" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 2d4ad8c8-c84e-447a-8784-9fe528010876)
     )
@@ -5611,7 +5611,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/ba8f31d3-f3b4-459a-bb6b-9ec95fb645c6")
     (attr through_hole)
-    (fp_text reference "D6" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D6" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp ef8b014f-1854-487e-af90-2a4ecd978c77)
     )
@@ -5671,7 +5671,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/abec6fc7-7ff9-4a8c-9bc1-f1e0b9486eb6")
     (attr smd)
-    (fp_text reference "C30" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C30" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 35ba4a35-9f67-47ad-bf6c-4347e40ba373)
     )
@@ -5729,7 +5729,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/b019851e-df44-4421-807c-d7a8f0dc1b07")
     (attr smd)
-    (fp_text reference "D36" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D36" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 8c0baf1f-2971-455c-9890-8abe52ba20bf)
     )
@@ -5796,7 +5796,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/ab851565-bd50-4e97-876e-d29e2e0a6b13")
     (attr through_hole)
-    (fp_text reference "D10" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D10" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp f8be55ff-3941-4798-bd12-99dd2f9308cb)
     )
@@ -5853,7 +5853,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/afb696f9-eda8-40d6-a9c0-b7a0085e4fe8")
     (attr through_hole)
-    (fp_text reference "D1" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D1" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp fc786406-521d-4dd6-a896-7d480f5ada5d)
     )
@@ -5910,7 +5910,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/17aea782-4d12-4736-80cb-6c29b0d29b0f")
     (attr through_hole)
-    (fp_text reference "D14" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D14" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp 2c779364-0976-4a36-a329-b288ec406289)
     )
@@ -5967,7 +5967,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/0aa1478b-963e-4b44-a926-72cf6ba7e660")
     (attr through_hole)
-    (fp_text reference "D11" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D11" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp 12ddd3b0-e087-4659-8f1f-a1b99f29e0d9)
     )
@@ -6024,7 +6024,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/085979bf-f7ce-4f78-9025-33126d19a436")
     (attr through_hole)
-    (fp_text reference "D16" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D16" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp 25dbc702-df2a-48d4-bd5c-c9d1354340dd)
     )
@@ -6086,7 +6086,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/ebfbc8fe-72ff-4726-9373-61ba85a56495")
     (attr smd)
-    (fp_text reference "D28" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D28" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp d9d32efb-5dd2-4d46-8faf-f50ef302c9ec)
     )
@@ -6153,7 +6153,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/c8562ea8-aca8-4e91-994e-fa5371892000")
     (attr through_hole)
-    (fp_text reference "D4" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D4" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp 64eb3c30-3321-4590-8c3d-016dbd450f0a)
     )
@@ -6215,7 +6215,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/cf227cd9-004f-4aa4-9bd6-b6175f53aaa4")
     (attr smd)
-    (fp_text reference "D35" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D35" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 319728f5-4276-4c98-9300-a0edfb93c240)
     )
@@ -6285,7 +6285,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/eecfd16c-5df8-4fa4-939a-ac63bc72d2e8")
     (attr smd)
-    (fp_text reference "C23" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C23" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 842b89f9-0057-4a26-96f7-fd572ba3acae)
     )
@@ -6575,7 +6575,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/1c101f19-2346-404b-b87a-38ea870bdddb")
     (attr smd)
-    (fp_text reference "D24" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D24" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 099681d7-ad00-4ea2-a469-753ed073d972)
     )
@@ -6823,7 +6823,7 @@
     (property "ki_keywords" "diode Schottky")
     (path "/2bac5195-070c-412d-b76e-85bcf1e6d414/7912c199-2ddc-44db-b650-8fca97cfd9f7")
     (attr smd)
-    (fp_text reference "D18" (at 0 -1.85) (layer "F.SilkS")
+    (fp_text reference "D18" (at 0 -1.85) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 8a6121ca-8dbf-496d-b20d-7ad74a8903b0)
     )
@@ -6895,7 +6895,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/6af73004-9fbc-4335-8fbc-cf09e631aec6")
     (attr smd)
-    (fp_text reference "D31" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D31" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp ab2c5980-d79e-448f-8a8d-68fcdc7b53e0)
     )
@@ -7077,7 +7077,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/5f691369-3bf2-490b-aea4-dff2eed6bc9f")
     (attr smd)
-    (fp_text reference "C27" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C27" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp c4cfb3a9-4075-4c0a-a375-79e8723722a5)
     )
@@ -7245,7 +7245,7 @@
     (property "ki_keywords" "cap capacitor")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/0a63ee35-cf06-4263-8a36-6dfb8a173078")
     (attr smd)
-    (fp_text reference "C34" (at 0 -1.16) (layer "F.SilkS")
+    (fp_text reference "C34" (at 0 -1.16) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 3b2ce8b0-fe32-4d58-9d65-e2d0173a07c3)
     )
@@ -7438,7 +7438,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/e8cc990a-a4a1-4e5c-a23a-3831681dabc0")
     (attr through_hole)
-    (fp_text reference "D5" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D5" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp a8260c9a-1437-45af-9450-0b1477755cb3)
     )
@@ -7495,7 +7495,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/366f5da0-a362-4e3b-84ef-70b3a058f7cf")
     (attr through_hole)
-    (fp_text reference "D3" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D3" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp 209e5694-c747-4323-96f0-5c6db565dbc7)
     )
@@ -7557,7 +7557,7 @@
     (property "ki_keywords" "diode")
     (path "/4d12fc69-6710-4e1d-82d3-ac3161ebfb20/e14b4982-25a6-4360-939a-ae9e184060fe")
     (attr smd)
-    (fp_text reference "D26" (at 0 -1.85 -90) (layer "F.SilkS")
+    (fp_text reference "D26" (at 0 -1.85 -90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 005658e0-9b50-4751-98dd-b58b66b958df)
     )
@@ -7624,7 +7624,7 @@
     (property "ki_keywords" "RGB LED NeoPixel addressable")
     (path "/58a13171-af4d-4148-bd5d-6db9b6f67a32/d1aa358b-b3cf-4a53-9434-d8f556763248")
     (attr through_hole)
-    (fp_text reference "D38" (at 0 2.1 unlocked) (layer "F.SilkS")
+    (fp_text reference "D38" (at 0 2.1 unlocked) (layer "F.SilkS") hide
         (effects (font (size 0.7 0.7) (thickness 0.15)))
       (tstamp a67d5fb3-bf73-4f72-90e4-190954634dc7)
     )
