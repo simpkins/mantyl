@@ -1667,10 +1667,10 @@
   (symbol (lib_id "Device:R") (at 215.9 133.35 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 5236bcf8-fa52-4012-99ac-703fa932812a)
-    (property "Reference" "R18" (at 215.9 127.635 90)
+    (property "Reference" "R16" (at 215.9 127 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "470" (at 215.9 130.175 90)
+    (property "Value" "470" (at 215.9 129.54 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 215.9 131.572 90)
@@ -1690,7 +1690,7 @@
     (instances
       (project "v2_controller"
         (path "/102c646f-89e8-474a-be69-05b634400329/58a13171-af4d-4148-bd5d-6db9b6f67a32"
-          (reference "R18") (unit 1)
+          (reference "R16") (unit 1)
         )
       )
     )
