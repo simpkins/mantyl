@@ -412,7 +412,7 @@
 
   (footprint "Resistor_SMD:R_0402_1005Metric" (layer "F.Cu")
     (tstamp 0395a8c1-f460-4436-9f31-163f6d09a9e8)
-    (at 129.4 59.4)
+    (at 60.51 124.61 180)
     (descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "LCSC Part #" "C25905")
@@ -455,9 +455,9 @@
       (stroke (width 0.1) (type solid)) (layer "F.Fab") (tstamp 2c1d9597-cb8a-4e7a-a595-76b226fd547b))
     (fp_line (start 0.525 0.27) (end -0.525 0.27)
       (stroke (width 0.1) (type solid)) (layer "F.Fab") (tstamp 5a92ff89-0734-43a6-ac95-6372c4ad48ea))
-    (pad "1" smd roundrect (at -0.51 0) (size 0.54 0.64) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25)
+    (pad "1" smd roundrect (at -0.51 0 180) (size 0.54 0.64) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25)
       (net 67 "Net-(J1-CC1)") (pintype "passive") (tstamp 2eadb1c2-c1e3-4a05-8949-8762ae83fd51))
-    (pad "2" smd roundrect (at 0.51 0) (size 0.54 0.64) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25)
+    (pad "2" smd roundrect (at 0.51 0 180) (size 0.54 0.64) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25)
       (net 1 "GND") (pintype "passive") (tstamp 1cc37592-f75d-4e45-9493-f413f8e19ab9))
     (model "${KICAD6_3DMODEL_DIR}/Resistor_SMD.3dshapes/R_0402_1005Metric.wrl"
       (offset (xyz 0 0 0))
@@ -468,7 +468,7 @@
 
   (footprint "Connector_USB:USB_C_Receptacle_G-Switch_GT-USB-7051x" (layer "F.Cu")
     (tstamp 0933787c-298e-4a80-beab-21d62d677974)
-    (at 133.41 63.24)
+    (at 63.31 128.56)
     (descr "USB Type C, vertical, SMT, https://datasheet.lcsc.com/lcsc/2108072030_G-Switch-GT-USB-7051A_C2843970.pdf")
     (tags "USB C Type-C Receptacle SMD GT-USB-7051A GT-USB-7051B")
     (property "LCSC Part #" "C2843970")
@@ -644,10 +644,10 @@
       (fill (thermal_gap 0.508) (thermal_bridge_width 0.508))
       (polygon
         (pts
-          (xy 134.21 61.44)
-          (xy 132.61 61.44)
-          (xy 132.61 60.74)
-          (xy 134.21 60.74)
+          (xy 64.11 126.76)
+          (xy 62.51 126.76)
+          (xy 62.51 126.06)
+          (xy 64.11 126.06)
         )
       )
     )
@@ -658,10 +658,10 @@
       (fill (thermal_gap 0.508) (thermal_bridge_width 0.508))
       (polygon
         (pts
-          (xy 134.21 65.74)
-          (xy 132.61 65.74)
-          (xy 132.61 65.04)
-          (xy 134.21 65.04)
+          (xy 64.11 131.06)
+          (xy 62.51 131.06)
+          (xy 62.51 130.36)
+          (xy 64.11 130.36)
         )
       )
     )
@@ -787,7 +787,7 @@
 
   (footprint "Resistor_SMD:R_0402_1005Metric" (layer "F.Cu")
     (tstamp 0d438a53-9df7-4121-a576-cb0af9667d7c)
-    (at 70.3 133.1)
+    (at 72.21 133.4)
     (descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "LCSC Part #" "C25900")
@@ -1460,7 +1460,7 @@
 
   (footprint "Resistor_SMD:R_0402_1005Metric" (layer "F.Cu")
     (tstamp 1383af71-18f0-4754-bc5f-589d74fc2b8a)
-    (at 134.3 67.1)
+    (at 65.41 132.61)
     (descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "LCSC Part #" "C25905")
@@ -4259,7 +4259,7 @@
 
   (footprint "Resistor_SMD:R_0402_1005Metric" (layer "F.Cu")
     (tstamp 7919f83a-9dc8-45c2-af05-b65e43cfd45e)
-    (at 70.29 131.8)
+    (at 72.2 132.1)
     (descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "LCSC Part #" "C25900")
@@ -4571,7 +4571,7 @@
 
   (footprint "Capacitor_SMD:C_0402_1005Metric" (layer "F.Cu")
     (tstamp 83c0900a-47a0-4c96-bdae-18fd8e794ede)
-    (at 132.8 50.1)
+    (at 49.32 123.4)
     (descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "capacitor")
     (property "LCSC Part #" "C307331")
@@ -5092,7 +5092,7 @@
 
   (footprint "Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187A" (layer "F.Cu")
     (tstamp a7d81149-a176-4b0e-82bb-d21e60098e93)
-    (at 63 134.875)
+    (at 148.2 56.575)
     (descr "SMD Tactile Switch, http://www.helloxkb.com/public/images/pdf/TS-1187A-X-X-X.pdf")
     (tags "SPST Tactile Switch")
     (property "LCSC Part #" "C318884")
@@ -6291,7 +6291,7 @@
 
   (footprint "Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187A" (layer "F.Cu")
     (tstamp c7a2bea7-e884-4b30-b347-54d8ff629e62)
-    (at 63 127)
+    (at 148.2 48.7)
     (descr "SMD Tactile Switch, http://www.helloxkb.com/public/images/pdf/TS-1187A-X-X-X.pdf")
     (tags "SPST Tactile Switch")
     (property "LCSC Part #" "C318884")
@@ -6789,7 +6789,7 @@
 
   (footprint "Package_TO_SOT_SMD:SOT-666" (layer "F.Cu")
     (tstamp d3379f6f-b3a1-461a-a058-7f1ac37e4288)
-    (at 130.05 50.0375)
+    (at 52.275 124)
     (descr "SOT666")
     (tags "SOT-666")
     (property "LCSC Part #" "C2827693")
@@ -6855,7 +6855,7 @@
 
   (footprint "Diode_SMD:D_SOD-323" (layer "F.Cu")
     (tstamp d3a46167-4bcf-417d-90c2-b976440fd8db)
-    (at 124.3 57.4)
+    (at 51.2 119.2 -90)
     (descr "SOD-323")
     (tags "SOD-323")
     (property "LCSC Part #" "C191023")
@@ -6866,15 +6866,15 @@
     (property "ki_keywords" "diode Schottky")
     (path "/2bac5195-070c-412d-b76e-85bcf1e6d414/7912c199-2ddc-44db-b650-8fca97cfd9f7")
     (attr smd)
-    (fp_text reference "D18" (at 0 -1.85) (layer "F.SilkS") hide
+    (fp_text reference "D18" (at 0 -1.85 90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 8a6121ca-8dbf-496d-b20d-7ad74a8903b0)
     )
-    (fp_text value "1N5819WS" (at 0.1 1.9) (layer "F.Fab")
+    (fp_text value "1N5819WS" (at 0.1 1.9 90) (layer "F.Fab")
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 8051266a-fa74-4766-8d50-11c24678b75b)
     )
-    (fp_text user "${REFERENCE}" (at 0 -1.85) (layer "F.Fab")
+    (fp_text user "${REFERENCE}" (at 0 -1.85 90) (layer "F.Fab")
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp a3421b49-6a42-4967-830c-071a40d1b59d)
     )
@@ -6912,9 +6912,9 @@
       (stroke (width 0.1) (type solid)) (layer "F.Fab") (tstamp 16da6e01-5a54-4773-bcf8-201fb5f0a0f1))
     (fp_line (start 0.9 0.7) (end -0.9 0.7)
       (stroke (width 0.1) (type solid)) (layer "F.Fab") (tstamp 92a150f5-32ee-4b24-b1c2-34c64a542c7b))
-    (pad "1" smd roundrect (at -1.05 0) (size 0.6 0.45) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25)
+    (pad "1" smd roundrect (at -1.05 0 270) (size 0.6 0.45) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25)
       (net 9 "+5V") (pinfunction "K") (pintype "passive") (tstamp a448d75c-0f0d-45a4-a231-a58118dc6842))
-    (pad "2" smd roundrect (at 1.05 0) (size 0.6 0.45) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25)
+    (pad "2" smd roundrect (at 1.05 0 270) (size 0.6 0.45) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.25)
       (net 129 "/USB/USB_VBUS") (pinfunction "A") (pintype "passive") (tstamp 815a488a-00de-4207-a815-9286b850aa21))
     (model "${KICAD6_3DMODEL_DIR}/Diode_SMD.3dshapes/D_SOD-323.wrl"
       (offset (xyz 0 0 0))
