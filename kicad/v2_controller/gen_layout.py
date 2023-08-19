@@ -9,7 +9,7 @@ from typing import TextIO
 
 extra = """\
     U1:
-        location: [-34.25, 9.5]
+        location: [-37.25, 9.5]
 """
 
 class Key:
@@ -32,7 +32,7 @@ class Key:
         d_x = sw_x - 5.75
         d_y = sw_y
 
-        cap_x = led_x - 5.5
+        cap_x = led_x - 4.75
         cap_y = led_y + 0.75
 
         out.write(f"    SW{self.index}: # {self.name}\n")

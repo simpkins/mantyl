@@ -10,7 +10,7 @@ components:
     D3: # KP1 LED
         location: [28.5, 24.08]
     C22: # KP1 LED capacitor
-        location: [23.0, 24.83]
+        location: [23.75, 24.83]
     SW4: # KP2
         location: [9.5, 19]
         flip: True
@@ -21,7 +21,7 @@ components:
     D4: # KP2 LED
         location: [9.5, 24.08]
     C27: # KP2 LED capacitor
-        location: [4.0, 24.83]
+        location: [4.75, 24.83]
     SW5: # KP3
         location: [-9.5, 19]
         flip: True
@@ -32,7 +32,7 @@ components:
     D5: # KP3 LED
         location: [-9.5, 24.08]
     C31: # KP3 LED capacitor
-        location: [-15.0, 24.83]
+        location: [-14.25, 24.83]
     SW7: # KP4
         location: [28.5, 0]
         flip: True
@@ -43,7 +43,7 @@ components:
     D7: # KP4 LED
         location: [28.5, 5.08]
     C21: # KP4 LED capacitor
-        location: [23.0, 5.83]
+        location: [23.75, 5.83]
     SW8: # KP5
         location: [9.5, 0]
         flip: True
@@ -54,7 +54,7 @@ components:
     D8: # KP5 LED
         location: [9.5, 5.08]
     C26: # KP5 LED capacitor
-        location: [4.0, 5.83]
+        location: [4.75, 5.83]
     SW9: # KP6
         location: [-9.5, 0]
         flip: True
@@ -65,7 +65,7 @@ components:
     D9: # KP6 LED
         location: [-9.5, 5.08]
     C30: # KP6 LED capacitor
-        location: [-15.0, 5.83]
+        location: [-14.25, 5.83]
     SW10: # KP7
         location: [28.5, -19]
         flip: True
@@ -76,7 +76,7 @@ components:
     D10: # KP7 LED
         location: [28.5, -13.92]
     C20: # KP7 LED capacitor
-        location: [23.0, -13.17]
+        location: [23.75, -13.17]
     SW11: # KP8
         location: [9.5, -19]
         flip: True
@@ -87,7 +87,7 @@ components:
     D11: # KP8 LED
         location: [9.5, -13.92]
     C25: # KP8 LED capacitor
-        location: [4.0, -13.17]
+        location: [4.75, -13.17]
     SW12: # KP9
         location: [-9.5, -19]
         flip: True
@@ -98,7 +98,7 @@ components:
     D12: # KP9 LED
         location: [-9.5, -13.92]
     C29: # KP9 LED capacitor
-        location: [-15.0, -13.17]
+        location: [-14.25, -13.17]
     SW14: # KP_Extra
         location: [28.5, -38]
         flip: True
@@ -109,7 +109,7 @@ components:
     D14: # KP_Extra LED
         location: [28.5, -32.92]
     C19: # KP_Extra LED capacitor
-        location: [23.0, -32.17]
+        location: [23.75, -32.17]
     SW15: # KP_Slash
         location: [9.5, -38]
         flip: True
@@ -120,7 +120,7 @@ components:
     D15: # KP_Slash LED
         location: [9.5, -32.92]
     C24: # KP_Slash LED capacitor
-        location: [4.0, -32.17]
+        location: [4.75, -32.17]
     SW16: # KP_Star
         location: [-9.5, -38]
         flip: True
@@ -131,7 +131,7 @@ components:
     D16: # KP_Star LED
         location: [-9.5, -32.92]
     C28: # KP_Star LED capacitor
-        location: [-15.0, -32.17]
+        location: [-14.25, -32.17]
     SW17: # KP_Minus
         location: [-28.5, -38]
         flip: True
@@ -142,7 +142,7 @@ components:
     D17: # KP_Minus LED
         location: [-28.5, -32.92]
     C33: # KP_Minus LED capacitor
-        location: [-34.0, -32.17]
+        location: [-33.25, -32.17]
     SW1: # KP0
         location: [19.0, 38]
         flip: True
@@ -153,7 +153,7 @@ components:
     D1: # KP0 LED
         location: [19.0, 43.08]
     C23: # KP0 LED capacitor
-        location: [13.5, 43.83]
+        location: [14.25, 43.83]
     SW2: # KP_Dot
         location: [-9.5, 38]
         flip: True
@@ -164,7 +164,7 @@ components:
     D2: # KP_Dot LED
         location: [-9.5, 43.08]
     C32: # KP_Dot LED capacitor
-        location: [-15.0, 43.83]
+        location: [-14.25, 43.83]
     SW13: # KP_Plus
         location: [-28.5, -9.5]
         flip: True
@@ -175,7 +175,7 @@ components:
     D13: # KP_Plus LED
         location: [-28.5, -4.42]
     C34: # KP_Plus LED capacitor
-        location: [-34.0, -3.67]
+        location: [-33.25, -3.67]
     SW6: # KP_Enter
         location: [-28.5, 28.5]
         flip: True
@@ -186,6 +186,6 @@ components:
     D6: # KP_Enter LED
         location: [-28.5, 33.58]
     C35: # KP_Enter LED capacitor
-        location: [-34.0, 34.33]
+        location: [-33.25, 34.33]
     U1:
-        location: [-34.25, 9.5]
+        location: [-37.25, 9.5]

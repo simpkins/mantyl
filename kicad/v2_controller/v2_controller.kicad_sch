@@ -245,7 +245,7 @@
       (effects (font (size 1.27 1.27)) (justify left))
       (uuid a7573432-340c-4289-94f4-5929e0df6906)
     )
-    (pin "LED_LEFT_DIN" input (at 155.575 76.2 270)
+    (pin "LED_RIGHT_DIN" input (at 155.575 76.2 270)
       (effects (font (size 1.27 1.27)) (justify left))
       (uuid d8470de4-a88d-4b98-8787-303e7719f382)
     )
