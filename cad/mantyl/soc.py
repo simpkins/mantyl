@@ -83,16 +83,14 @@ PCB_THICKNESS = 1.6
 def numpad_pcb_mesh() -> cad.Mesh:
     mesh = cad.Mesh()
     perim_xy: List[Tuple[float, float]] = [
-        (44, 59),
-        (-44, 59),
-        (-53, 33),
-        (-53, 14),
-        (-47, 14),
-        (-47, -22.65),
-        (-16, -57),
         (16, -57),
         (53, -16),
         (53, 33),
+        (44, 59),
+        (-44, 59),
+        (-47, 50),
+        (-47, -22),
+        (-16, -57),
     ]
     perim: List[Tuple[cad.MeshPoint, cad.MeshPoint]] = []
     for x, y in perim_xy:
@@ -122,12 +120,42 @@ def numpad_pcb() -> bpy.types.Object:
     bmesh = blender_util.blender_mesh(f"pcb_mesh", mesh)
     obj = blender_util.new_mesh_obj("numpad_pcb", bmesh)
 
-    mod = esp32s3_wroom_1()
-    y_offset = NumpadSection.global_y_offset - (0.5 * NumpadSection.key_size) + 2
-    with blender_util.TransformContext(mod) as ctx:
+    esp32 = esp32s3_wroom_1()
+    esp32_x = -37.25
+    esp32_y = 3.5
+    #y_offset = NumpadSection.global_y_offset - (0.5 * NumpadSection.key_size) + 2
+    with blender_util.TransformContext(esp32) as ctx:
         ctx.rotate(90, "Z")
-        ctx.translate(-37, y_offset, PCB_THICKNESS)
+        ctx.translate(esp32_x, esp32_y, PCB_THICKNESS)
+    blender_util.union(obj, esp32)
 
-    blender_util.union(obj, mod)
+    key_positions = [
+        (28.5, 6),  # KP1
+        (9.5, 6),  # KP2
+        (-9.5, 6),  # KP3
+        (28.5, -13),  # KP4
+        (9.5, -13),  # KP5
+        (-9.5, -13),  # KP6
+        (28.5, -32),  # KP7
+        (9.5, -32),  # KP8
+        (-9.5, -32),  # KP9
+
+        (28.5, -51),  # KP_Extra
+        (9.5, -51),  # KP_Slash
+        (-9.5, -51),  # KP_Star
+        (-28.5, -51),  # KP_Minus
+
+        (19.0, 25),  # KP0
+        (-9.5, 25),  # KP_Dot
+
+        (-28.5, -22.5),  # KP_Plus
+        (-28.5, 15.5),  # KP_Enter
+    ]
+    d = 6.75
+    for x, y in key_positions:
+        c = blender_util.range_cube((-d, d), (-d, d), (-10, 10))
+        with blender_util.TransformContext(c) as ctx:
+            ctx.translate(x, -y, 0.0)
+        blender_util.union(obj, c)
 
     return obj

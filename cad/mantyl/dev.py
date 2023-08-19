@@ -37,6 +37,7 @@ def test_full() -> None:
 
     if show_numpad:
         np.gen_object_simple()
+        np.print_key_positions()
 
     if show_controller:
         pcb = soc.numpad_pcb()
@@ -82,6 +83,7 @@ def test_np() -> None:
 
 
 def test() -> None:
+    # soc.numpad_pcb()
     # wrist_rest.right()
     test_full()
     # test_np()

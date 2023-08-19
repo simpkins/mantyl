@@ -7,15 +7,14 @@ from __future__ import annotations
 import sys
 from typing import TextIO
 
-extra = """\
-    U1:
-        location: [-37.25, 9.5]
-"""
 
 class Key:
     key_size = 19
+    global_y_offset = -13
 
-    def __init__(self, name: str, index: int, x: float, y: float, cap: str) -> None:
+    def __init__(
+        self, name: str, index: int, x: float, y: float, cap: str
+    ) -> None:
         self.name = name
         self.index = index
         self.x = x
@@ -23,8 +22,8 @@ class Key:
         self.cap = cap
 
     def write(self, out: TextIO) -> None:
-        sw_x = 28.5 - self.x * self.key_size
-        sw_y = -self.y * self.key_size
+        sw_x = (self.key_size * 1.5) - self.x * self.key_size
+        sw_y = self.global_y_offset - (self.y * self.key_size)
 
         led_x = sw_x
         led_y = sw_y + 5.08
@@ -51,7 +50,7 @@ class Key:
 
 def main() -> None:
     out = sys.stdout
-    out.write("origin: [90, 86]\n")
+    out.write("origin: [90, 99]\n")
     keys = [
         Key("KP1", 3, 0, -1, "C22"),
         Key("KP2", 4, 1, -1, "C27"),
@@ -62,15 +61,12 @@ def main() -> None:
         Key("KP7", 10, 0, 1, "C20"),
         Key("KP8", 11, 1, 1, "C25"),
         Key("KP9", 12, 2, 1, "C29"),
-
         Key("KP_Extra", 14, 0, 2, "C19"),
         Key("KP_Slash", 15, 1, 2, "C24"),
         Key("KP_Star", 16, 2, 2, "C28"),
         Key("KP_Minus", 17, 3, 2, "C33"),
-
         Key("KP0", 1, 0.5, -2, "C23"),
         Key("KP_Dot", 2, 2, -2, "C32"),
-
         Key("KP_Plus", 13, 3, 0.5, "C34"),
         Key("KP_Enter", 6, 3, -1.5, "C35"),
     ]
@@ -79,7 +75,10 @@ def main() -> None:
     for key in keys:
         key.write(out)
 
-    out.write(extra)
+    esp32_pos = (-37.25, 9.5)
+    esp32_y = esp32_pos[1] + Key.global_y_offset
+    out.write("    U1:\n")
+    out.write(f"        location: [{esp32_pos[0]}, {esp32_y}]")
 
 
 if __name__ == "__main__":

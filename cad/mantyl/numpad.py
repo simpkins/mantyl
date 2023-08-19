@@ -74,6 +74,9 @@ class NumpadSection:
         y_off_mm = self.global_y_offset + (y_offset * self.key_size)
         kh = KeyHole(self.mesh, Transform().translate(x_off_mm, y_off_mm, 0.0))
         kh.inner_walls()
+
+        kh.numpad_x = x_off_mm
+        kh.numpad_y = y_off_mm
         return kh
 
     def gen_mesh(self, rkbd: Keyboard, lkbd: Keyboard) -> None:
@@ -309,19 +312,22 @@ class NumpadSection:
         self._fan(
             self.br, [self.kp_enter.br, self.kp_enter.bl, self.kp_dot.br]
         )
-        self._fan(
-            self.bl,
-            [self.kp0.bl, self.kp0.tl, self.kp1.bl]
-        )
+        self._fan(self.bl, [self.kp0.bl, self.kp0.tl, self.kp1.bl])
 
         # Left
         self._fan(
             self.ml,
-            [self.kp1.bl, self.kp1.tl, self.kp4.bl, self.kp4.tl, self.kp7.bl, self.kp7.tl]
+            [
+                self.kp1.bl,
+                self.kp1.tl,
+                self.kp4.bl,
+                self.kp4.tl,
+                self.kp7.bl,
+                self.kp7.tl,
+            ],
         )
         self._fan(
-            self.tl,
-            [self.ml, self.kp7.tl, self.kp_extra.bl, self.kp_extra.tl]
+            self.tl, [self.ml, self.kp7.tl, self.kp_extra.bl, self.kp_extra.tl]
         )
 
     def _fan(
@@ -483,7 +489,10 @@ class NumpadSection:
 
         # Top perimeter faces
         self._fan(self.br, self.perim[0:3])
-        self._fan(self.perim[2], [self.mr, self.kp_enter.tr, self.kp_enter.br, self.br])
+        self._fan(
+            self.perim[2],
+            [self.mr, self.kp_enter.tr, self.kp_enter.br, self.br],
+        )
         self._fan(self.mr, self.perim[2:5] + [self.tr])
         self._fan(self.tr, self.perim[4:9])
         self._wall_quad(self.tr, self.perim[10], self.perim[9], self.perim[8])
@@ -588,7 +597,7 @@ class NumpadSection:
         self._bevel_edge(self.mr[0], self.perim[4][0], 0.5)
         # For some reason the bevels are not symmtrical, and the same bevel
         # on the left side looks worse.
-        #self._bevel_edge(self.ml[0], self.perim[17][0], 0.5)
+        # self._bevel_edge(self.ml[0], self.perim[17][0], 0.5)
 
         # Perimeter corner bevels
         if bevel_joins:
@@ -621,7 +630,9 @@ class NumpadSection:
     def apply_bevels(self, obj: bpy.types.Object) -> None:
         return self._beveler.apply_bevels(obj)
 
-    def gen_object_simple(self, name: str = "numpad", bevel: bool=True) -> bpy.types.Object:
+    def gen_object_simple(
+        self, name: str = "numpad", bevel: bool = True
+    ) -> bpy.types.Object:
         """
         Generate just the basic numpad shell, without applying feet or internal
         board holders.
@@ -635,37 +646,41 @@ class NumpadSection:
 
     def _add_feet(self, obj: bpy.types.Object) -> None:
         br = self.perim_floor[9][1]
-        add_foot(
-            obj,
-            br.x - 0.4, br.y - 0.5,
-            -145.0,
-            2.0,
-        )
+        add_foot(obj, br.x - 0.4, br.y - 0.5, -145.0, 2.0)
         bl = self.perim_floor[12][1]
-        add_foot(
-            obj,
-            bl.x + 0.4, bl.y - 0.5,
-            -35.0,
-            2.0,
-        )
+        add_foot(obj, bl.x + 0.4, bl.y - 0.5, -35.0, 2.0)
 
         fr = self.perim_floor[1][1]
-        add_foot(
-            obj,
-            fr.x + 1, fr.y - 1,
-            140.0,
-            0.0,
-        )
+        add_foot(obj, fr.x + 1, fr.y - 1, 140.0, 0.0)
         fl = self.perim_floor[-2][1]
-        add_foot(
-            obj,
-            fl.x - 1, fl.y - 1,
-            40.0,
-            0.0,
-        )
+        add_foot(obj, fl.x - 1, fl.y - 1, 40.0, 0.0)
 
     def gen_object(self, name: str = "numpad") -> bpy.types.Object:
         obj = self.gen_object_simple(name=name)
         self._add_feet(obj)
 
         return obj
+
+    def print_key_positions(self) -> None:
+        keys = [
+            ("KP_Extra", self.kp_extra),
+            ("KP_Slash", self.kp_slash),
+            ("KP_Star", self.kp_star),
+            ("KP_Minus", self.kp_minus),
+            ("KP1", self.kp1),
+            ("KP2", self.kp2),
+            ("KP3", self.kp3),
+            ("KP4", self.kp4),
+            ("KP5", self.kp5),
+            ("KP6", self.kp6),
+            ("KP7", self.kp7),
+            ("KP8", self.kp8),
+            ("KP9", self.kp9),
+            ("KP0", self.kp0),
+            ("KP_Dot", self.kp_dot),
+            ("KP_Plus", self.kp_plus),
+            ("KP_Enter", self.kp_enter),
+        ]
+        print("Numpad key positions:")
+        for name, k in keys:
+            print(f"- {name}: {k.numpad_x}, {k.numpad_y}")
