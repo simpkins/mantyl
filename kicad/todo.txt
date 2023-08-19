@@ -1,0 +1,13 @@
+- add JTAG header?
+
+- USB shield connections
+  connect to ground with parallel capacitor and high value resistor?
+
+- tune trace widths.  Check USB data trace lengths.
+
+- confirm OLED connector layout
+
+- ESP32-S3 hardware design guidelines recommend resistor and capacitor on USB
+  data lines.  DevKit doesn't include these, though.
+
+- Could possibly add PPTC fuse on input USB power line?
