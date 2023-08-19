@@ -10,7 +10,7 @@ from typing import TextIO
 
 class Key:
     key_size = 19
-    global_y_offset = -13
+    global_y_offset = -12
 
     def __init__(
         self, name: str, index: int, x: float, y: float, cap: str
@@ -50,7 +50,7 @@ class Key:
 
 def main() -> None:
     out = sys.stdout
-    out.write("origin: [90, 99]\n")
+    out.write("origin: [90, 98]\n")
     keys = [
         Key("KP1", 3, 0, -1, "C22"),
         Key("KP2", 4, 1, -1, "C27"),
