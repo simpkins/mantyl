@@ -50,6 +50,17 @@ def unc6_32_screw_standoff(
     return screw_standoff(h=h, hole_h=hole_h, outer_d=outer_d, hole_d=3.25)
 
 
+def m2_5_screw_standoff(
+    h: float = 4.5, hole_h: float = 4.2, outer_d: float = 6.0
+) -> bpy.types.Object:
+    """
+    A stand-off designed to fit an M2.5 screw.
+    """
+    # hole_h is less than 1/4" since the screw also has to fit a couple mm
+    # through a backplate
+    return screw_standoff(h=h, hole_h=hole_h, outer_d=outer_d, hole_d=2.5)
+
+
 def gen_screw_hole(wall_thickness: float) -> bpy.types.Object:
     """
     Create a hole for a wall, big enough to fit a US #6 screw.

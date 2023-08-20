@@ -77,85 +77,132 @@ def esp32s3_wroom_1u() -> bpy.types.Object:
     return obj
 
 
-PCB_THICKNESS = 1.6
+class NumpadPcb:
+    pcb_thickness = 1.6
 
+    def __init__(self) -> None:
+        self.mesh = self._gen_mesh()
+        self.object = self._gen_object()
 
-def numpad_pcb_mesh() -> cad.Mesh:
-    mesh = cad.Mesh()
-    perim_xy: List[Tuple[float, float]] = [
-        (16, -57),
-        (53, -16),
-        (53, 33),
-        (44, 59),
-        (-44, 59),
-        (-47, 50),
-        (-47, -22),
-        (-16, -57),
-    ]
-    perim: List[Tuple[cad.MeshPoint, cad.MeshPoint]] = []
-    for x, y in perim_xy:
-        t = mesh.add_xyz(x, y, PCB_THICKNESS)
-        b = mesh.add_xyz(x, y, 0)
-        perim.append((t, b))
+    def _gen_mesh(self) -> cad.Mesh:
+        mesh = cad.Mesh()
+        perim_xy: List[Tuple[float, float]] = [
+            (16, -57),
+            (53, -16),
+            (53, 33),
+            (44, 59),
+            (-44, 59),
+            (-47, 50),
+            (-47, -22),
+            (-16, -57),
+        ]
+        perim: List[Tuple[cad.MeshPoint, cad.MeshPoint]] = []
+        for x, y in perim_xy:
+            t = mesh.add_xyz(x, y, self.pcb_thickness)
+            b = mesh.add_xyz(x, y, 0)
+            perim.append((t, b))
 
-    top_face_indices = [t.index for t, b in reversed(perim)]
-    # pyre-fixme[6]: we are letting blender deal with a polygon face here,
-    #     but we did not declare typing in cad.Mesh to allow polygon faces
-    mesh.faces.append(top_face_indices)
-    bottom_face_indices = [b.index for t, b in perim]
-    # pyre-fixme[6]: we are letting blender deal with a polygon face here,
-    #     but we did not declare typing in cad.Mesh to allow polygon faces
-    mesh.faces.append(bottom_face_indices)
+        top_face_indices = [t.index for t, b in reversed(perim)]
+        # pyre-fixme[6]: we are letting blender deal with a polygon face here,
+        #     but we did not declare typing in cad.Mesh to allow polygon faces
+        mesh.faces.append(top_face_indices)
+        bottom_face_indices = [b.index for t, b in perim]
+        # pyre-fixme[6]: we are letting blender deal with a polygon face here,
+        #     but we did not declare typing in cad.Mesh to allow polygon faces
+        mesh.faces.append(bottom_face_indices)
 
-    for idx in range(len(perim)):
-        mesh.add_quad(
-            perim[idx - 1][0], perim[idx][0], perim[idx][1], perim[idx - 1][1]
-        )
+        for idx in range(len(perim)):
+            mesh.add_quad(
+                perim[idx - 1][0], perim[idx][0], perim[idx][1], perim[idx - 1][1]
+            )
 
-    return mesh
+        return mesh
+
+    def _gen_object(self) -> bpy.types.Object:
+        bmesh = blender_util.blender_mesh(f"pcb_mesh", self.mesh)
+        obj = blender_util.new_mesh_obj("numpad_pcb", bmesh)
+
+        self._add_esp32(obj)
+        self._add_keys(obj)
+        self._add_screw_holes(obj)
+        self._add_headers(obj)
+        self._add_display(obj)
+
+        return obj
+
+    def _add_esp32(self, obj: bpy.types.Object) -> None:
+        esp32 = esp32s3_wroom_1()
+        esp32_x = -37.25
+        esp32_y = 2.5
+        with blender_util.TransformContext(esp32) as ctx:
+            ctx.rotate(90, "Z")
+            ctx.translate(esp32_x, esp32_y, self.pcb_thickness)
+        blender_util.union(obj, esp32)
+
+    def _add_keys(self, obj: bpy.types.Object) -> None:
+        key_positions = [
+            (28.5, -7),  # KP1
+            (9.5, -7),  # KP2
+            (-9.5, -7),  # KP3
+            (28.5, 12),  # KP4
+            (9.5, 12),  # KP5
+            (-9.5, 12),  # KP6
+            (28.5, 31),  # KP7
+            (9.5, 31),  # KP8
+            (-9.5, 31),  # KP9
+
+            (28.5, 50),  # KP_Extra
+            (9.5, 50),  # KP_Slash
+            (-9.5, 50),  # KP_Star
+            (-28.5, 50),  # KP_Minus
+
+            (19.0, -26),  # KP0
+            (-9.5, -26),  # KP_Dot
+
+            (-28.5, 21.5),  # KP_Plus
+            (-28.5, -16.5),  # KP_Enter
+        ]
+        d = 6.75
+        for x, y in key_positions:
+            c = blender_util.range_cube((-d, d), (-d, d), (-10, 10))
+            with blender_util.TransformContext(c) as ctx:
+                ctx.translate(x, y, 0.0)
+            blender_util.difference(obj, c)
+
+    def _add_screw_holes(self, obj: bpy.types.Object) -> None:
+        screw_positions = [
+            (-26, -40),
+            (26, -40),
+            (41.5, 53.5),
+            (-41.5, 53.5),
+        ]
+        d = 6.75
+        for x, y in screw_positions:
+            hole = blender_util.cylinder(r=1.25, h=10)
+            with blender_util.TransformContext(hole) as ctx:
+                ctx.translate(x, y, 0.0)
+            blender_util.difference(obj, hole)
+
+    def _add_headers(self, obj: bpy.types.Object) -> None:
+        main_header_positions = [(-41.3, 31.85), (43.05, 29.355)]
+
+        h = 8.9
+        for x, y in main_header_positions:
+            header = blender_util.cube(8.9, 33.02, h)
+            with blender_util.TransformContext(header) as ctx:
+                ctx.translate(x, y, self.pcb_thickness + (h * 0.5))
+            blender_util.union(obj, header)
+
+        hat_h = 8.5
+        hat_header = blender_util.cube(5, 8.02, hat_h)
+        with blender_util.TransformContext(hat_header) as ctx:
+            ctx.translate(19.1, -41.3, self.pcb_thickness + (hat_h * 0.5))
+        blender_util.union(obj, hat_header)
+
+    def _add_headers(self, obj: bpy.types.Object) -> None:
+        # TODO
+        pass
 
 
 def numpad_pcb() -> bpy.types.Object:
-    mesh = numpad_pcb_mesh()
-    bmesh = blender_util.blender_mesh(f"pcb_mesh", mesh)
-    obj = blender_util.new_mesh_obj("numpad_pcb", bmesh)
-
-    esp32 = esp32s3_wroom_1()
-    esp32_x = -37.25
-    esp32_y = 3.5
-    #y_offset = NumpadSection.global_y_offset - (0.5 * NumpadSection.key_size) + 2
-    with blender_util.TransformContext(esp32) as ctx:
-        ctx.rotate(90, "Z")
-        ctx.translate(esp32_x, esp32_y, PCB_THICKNESS)
-    blender_util.union(obj, esp32)
-
-    key_positions = [
-        (28.5, 7),  # KP1
-        (9.5, 7),  # KP2
-        (-9.5, 7),  # KP3
-        (28.5, -12),  # KP4
-        (9.5, -12),  # KP5
-        (-9.5, -12),  # KP6
-        (28.5, -31),  # KP7
-        (9.5, -31),  # KP8
-        (-9.5, -31),  # KP9
-
-        (28.5, -50),  # KP_Extra
-        (9.5, -50),  # KP_Slash
-        (-9.5, -50),  # KP_Star
-        (-28.5, -50),  # KP_Minus
-
-        (19.0, 26),  # KP0
-        (-9.5, 26),  # KP_Dot
-
-        (-28.5, -21.5),  # KP_Plus
-        (-28.5, 16.5),  # KP_Enter
-    ]
-    d = 6.75
-    for x, y in key_positions:
-        c = blender_util.range_cube((-d, d), (-d, d), (-10, 10))
-        with blender_util.TransformContext(c) as ctx:
-            ctx.translate(x, -y, 0.0)
-        blender_util.union(obj, c)
-
-    return obj
+    return NumpadPcb().object

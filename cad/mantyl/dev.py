@@ -83,9 +83,9 @@ def test_np() -> None:
 
 
 def test() -> None:
-    # soc.numpad_pcb()
+    soc.numpad_pcb()
     # wrist_rest.right()
-    test_full()
+    # test_full()
     # test_np()
     # cover.cover_clip()
 
