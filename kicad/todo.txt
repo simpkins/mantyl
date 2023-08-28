@@ -1,8 +1,0 @@
-- add JTAG header?
-
-- confirm OLED connector length
-
-- ESP32-S3 hardware design guidelines recommend resistor and capacitor on USB
-  data lines.  DevKit doesn't include these, though.
-
-- Could possibly add PPTC fuse on input USB power line?

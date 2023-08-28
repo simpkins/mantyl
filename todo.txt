@@ -1,0 +1,56 @@
+# CAD
+
+  - Numpad:
+    - bottom cover
+    - hat switch on front
+    - figure out status LEDs
+    - OLED display hole
+    - controller screw standoffs
+    - USB connector / hole
+    - cable holes to left & right
+    - screw holes to left & right
+
+  - Left / Right:
+    - bottom cover
+    - cable holes to numpad
+    - screw holes to numpad
+
+  - Wrist Rests:
+    - test supports
+
+
+# Controller PCB
+
+  - redo OLED display for folded connection on back
+  - headers for external reset button
+
+
+# Firmware
+
+  - finish USB stack re-implementation
+    - improved descriptors
+    - remote wake-up
+    - suspend handling
+  - display UI
+
+
+
+------------------------
+
+# Low-pri
+
+- V1 firmware:
+  - Improve handling of right half disconnect
+
+Low-pri future firmware:
+  - Software-based USB serial download functionality
+  - KeymapDB: save & load from flash
+
+- docs:
+  - Discuss burning the USB_PHY_SEL eFuse
+
+- Low-pri future improvements:
+  - custom flex PCB for left and right half keys
+  - touchpad below right thumb?
+    Azoteq TPS43-201A
+  - headphone in + out jacks with volume potentiometer?
