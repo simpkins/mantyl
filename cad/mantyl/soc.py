@@ -126,7 +126,9 @@ class NumpadPcb:
         self._add_keys(obj)
         self._add_screw_holes(obj)
         self._add_headers(obj)
+        self._add_usb(obj)
         self._add_display(obj)
+        self._add_status_leds(obj)
 
         return obj
 
@@ -178,7 +180,7 @@ class NumpadPcb:
         ]
         d = 6.75
         for x, y in screw_positions:
-            hole = blender_util.cylinder(r=1.25, h=10)
+            hole = blender_util.cylinder(r=1.35, h=10)
             with blender_util.TransformContext(hole) as ctx:
                 ctx.translate(x, y, 0.0)
             blender_util.difference(obj, hole)
@@ -199,9 +201,45 @@ class NumpadPcb:
             ctx.translate(19.1, -41.3, self.pcb_thickness + (hat_h * 0.5))
         blender_util.union(obj, hat_header)
 
-    def _add_headers(self, obj: bpy.types.Object) -> None:
-        # TODO
-        pass
+    def _add_usb(self, obj: bpy.types.Object) -> None:
+        main_pos = (-21.6, 4.24)
+        uart_pos = (42.67, -16.7)
+        l = 8.4
+        w = 3.16
+        h = 10.0
+
+        h_offset = (h * 0.5) + self.pcb_thickness
+
+        # Main USB header
+        main_hdr = blender_util.cube(l, w, h)
+        with blender_util.TransformContext(main_hdr) as ctx:
+            ctx.translate(main_pos[0], main_pos[1], h_offset)
+        blender_util.union(obj, main_hdr)
+
+        # UART USB header
+        uart_hdr = blender_util.cube(w, l, h)
+        with blender_util.TransformContext(uart_hdr) as ctx:
+            ctx.translate(uart_pos[0], uart_pos[1], h_offset)
+        blender_util.union(obj, uart_hdr)
+
+    def _add_status_leds(self, obj: bpy.types.Object) -> None:
+        y = -52.0
+        x_list = (-12, -4, 4, 12)
+
+        for x in x_list:
+            hole = blender_util.cube(3.4, 3.0, 10)
+            with blender_util.TransformContext(hole) as ctx:
+                ctx.translate(x, y, 0.0)
+            blender_util.difference(obj, hole)
+
+    def _add_display(self, obj: bpy.types.Object) -> None:
+        y = -40.89
+        h = 4
+        disp = blender_util.cube(30, 11.6, h)
+        with blender_util.TransformContext(disp) as ctx:
+            ctx.translate(0, y, (-h / 2) + .3)
+
+        blender_util.difference(obj, disp)
 
 
 def numpad_pcb() -> bpy.types.Object:
