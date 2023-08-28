@@ -1,6 +1,6 @@
 (footprint "SSD1306_OLED-0.91-128x32_Front_Mount" (version 20221018) (generator pcbnew)
   (layer "F.Cu")
-  (attr through_hole)
+  (attr smd)
   (fp_text reference "REF**" (at 1.778 -1.016) (layer "F.SilkS")
       (effects (font (size 1 1) (thickness 0.15)))
     (tstamp 246686c2-ed9c-4f89-ba69-93dcff4dc5d0)
