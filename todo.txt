@@ -54,3 +54,4 @@ Low-pri future firmware:
   - touchpad below right thumb?
     Azoteq TPS43-201A
   - headphone in + out jacks with volume potentiometer?
+  - JTAG header
