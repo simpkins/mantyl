@@ -593,7 +593,7 @@
     (property "Value" "SSD1306_I2C" (at 103.505 59.055 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "mantyl:SSD1306_OLED-0.91-128x32_Back_Mount" (at 90.17 56.515 0)
+    (property "Footprint" "mantyl:SSD1306_OLED-0.91-128x32_Folded" (at 90.17 56.515 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "https://www.crystalfontz.com/products/document/3529/CFAL12832D-CWDatasheetReleaseDate2017-07-18.pdf" (at 97.79 56.515 0)
