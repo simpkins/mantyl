@@ -21,9 +21,7 @@
 
 # Controller PCB
 
-  - redo OLED display for folded connection on back
-  - headers for external reset button
-
+  - mostly done?
 
 # Firmware
 
