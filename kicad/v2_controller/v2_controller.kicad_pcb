@@ -4678,7 +4678,7 @@
     (property "ki_description" "Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)")
     (property "ki_keywords" "connector")
     (path "/7823ba18-44bd-4775-8b61-284ac8655bf1/8161d333-ae8c-440f-83dc-e52c1137c2a1")
-    (attr through_hole exclude_from_bom)
+    (attr through_hole exclude_from_pos_files exclude_from_bom)
     (fp_text reference "J7" (at 0 7.68 90) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.153)))
       (tstamp b317ec5f-6099-4ec5-8821-43446c9acd61)
@@ -7374,7 +7374,7 @@
     (property "ki_description" "Generic connector, double row, 02x04, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)")
     (property "ki_keywords" "connector")
     (path "/7823ba18-44bd-4775-8b61-284ac8655bf1/0f5071db-e575-44db-a6e7-be2c4d2bb99f")
-    (attr through_hole exclude_from_bom)
+    (attr through_hole exclude_from_pos_files exclude_from_bom)
     (fp_text reference "J5" (at -1.27 -2.77) (layer "F.SilkS") hide
         (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 8c845031-bd7d-48ab-95eb-f5a1f645c461)
