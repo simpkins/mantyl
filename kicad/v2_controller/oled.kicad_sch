@@ -725,7 +725,7 @@
   )
 
   (symbol (lib_id "mantyl:SSD1306_I2C") (at 95.25 56.515 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (in_bom no) (on_board yes) (dnp yes) (fields_autoplaced)
     (uuid 502e077c-cff2-4ed6-a273-389a7dbf7278)
     (property "Reference" "U2" (at 103.505 56.515 0)
       (effects (font (size 1.27 1.27)) (justify left))
