@@ -83,9 +83,9 @@ def test_np() -> None:
 
 
 def test() -> None:
-    soc.numpad_pcb()
+    # soc.numpad_pcb()
     # test_full()
-    # test_np()
+    test_np()
     # cover.cover_clip()
 
     # kbd_halves.right_full()

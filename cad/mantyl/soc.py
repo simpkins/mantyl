@@ -233,7 +233,15 @@ class NumpadPcb:
             blender_util.difference(obj, hole)
 
     def _add_display(self, obj: bpy.types.Object) -> None:
-        y = -40.89
+        # https://datasheet.lcsc.com/lcsc/2109031030_Newvisio-N091-2832TSWFG02-H14_C2890599.pdf
+        # The length of the display glass is 30mm
+        # This is split into a main area on the left of 26.6mm, and 3.4mm on
+        # the right for the connector.
+        #
+        # I have centered the entire glass area, rather than centering the
+        # active area.
+
+        y = -41.75
         h = 4
         disp = blender_util.cube(30, 11.6, h)
         with blender_util.TransformContext(disp) as ctx:
