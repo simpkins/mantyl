@@ -580,6 +580,9 @@
     (property "LCSC Part #" "C5156480" (at 0 -10.16 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "JLCPCB Position Offset" "0.635,3.81" (at 0 -15.24 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (symbol "Kailh_MX_Socket_0_1"
       (circle (center -3.81 -5.08) (radius 1.27)
         (stroke (width 0) (type default))
