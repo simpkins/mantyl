@@ -22,11 +22,6 @@
 # Controller PCB
 
   - Fix JLCPCB component offsets / rotations:
-    - ESP32-S3-WROOM-1 is off by exactly half a pin pitch (0.635mm) 
-      (they center in the middle of pin 8, my footprint centers in between pins
-      7 and 8)
-    - Kailh socket needs an offset.  My footprint centers in the center of
-      the key switch; theirs centers in the center of the socket.
     - rotations of ESD chips are wrong
     - J6 header rotation is wrong
     - IDC headers are offset slightly
