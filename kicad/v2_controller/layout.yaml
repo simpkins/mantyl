@@ -9,6 +9,7 @@ components:
         rotation: 270
     D3: # KP1 LED
         location: [28.5, 12.08]
+        rotation: 180
     C22: # KP1 LED capacitor
         location: [23.75, 12.83]
     SW4: # KP2
@@ -20,6 +21,7 @@ components:
         rotation: 270
     D4: # KP2 LED
         location: [9.5, 12.08]
+        rotation: 180
     C27: # KP2 LED capacitor
         location: [4.75, 12.83]
     SW5: # KP3
@@ -31,6 +33,7 @@ components:
         rotation: 270
     D5: # KP3 LED
         location: [-9.5, 12.08]
+        rotation: 180
     C31: # KP3 LED capacitor
         location: [-14.25, 12.83]
     SW7: # KP4
@@ -42,6 +45,7 @@ components:
         rotation: 270
     D7: # KP4 LED
         location: [28.5, -6.92]
+        rotation: 180
     C21: # KP4 LED capacitor
         location: [23.75, -6.17]
     SW8: # KP5
@@ -53,6 +57,7 @@ components:
         rotation: 270
     D8: # KP5 LED
         location: [9.5, -6.92]
+        rotation: 180
     C26: # KP5 LED capacitor
         location: [4.75, -6.17]
     SW9: # KP6
@@ -64,6 +69,7 @@ components:
         rotation: 270
     D9: # KP6 LED
         location: [-9.5, -6.92]
+        rotation: 180
     C30: # KP6 LED capacitor
         location: [-14.25, -6.17]
     SW10: # KP7
@@ -75,6 +81,7 @@ components:
         rotation: 270
     D10: # KP7 LED
         location: [28.5, -25.92]
+        rotation: 180
     C20: # KP7 LED capacitor
         location: [23.75, -25.17]
     SW11: # KP8
@@ -86,6 +93,7 @@ components:
         rotation: 270
     D11: # KP8 LED
         location: [9.5, -25.92]
+        rotation: 180
     C25: # KP8 LED capacitor
         location: [4.75, -25.17]
     SW12: # KP9
@@ -97,6 +105,7 @@ components:
         rotation: 270
     D12: # KP9 LED
         location: [-9.5, -25.92]
+        rotation: 180
     C29: # KP9 LED capacitor
         location: [-14.25, -25.17]
     SW14: # KP_Extra
@@ -108,6 +117,7 @@ components:
         rotation: 270
     D14: # KP_Extra LED
         location: [28.5, -44.92]
+        rotation: 180
     C19: # KP_Extra LED capacitor
         location: [23.75, -44.17]
     SW15: # KP_Slash
@@ -119,6 +129,7 @@ components:
         rotation: 270
     D15: # KP_Slash LED
         location: [9.5, -44.92]
+        rotation: 180
     C24: # KP_Slash LED capacitor
         location: [4.75, -44.17]
     SW16: # KP_Star
@@ -130,6 +141,7 @@ components:
         rotation: 270
     D16: # KP_Star LED
         location: [-9.5, -44.92]
+        rotation: 180
     C28: # KP_Star LED capacitor
         location: [-14.25, -44.17]
     SW17: # KP_Minus
@@ -141,6 +153,7 @@ components:
         rotation: 270
     D17: # KP_Minus LED
         location: [-28.5, -44.92]
+        rotation: 180
     C33: # KP_Minus LED capacitor
         location: [-33.25, -44.17]
     SW1: # KP0
@@ -152,6 +165,7 @@ components:
         rotation: 270
     D1: # KP0 LED
         location: [19.0, 31.08]
+        rotation: 180
     C23: # KP0 LED capacitor
         location: [14.25, 31.83]
     SW2: # KP_Dot
@@ -163,6 +177,7 @@ components:
         rotation: 270
     D2: # KP_Dot LED
         location: [-9.5, 31.08]
+        rotation: 180
     C32: # KP_Dot LED capacitor
         location: [-14.25, 31.83]
     SW13: # KP_Plus
@@ -174,6 +189,7 @@ components:
         rotation: 270
     D13: # KP_Plus LED
         location: [-28.5, -16.42]
+        rotation: 180
     C34: # KP_Plus LED capacitor
         location: [-33.25, -15.670000000000002]
     SW6: # KP_Enter
@@ -185,6 +201,7 @@ components:
         rotation: 270
     D6: # KP_Enter LED
         location: [-28.5, 21.58]
+        rotation: 180
     C35: # KP_Enter LED capacitor
         location: [-33.25, 22.33]
     U1:

@@ -44,6 +44,7 @@ class Key:
 
         out.write(f"    D{self.index}: # {self.name} LED\n")
         out.write(f"        location: [{led_x}, {led_y}]\n")
+        out.write("        rotation: 180\n")
         out.write(f"    {self.cap}: # {self.name} LED capacitor\n")
         out.write(f"        location: [{cap_x}, {cap_y}]\n")
 
