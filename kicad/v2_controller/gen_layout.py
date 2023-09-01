@@ -36,8 +36,7 @@ class Key:
 
         out.write(f"    SW{self.index}: # {self.name}\n")
         out.write(f"        location: [{sw_x}, {sw_y}]\n")
-        out.write("        flip: True\n")
-        out.write("        rotation: 180\n")
+        out.write("        rotation: 0\n")
         out.write(f"    D{self.index + 20}: # {self.name} diode\n")
         out.write(f"        location: [{d_x}, {d_y}]\n")
         out.write("        rotation: 270\n")
@@ -47,6 +46,7 @@ class Key:
         out.write("        rotation: 180\n")
         out.write(f"    {self.cap}: # {self.name} LED capacitor\n")
         out.write(f"        location: [{cap_x}, {cap_y}]\n")
+        out.write("        rotation: 0\n")
 
 
 def main() -> None:
