@@ -2619,7 +2619,7 @@
     (property "Datasheet" "~" (at 29.21 95.25 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "LCSC Part #" "C52923" (at 29.21 95.25 0)
+    (property "LCSC Part #" "C25744" (at 29.21 95.25 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Manufacturer Part #" "" (at 29.21 95.25 0)
