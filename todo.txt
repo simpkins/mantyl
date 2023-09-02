@@ -21,11 +21,54 @@
 
 # Controller PCB
 
-  - Fix JLCPCB component offsets / rotations:
-    - rotations of ESD chips are wrong
-    - J6 header rotation is wrong
-    - IDC headers are offset slightly
-    - verify rotations of most other components (LDO, CP2102N, diodes)
+  - Re-do LEDs.
+    - Each sk6812 uses 1mA even when off
+    - Other LED driver alternatives:
+      - IS31FL3733 / IS31FL3723
+        - I2C
+        - 12x16; 1 chip supports one RGBW led per key on each half
+        - Various other matrix dimensions:
+          IS31FL3741: 39x9
+          IS31FL3743: 18x11
+          IS31FL3737 / IS31FL3731: 12x12
+      - Holtek makes some LED drivers:
+        - HT1632: 24x16 or 32x8.  4-pin SMI
+        - HT16K33: 16x8.  I2C.
+          - also supports keyscan
+      - Analog devices:
+        - MAX6955: 16x8, I2C
+          also supports keyscan but only some pins, only 32 keys
+          seems quite expensive
+        - MAX6954: 16x8, SPI
+      - AS1130: 12x11 (charlieplexed with 12 pins)
+
+    - RGBW LEDs:
+      - HL-5050RGBW-S1
+        Available cheaply from JLCPCB, but top mount.
+        Might work on flex PCB would possibly require double sided build.
+        Or perhaps attempt to manually mount sockets on back, and have some
+        sort of stand-off around LED
+
+      JLCPCB global sourcing parts:
+        - Inolux IN-P32TRRRGB
+          Also avilable from Digikey
+        - SunLED XZMDKCBDDG45S-9
+          Not in stock at JLCPCB, seems like they could order it cheaply.
+          RGB rather than RGBW
+        - Wurth Electronic 156120M173000
+      Digikey / Mouser
+        - IN-P32TRRRGB
+          Cheaper than other options below.
+          IN-S124TCRRGB is a reverse mount 1204 option
+        - Osram LTRBRASF
+          Available from Mouser, rather than JLCPCB.
+          Expensive and would require manual assembly
+        - QT Brightek QBLP677R-RGB
+          Digikey
+          Expensive and would require manual assembly
+        - Kingbright AAA3528RBGS/08-09 
+          Digikey
+          Expensive and would require manual assembly
 
 # Firmware
 
