@@ -1,0 +1,59 @@
+components:
+    # Per-component rules can be added here, matching on the component
+    # reference.  e.g.:
+    #
+    #U4:
+    #    part: C2913202
+    #    center_y: 0.635
+parts:
+    # A dictionary of LCSC part IDs to footprint orientation info.
+    C892227:
+        rotation: 270.0
+    C2913202:
+        center_y: 0.635
+footprint_rules:
+    # An ordered list of footprint name regular expressions.
+    # This is processed in order, and the first one to match is used.
+    - pattern: "_SMD:(C|D|R|LED)_([0-9][0-9][0-9][-09])_[0-9]+Metric"
+      # Adjust the footprint name for SMT resistors/capacitors/diodes
+      jlc_footprint: "{1}{2}"
+    - pattern: "_SMD:(C|D|R|LED)_([0-9]{4})_[0-9]+Metric"
+      jlc_footprint: "{1}{2}"
+    - pattern: "^Diode_SMD:D_SOD-(.*)"
+      jlc_footprint: "SOD-{1}"
+    - pattern: "^Package_TO_SOT_SMD:SOT-(23|89|143|223|353|363)"
+      rotation: 180.0
+    - pattern: "^Package_TO_SOT_SMD:SOT-666"
+      rotation: 270.0 
+    - pattern: "^Connector_IDC:IDC-Header_2x10_P2.54mm_Vertical"
+      rotation: 270.0
+      center_x: 1.27
+      center_y: 11.43
+    - pattern: "^Connector_IDC:"
+      # KiCad orients most IDC headers with the key facing left;
+      # JLCPCB orients it with the key facing down.
+      #
+      # Additionally, KiCad centers the footprints around pin 1,
+      # whereas JLCPCB centers the footprint in the center of the connector.
+      # We unfortunately cannot easily adjust the footprint center here
+      # generically for all the various connectors.  Specific cases have been
+      # handled above.
+      rotation: 270.0
+    - pattern: "^Connector_PinSocket_2.54mm:PinSocket_2x03_P2.54mm_Vertical"
+      rotation: 90.0
+      center_x: -1.27
+      center_y: 2.54
+    - pattern: "^Connector_Pin(Header|Socket)"
+      # As with the IDC headers, the rotation needs to be adjusted.
+      # The footprint center is also off for all of the through-hole parts,
+      # as KiCad centers the footprint around pin 1 for these parts.
+      rotation: 90.0
+    - pattern: "^mantyl:Kailh_socket_MX"
+      # The KiCad footprint is centered on the MX switch center.
+      # The JLCPCB footprint is centered on the switch socket, which is
+      # 0.15" higher and 0.025" to the left.  They also have the
+      # component rotated 180, so that the MX switch LED would be at the
+      # top of the switch.
+      center_x: 0.635
+      center_y: -3.81
+      rotation: 180.0
