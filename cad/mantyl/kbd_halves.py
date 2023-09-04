@@ -92,6 +92,8 @@ def right_shell_obj(
 ) -> bpy.types.Object:
     kbd_obj = gen_keyboard(kbd, name=name)
     add_feet(kbd, kbd_obj)
+    return kbd_obj
+
     add_screw_holes(kbd, kbd_obj)
 
     apply_cable_hole(
