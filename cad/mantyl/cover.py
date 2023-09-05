@@ -255,7 +255,7 @@ def ensure_edge_loop_direction(loop: List[cad.Point2D]) -> None:
         prev2 = loop[idx - 2]
         l0 = cad.Line2D(prev2, prev)
         l1 = cad.Line2D(prev, p)
-        angle_sum += l0.angle_360(l1)
+        angle_sum += l0.angle_full(l1)
 
     # angle_sum should be 360 degrees, either positive or negative
     # depending on whether our loop is clockwise or counterclockwise.

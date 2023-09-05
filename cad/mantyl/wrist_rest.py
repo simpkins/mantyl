@@ -500,7 +500,7 @@ class PadHolder:
         self.mesh.rotate(0.0, 0.0, 4.0)
         # Rotate around the X and Y axes to align with our desired top plane
         r = self.top_plane.rotation_off_z()
-        self.mesh.rotate(r.x, r.y, 0.0)
+        self.mesh.rotate_radians(r.x, r.y, 0.0)
 
         # Translate to the desired location
         x_offset = 51
