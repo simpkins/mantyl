@@ -15,8 +15,8 @@ from typing import List, Tuple
 class CoverClip:
     def __init__(self) -> None:
         # The thickness of the bottom cover
-        self.floor_thickness = 3.175
-        self.floor_tolerance = 0.4
+        self.floor_thickness = 3.0
+        self.floor_tolerance = 0.1
 
         # The gap between the walls and the floor
         self.floor_wall_gap = 2
@@ -27,7 +27,7 @@ class CoverClip:
         # The height of the clip, above the floor
         self.clip_height = 25
         # The length that the clip handle extends below the floor
-        self.handle_len = 3.5
+        self.handle_len = 2.05
         # The gap between the front and back sides of the clip
         self.clip_gap = 4.0
 
@@ -37,8 +37,8 @@ class CoverClip:
 
         # The gap between the handle and the surrounding floor (on each side)
         self.handle_gap = 3.0
-        self.base_inner_thickness = 3.0
-        self.base_z_thickness = 3.0
+        self.base_inner_thickness = 2.0
+        self.base_z_thickness = 2.0
 
         # How much the clip extends over the floor
         self.base_lip_x = 4
@@ -56,14 +56,17 @@ class CoverClip:
         # The very back X coordinate of where the clip attaches to the base
         # This will be computed later, in _gen_clip()
         self.clip_back_x = 0.0
+        self.clip_back_xmin = 0.0
 
-        self.protrusion_ymin = self.floor_thickness * -0.5
+        self.protrusion_ymin = (
+            self.floor_thickness + self.floor_tolerance
+        ) * -0.5
 
     def gen(self, name: str = "clip") -> bpy.types.Object:
         clip = self._gen_clip()
         base = self._gen_base(name)
         blender_util.union(base, clip, dissolve_angle=0.1)
-        return base
+        return clip
 
     def _gen_base(self, name: str) -> bpy.types.Object:
         w = self.handle_gap + self.base_inner_thickness + self.base_lip_x
@@ -79,14 +82,16 @@ class CoverClip:
         ymin = -ymax
 
         xmin = self.floor_wall_gap
-        xmax = self.clip_back_x + self.base_inner_thickness + self.base_lip_y
+        xmax = (
+            self.clip_back_xmin + self.base_inner_thickness + self.base_lip_y
+        )
         base = blender_util.range_cube(
             (xmin, xmax), (ymin, ymax), (zmin, zmax), name=name
         )
         floor = self._gen_floor()
         blender_util.difference(base, floor)
 
-        groove_xmax = self.clip_back_x - 0.01
+        groove_xmax = self.clip_back_xmin - 0.01
         groove_zmax = (0.5 * self.clip_width) + self.handle_gap
         groove_zmin = -groove_zmax
         groove = blender_util.range_cube(
@@ -110,7 +115,7 @@ class CoverClip:
             (xmin, 1000), (ymin, ymax), (-1000, 1000)
         )
 
-        c_xmax = self.clip_back_x + self.base_inner_thickness
+        c_xmax = self.clip_back_xmin + self.base_inner_thickness
         c_zmax = (
             (self.clip_width * 0.5)
             + self.handle_gap
@@ -150,32 +155,19 @@ class CoverClip:
 
         blender_util.union(obj, u_outer_c)
 
-        # Lower radius
-        lower_outer_r = self.total_base_thickness
-        clip_back_xmax = 2 * clip_outer_r
-        clip_back_xmin = clip_back_xmax - self.clip_thickness
-        l_outer_c = blender_util.cylinder(
-            r=lower_outer_r, h=self.clip_width, rotation=90.0
-        )
-
-        base_ymin = -0.5 * self.total_base_thickness
-        self.clip_back_x = clip_back_xmin + lower_outer_r
-        with blender_util.TransformContext(l_outer_c) as ctx:
-            ctx.rotate(180, "Z")
-            ctx.translate(self.clip_back_x, lower_outer_r + base_ymin, 0)
-
         # Back wall of clip
-        clip_back_ymin = lower_outer_r + base_ymin - 0.1
+        clip_back_xmax = 2 * clip_outer_r
+        self.clip_back_xmin = clip_back_xmax - self.clip_thickness
+        clip_back_ymin = (self.total_base_thickness * 0.5) - 0.1
         back = blender_util.range_cube(
-            (clip_back_xmin, clip_back_xmax),
+            (self.clip_back_xmin, clip_back_xmax),
             (clip_back_ymin, ymax + 0.1),
             (self.clip_width * -0.5, self.clip_width * 0.5),
         )
         blender_util.union(obj, back)
-        blender_util.union(obj, l_outer_c)
 
         # Upper radius of back wall
-        lower_inner_r = lower_outer_r * 0.75
+        lower_inner_r = self.total_base_thickness * 0.5
         block = blender_util.range_cube(
             (clip_back_xmax - 0.1, clip_back_xmax + lower_inner_r - 0.1),
             (clip_back_ymin - 0.1, clip_back_ymin + lower_inner_r - 0.1),

@@ -21,7 +21,7 @@ import bpy
 
 
 def test_full() -> None:
-    show_halves = False
+    show_halves = True
     show_numpad = True
     show_keycaps = False
     show_controller = True
@@ -85,8 +85,8 @@ def test_np() -> None:
 def test() -> None:
     # soc.numpad_pcb()
     # test_full()
-    test_np()
-    # cover.cover_clip()
+    # test_np()
+    cover.cover_clip()
 
     # kbd_halves.right_full()
     # kbd_halves.right_shell()
