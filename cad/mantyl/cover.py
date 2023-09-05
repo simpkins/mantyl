@@ -15,37 +15,37 @@ from typing import Dict, List, Tuple
 
 
 class CoverClip:
+    # The thickness of the bottom cover
+    floor_thickness = 3.0
+    floor_tolerance = 0.1
+
+    # The gap between the walls and the floor
+    floor_wall_gap = 2
+
+    # The thickness of the "spring" handle
+    clip_thickness = 2.0
+    clip_width = 10
+    # The height of the clip, above the floor
+    clip_height = 25
+    # The length that the clip handle extends below the floor
+    handle_len = 2.05
+    # The gap between the front and back sides of the clip
+    clip_gap = 4.0
+
+    # The dimensions of the triangular protrusion that clips into the wall
+    clip_protrusion = 4.0
+    protrusion_h = 8.0
+
+    # The gap between the handle and the surrounding floor (on each side)
+    handle_gap = 3.0
+    base_inner_thickness = 2.0
+    base_z_thickness = 2.0
+
+    # How much the clip extends over the floor
+    base_lip_x = 4
+    base_lip_y = 4
+
     def __init__(self) -> None:
-        # The thickness of the bottom cover
-        self.floor_thickness = 3.0
-        self.floor_tolerance = 0.1
-
-        # The gap between the walls and the floor
-        self.floor_wall_gap = 2
-
-        # The thickness of the "spring" handle
-        self.clip_thickness = 2.0
-        self.clip_width = 10
-        # The height of the clip, above the floor
-        self.clip_height = 25
-        # The length that the clip handle extends below the floor
-        self.handle_len = 2.05
-        # The gap between the front and back sides of the clip
-        self.clip_gap = 4.0
-
-        # The dimensions of the triangular protrusion that clips into the wall
-        self.clip_protrusion = 4.0
-        self.protrusion_h = 8.0
-
-        # The gap between the handle and the surrounding floor (on each side)
-        self.handle_gap = 3.0
-        self.base_inner_thickness = 2.0
-        self.base_z_thickness = 2.0
-
-        # How much the clip extends over the floor
-        self.base_lip_x = 4
-        self.base_lip_y = 4
-
         self.total_base_thickness: float = (
             self.floor_thickness
             + self.floor_tolerance
@@ -420,6 +420,55 @@ def find_inner_wall_edge_loop(bm: bmesh.types.BMesh) -> List[cad.Point2D]:
 
 def cover_clip() -> bpy.types.Object:
     return CoverClip().gen()
+
+
+def add_stop(
+    obj: bpy.types.Object,
+    length: float,
+    p1: cad.Point,
+    p2: cad.Point,
+    x: float = 0.0,
+) -> None:
+    """
+    Add a block to an object to prevent the cover from being pushed upwards
+    into the object interior
+    """
+    ground_clearance = 2.0
+    cover_height = 3.0
+
+    bottom = ground_clearance + cover_height
+    top = bottom + cover_height
+
+    stop = blender_util.range_cube(
+        (length * -0.5, length * 0.5), (-0.1, 4.0), (bottom, top)
+    )
+    blender_util.apply_to_wall(stop, p1, p2, x=x)
+    blender_util.union(obj, stop)
+
+
+def add_clip_hole(
+    obj: bpy.types.Object,
+    p1: cad.Point,
+    p2: cad.Point,
+    x: float = 0.0,
+) -> None:
+    """
+    Add a slot to an object wall for the cover to clip into.
+    """
+    ground_clearance = 2.0
+    cover_height = 3.0
+
+    bottom = ground_clearance
+    top = bottom + cover_height
+
+    length = CoverClip.clip_width + 2.0
+    slot_depth = 2.5
+
+    slot = blender_util.range_cube(
+        (length * -0.5, length * 0.5), (-slot_depth, 0.1), (bottom, top)
+    )
+    blender_util.apply_to_wall(slot, p1, p2, x=x)
+    blender_util.difference(obj, slot)
 
 
 def gen_cover(

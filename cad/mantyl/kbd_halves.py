@@ -16,6 +16,7 @@ from .keyboard import Grid2D, Keyboard, KeyHole, gen_keyboard
 from .key_socket_holder import SocketHolder, SocketHolderBuilder, SocketType
 from .numpad import NumpadSection
 from .screw_holes import add_screw_holes
+from . import cover
 from . import oled_holder
 from . import numpad
 from . import sx1509_holder
@@ -93,12 +94,44 @@ def right_shell_obj(
     kbd_obj = gen_keyboard(kbd, name=name)
     add_feet(kbd, kbd_obj)
 
+    add_bottom_cover_parts(kbd, kbd_obj)
+
     add_screw_holes(kbd, kbd_obj)
 
-    apply_cable_hole(
-        kbd_obj, kbd.left_wall[-5].in3, kbd.left_wall[-2].in3, x=5.0, z=20.0
-    )
+    # apply_cable_hole(
+    #    kbd_obj, kbd.left_wall[-5].in3, kbd.left_wall[-2].in3, x=5.0, z=20.0
+    # )
     return kbd_obj
+
+
+def add_bottom_cover_parts(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
+    # Add some blocks to prevent the cover from being pushed upward
+    # into the case
+    def add_stop(
+        length: float, p1: cad.Point, p2: cad.Point, x: float = 0.0
+    ) -> None:
+        cover.add_stop(kbd_obj, length, p1, p2, x=x)
+
+    add_stop(30, kbd.left_wall[-5].in3, kbd.left_wall[-1].in3, x=5)
+    add_stop(50, kbd.right_wall[0].in3, kbd.right_wall[-1].in3)
+
+    front_x_off = 2.75
+    add_stop(10, kbd.fl.in3, kbd.fr.in3, x=front_x_off + 12)
+    add_stop(10, kbd.fl.in3, kbd.fr.in3, x=front_x_off - 12)
+
+    add_stop(10, kbd.br.in3, kbd.bl.in3, x=20)
+    add_stop(10, kbd.br.in3, kbd.bl.in3, x=-20)
+
+    add_stop(15, kbd.thumb_bl.in2.point, kbd.thumb_br.in2.point)
+    add_stop(15, kbd.thumb_tr.in2.point, kbd.thumb_tl.in2.point)
+
+    # Add some holes for the cover clip to clip into
+    def add_clip_hole(p1: cad.Point, p2: cad.Point, x: float = 0.0) -> None:
+        cover.add_clip_hole(kbd_obj, p1, p2, x=x)
+
+    add_clip_hole(kbd.fl.in3, kbd.fr.in3, x=front_x_off)
+    add_clip_hole(kbd.br.in3, kbd.bl.in3)
+    add_clip_hole(kbd.thumb_tl.in2, kbd.thumb_bl.in2)
 
 
 def apply_cable_hole(
@@ -126,9 +159,7 @@ def apply_cable_hole(
         ctx.translate(0, 0, Keyboard.wall_thickness * 0.5)
         ctx.rotate(90, "X")
         ctx.translate(0, 0, bottom)
-    hole3 = blender_util.range_cube(
-        (-r, r), (-h, 1.0), (bottom, top)
-    )
+    hole3 = blender_util.range_cube((-r, r), (-h, 1.0), (bottom, top))
     blender_util.union(hole, hole2)
     blender_util.union(hole, hole3)
     blender_util.apply_to_wall(hole, p1, p2, x, z)
