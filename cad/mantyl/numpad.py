@@ -645,15 +645,37 @@ class NumpadSection:
         return obj
 
     def _add_feet(self, obj: bpy.types.Object) -> None:
-        br = self.perim_floor[9][1]
-        add_foot(obj, br.x - 0.4, br.y - 0.5, -145.0, 2.0)
-        bl = self.perim_floor[12][1]
-        add_foot(obj, bl.x + 0.4, bl.y - 0.5, -35.0, 2.0)
+        # Back right
+        add_foot(
+            obj,
+            self.perim_floor[9][1],
+            self.perim_floor[10][1],
+            self.perim_floor[8][1],
+        )
 
-        fr = self.perim_floor[1][1]
-        add_foot(obj, fr.x + 1, fr.y - 1, 140.0, 0.0)
-        fl = self.perim_floor[-2][1]
-        add_foot(obj, fl.x - 1, fl.y - 1, 40.0, 0.0)
+        # Back left
+        add_foot(
+            obj,
+            self.perim_floor[12][1],
+            self.perim_floor[13][1],
+            self.perim_floor[11][1],
+        )
+
+        # Front left
+        add_foot(
+            obj,
+            self.perim_floor[1][1],
+            self.perim_floor[2][1],
+            self.perim_floor[0][1],
+        )
+
+        # Front right
+        add_foot(
+            obj,
+            self.perim_floor[-2][1],
+            self.perim_floor[-1][1],
+            self.perim_floor[-3][1],
+        )
 
     def gen_object(self, name: str = "numpad") -> bpy.types.Object:
         obj = self.gen_object_simple(name=name)

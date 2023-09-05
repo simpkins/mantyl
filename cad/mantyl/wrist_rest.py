@@ -323,20 +323,16 @@ class WristRestSimple:
 
     def add_feet(self, obj: bpy.types.Object) -> None:
         add_foot(
-            obj, self.in_bottom_bl.x - 1.5, self.in_bottom_bl.y - 1.5, 60, 0
+            obj, self.in_bottom_bl, self.in_bottom_br, self.thumb_in_bottom_l
         )
-        add_foot(
-            obj, self.in_bottom_br.x + 1.0, self.in_bottom_br.y - 1.0, 135, 2
-        )
-        add_foot(
-            obj, self.in_bottom_tr.x + 1.0, self.in_bottom_tr.y + 1.0, 225, 3
-        )
+        add_foot(obj, self.in_bottom_br, self.in_bottom_tr, self.in_bottom_bl)
+        add_foot(obj, self.in_bottom_tr, self.in_bottom_tl, self.in_bottom_br)
         add_foot(
             obj,
-            self.thumb_in_bottom_tl.x - 1.5,
-            self.thumb_in_bottom_tl.y + 2.0,
-            -65,
-            2.5,
+            self.thumb_in_bottom_tl,
+            self.thumb_in_bottom_l,
+            self.in_bottom_tr,
+            wall_recess=0.9,
         )
 
     def add_screw_holes(self, obj: bpy.types.Object) -> None:
@@ -721,20 +717,37 @@ class PadHolder:
         self.add_screw_holes(obj)
 
     def add_feet(self, obj: bpy.types.Object) -> None:
-        add_foot(obj, self.left.p8.x, self.left.p8.y, 320, 0)
+        add_foot(
+            obj,
+            self.left.p8,
+            self.segments[self.left_idx - 1].p8,
+            self.segments[self.left_idx + 1].p8,
+        )
 
         num_segments = len(self.segments)
         bl_idx = int(num_segments * 0.63)
-        bl = self.segments[bl_idx]
-        add_foot(obj, bl.p8.x - 2.0, bl.p8.y - 2.0, 45, 0)
+        add_foot(
+            obj,
+            self.segments[bl_idx].p8,
+            self.segments[bl_idx - 1].p8,
+            self.segments[bl_idx + 1].p8,
+        )
 
         br_idx = int(num_segments * 0.42)
-        br = self.segments[br_idx]
-        add_foot(obj, br.p8.x + 0.2, br.p8.y - 3, 120, 0)
+        add_foot(
+            obj,
+            self.segments[br_idx].p8,
+            self.segments[br_idx - 1].p8,
+            self.segments[br_idx + 1].p8,
+        )
 
         tr_idx = int(num_segments * 0.19)
-        tr = self.segments[tr_idx]
-        add_foot(obj, tr.p8.x + 1.30, tr.p8.y + 1.30, 215, 0)
+        add_foot(
+            obj,
+            self.segments[tr_idx].p8,
+            self.segments[tr_idx - 1].p8,
+            self.segments[tr_idx + 1].p8,
+        )
 
     def add_screw_holes(self, obj: bpy.types.Object) -> None:
         def add_screw_hole(x: float, z: float) -> None:

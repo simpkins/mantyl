@@ -23,204 +23,6 @@ class Foot:
     base_h = 3.0
     top_h = 15.0
 
-    @classmethod
-    def foot_mesh_pos(cls, phase: float) -> cad.Mesh:
-        mesh = cad.Mesh()
-        l_orig = mesh.add_point(cad.Point(0.0, 0.0, 0.0))
-        top = mesh.add_point(cad.Point(-cls.outer_r, 0.0, cls.top_h))
-
-        lower_points: List[cad.MeshPoint] = []
-        upper_points: List[cad.MeshPoint] = []
-
-        fn = 24
-        for n in range(fn):
-            angle = ((360.0 / fn) * n) + phase
-            rad = math.radians(angle)
-
-            x = math.sin(rad) * cls.outer_r
-            y = math.cos(rad) * cls.outer_r
-
-            pl = mesh.add_point(cad.Point(x, y, 0.0))
-            pu = mesh.add_point(cad.Point(x, y, cls.base_h))
-            lower_points.append(pl)
-            upper_points.append(pu)
-
-        for idx in range(len(lower_points)):
-            if idx + 1 == len(lower_points):
-                l_next = lower_points[0]
-                u_next = upper_points[0]
-            else:
-                l_next = lower_points[idx + 1]
-                u_next = upper_points[idx + 1]
-
-            mesh.add_tri(l_orig, l_next, lower_points[idx])
-            mesh.add_tri(top, upper_points[idx], u_next)
-            mesh.add_quad(u_next, upper_points[idx], lower_points[idx], l_next)
-
-        return mesh
-
-    @classmethod
-    def foot_mesh_neg(cls, phase: float) -> cad.Mesh:
-        bottom_h = -1.0
-
-        mesh = cad.Mesh()
-        l_orig = mesh.add_point(cad.Point(0.0, 0.0, bottom_h))
-        u_orig = mesh.add_point(cad.Point(0.0, 0.0, cls.recess_h))
-
-        lower_points: List[cad.MeshPoint] = []
-        upper_points: List[cad.MeshPoint] = []
-
-        fn = 24
-        for n in range(fn):
-            angle = ((360.0 / fn) * n) + phase
-            rad = math.radians(angle)
-
-            x = math.sin(rad) * cls.inner_r
-            y = math.cos(rad) * cls.inner_r
-
-            pl = mesh.add_point(cad.Point(x, y, bottom_h))
-            pu = mesh.add_point(cad.Point(x, y, cls.recess_h))
-            lower_points.append(pl)
-            upper_points.append(pu)
-
-        for idx in range(len(lower_points)):
-            if idx + 1 == len(lower_points):
-                l_next = lower_points[0]
-                u_next = upper_points[0]
-            else:
-                l_next = lower_points[idx + 1]
-                u_next = upper_points[idx + 1]
-
-            mesh.add_tri(l_orig, l_next, lower_points[idx])
-            mesh.add_tri(u_orig, upper_points[idx], u_next)
-            mesh.add_quad(u_next, upper_points[idx], lower_points[idx], l_next)
-
-        return mesh
-
-
-def foot_meshes(
-    x: float, y: float, angle: float, phase: float
-) -> Tuple[cad.Mesh, cad.Mesh]:
-    neg_mesh = Foot.foot_mesh_neg(phase)
-    pos_mesh = Foot.foot_mesh_pos(phase)
-    pos_mesh.translate(Foot.outer_r, 0.0, 0.0)
-    neg_mesh.translate(Foot.outer_r, 0.0, 0.0)
-    pos_mesh.rotate(0.0, 0.0, angle)
-    neg_mesh.rotate(0.0, 0.0, angle)
-    pos_mesh.translate(x, y, 0.0)
-    neg_mesh.translate(x, y, 0.0)
-
-    return pos_mesh, neg_mesh
-
-
-def gen_foot(
-    name: str, x: float, y: float, angle: float, phase: float
-) -> Tuple[bpy.types.Object, bpy.types.Object]:
-    pos_mesh, neg_mesh = foot_meshes(x, y, angle, phase)
-
-    neg = new_mesh_obj(f"{name}_neg", neg_mesh)
-    foot = new_mesh_obj(name, pos_mesh)
-    return foot, neg
-
-
-def add_foot(
-    kbd_obj: bpy.types.Object,
-    x: float,
-    y: float,
-    angle: float,
-    phase: float = 0.0,
-    dbg: bool = False,
-) -> None:
-    """
-    Add a foot to the keyboard object.
-
-    (x, y) control the location.  The top of the foot will be at this location.
-    angle controls the direction the foot is pointing.
-
-    The phase parameter allows slightly rotating the angles at which the
-    cylindrical vertices of the foot are placed.  This doesn't change the
-    general shape of the foot or the direction it is pointing, but simply
-    allows rotating the location of the vertices slightly.  This helps tweak
-    the vertices to prevent blender from generating intersecting faces when
-    performing the boolean union and difference, which can happen if the
-    intersection points lie close to an existing vertex.  I set this parameter
-    experimentally for each foot: Blender's 3D-Print tool can highlight
-    intersecting edges.  When any were present on a foot, I tweaked its phase
-    until blender no longer generates intersecting geometry on that foot.
-    (Disabling the bevel on the interior corners would also have probably
-    helped eliminate this bad geometry, but using this phase parameter allows
-    keeping the bevel.)
-    """
-    pos, neg = gen_foot("foot", x, y, angle, phase)
-    union(kbd_obj, pos)
-    difference(kbd_obj, neg, apply_mod=not dbg)
-
-
-def add_foot_v2(
-    kbd_obj: bpy.types.Object,
-    center: cad.MeshPoint,
-    left: cad.MeshPoint,
-    right: cad.MeshPoint,
-    wall_recess=2.0,
-) -> None:
-    foot = FootV2(
-        center.point, left.point, right.point, wall_recess=wall_recess
-    )
-    union(kbd_obj, foot.pos)
-    difference(kbd_obj, foot.neg)
-
-
-def add_feet(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
-    # Back right foot
-    add_foot_v2(
-        kbd_obj,
-        kbd.br.in3,
-        kbd.back_wall[1].in3,
-        kbd.right_wall[-2].in3,
-        wall_recess=2.1,
-    )
-
-    # Back left foot
-    add_foot_v2(
-        kbd_obj,
-        kbd.bl.in3,
-        kbd.left_wall[0].in3,
-        kbd.back_wall[-2].in3,
-    )
-
-    # Front right foot
-    add_foot_v2(
-        kbd_obj,
-        kbd.fr.in3,
-        kbd.right_wall[0].in3,
-        kbd.front_wall[-2].in3,
-        wall_recess=2.1,
-    )
-
-    # Thumb bottom left foot
-    add_foot_v2(
-        kbd_obj,
-        kbd.thumb_wall[3].in2,
-        kbd.thumb_wall[2].in2,
-        kbd.thumb_wall[4].in2,
-    )
-
-    # Thumb top left foot
-    add_foot_v2(
-        kbd_obj,
-        kbd.thumb_wall[8].in2,
-        kbd.thumb_wall[7].in2,
-        kbd.thumb_wall[9].in2,
-    )
-
-
-class FootV2:
-    inner_r = 6.5
-    outer_r: float = inner_r + 2.0
-    recess_h = 1.75
-    base_h = 3.0
-    top_h = 15.0
-
     fn = 48
     num_layers = 1
 
@@ -231,9 +33,9 @@ class FootV2:
         wall_right: cad.Point,
         wall_recess: float = 0.0,
     ) -> None:
-        assert wall_center.z == 0
-        assert wall_left.z == 0
-        assert wall_right.z == 0
+        assert abs(wall_center.z) < 1e-14, f"bad Z value: {wall_left.z}"
+        assert abs(wall_left.z) < 1e-14, f"bad Z value: {wall_left.z}"
+        assert abs(wall_right.z) < 1e-14, f"bad Z value: {wall_left.z}"
 
         self.mesh = cad.Mesh()
 
@@ -387,12 +189,70 @@ class FootV2:
         return mesh_points
 
 
+def add_foot(
+    kbd_obj: bpy.types.Object,
+    center: cad.MeshPoint,
+    left: cad.MeshPoint,
+    right: cad.MeshPoint,
+    wall_recess=2.0,
+) -> None:
+    """Add a foot to an object.
+
+    The center, left, and right parameters specify points on the wall where
+    the foot should be placed.  Center is the point on the wall where the foot
+    should be centered, and left and right should be points along the walls to
+    the left and right of the foot.
+    """
+    foot = Foot(center.point, left.point, right.point, wall_recess=wall_recess)
+    union(kbd_obj, foot.pos)
+    difference(kbd_obj, foot.neg)
+
+
+def add_feet(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
+    # Back right foot
+    add_foot(
+        kbd_obj,
+        kbd.br.in3,
+        kbd.back_wall[1].in3,
+        kbd.right_wall[-2].in3,
+        wall_recess=2.1,
+    )
+
+    # Back left foot
+    add_foot(kbd_obj, kbd.bl.in3, kbd.left_wall[0].in3, kbd.back_wall[-2].in3)
+
+    # Front right foot
+    add_foot(
+        kbd_obj,
+        kbd.fr.in3,
+        kbd.right_wall[0].in3,
+        kbd.front_wall[-2].in3,
+        wall_recess=2.1,
+    )
+
+    # Thumb bottom left foot
+    add_foot(
+        kbd_obj,
+        kbd.thumb_wall[3].in2,
+        kbd.thumb_wall[2].in2,
+        kbd.thumb_wall[4].in2,
+    )
+
+    # Thumb top left foot
+    add_foot(
+        kbd_obj,
+        kbd.thumb_wall[8].in2,
+        kbd.thumb_wall[7].in2,
+        kbd.thumb_wall[9].in2,
+    )
+
+
 def test() -> bpy.types.Object:
     wall_center = cad.Point(0, 0, 0)
     wall_left = cad.Point(30, 0, 0)
     wall_right = cad.Point(0, 30, 0)
 
-    foot = FootV2(wall_center, wall_left, wall_right)
+    foot = Foot(wall_center, wall_left, wall_right)
     obj = new_mesh_obj(f"foot", foot.mesh)
     neg_obj = new_mesh_obj(f"foot.neg", foot.neg_mesh)
     blender_util.difference(obj, neg_obj)
