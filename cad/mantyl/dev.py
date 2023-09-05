@@ -86,10 +86,11 @@ def test() -> None:
     # soc.numpad_pcb()
     # test_full()
     # test_np()
-    cover.cover_clip()
+    # cover.cover_clip()
 
     # kbd_halves.right_full()
-    # kbd_halves.right_shell()
+    shell = kbd_halves.right_shell_simple()
+    cover.gen_cover(shell)
     # kbd_halves.right_socket_underlay()
     # kbd_halves.right_thumb_underlay()
 
