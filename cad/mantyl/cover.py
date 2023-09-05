@@ -235,16 +235,27 @@ def is_on_ground(face: bmesh.types.BMFace) -> bool:
     return True
 
 
-def gen_cover_impl(bm: bmesh.types.BMesh) -> bpy.types.Object:
+def gen_cover_impl(
+    bm: bmesh.types.BMesh, clearance: float, height: float
+) -> bpy.types.Object:
     loop = find_inner_wall_edge_loop(bm)
     ensure_edge_loop_direction(loop)
-    shrunk = shrink_edge_loop(loop, clearance=1.0)
+    shrunk = shrink_edge_loop(loop, clearance=clearance)
 
     mesh = cad.Mesh()
-    mesh_points = [mesh.add_xyz(p.x, p.y, 0.0) for p in shrunk]
-    mesh.faces.append([p.index for p in mesh_points])
+    bottom_points = [mesh.add_xyz(p.x, p.y, 0.0) for p in shrunk]
+    top_points = [mesh.add_xyz(p.x, p.y, height) for p in shrunk]
+    mesh.faces.append([p.index for p in reversed(bottom_points)])
+    mesh.faces.append([p.index for p in top_points])
+    for idx in range(len(bottom_points)):
+        mesh.add_quad(
+            bottom_points[idx],
+            top_points[idx],
+            top_points[idx - 1],
+            bottom_points[idx - 1],
+        )
     blend_mesh = blender_util.blender_mesh(f"cover_mesh", mesh)
-    obj = blender_util.new_mesh_obj("cover", blend_mesh)
+    return blender_util.new_mesh_obj("cover", blend_mesh)
 
 
 def ensure_edge_loop_direction(loop: List[cad.Point2D]) -> None:
@@ -275,25 +286,57 @@ def shrink_edge_loop(
         with_clearance = edge.shifted_along_normal(clearance)
         edges.append(with_clearance)
 
-    # Compute where the newly shifted edges intersect.
-    #
-    # TODO: For concave corners, if the clearance is large this can cause
-    # some edges to disappear entirely.  We need to handle this case
-    # properly, rather than letting some edges end up backwards when the
-    # clearance is large.
-    points: List[cad.Point2D] = []
-    for idx, e in enumerate(edges):
-        prev = edges[idx - 1]
-        isect = e.intersect(prev)
-        if isect is None:
-            # e and prev are parallel.  In this case we just want to use the
-            # starting point from e, which is already shifted along the shared
-            # normal by the clearance.
-            print(f"flat: {idx}")
-            isect = e.p0
-        else:
-            print(f"non-flat: {idx}")
-        points.append(isect)
+    # Now compute the new intersection points for the edges.
+    # We may have to repeat this process if it initially produces non-manifold
+    # results.
+    while True:
+        # Compute where the newly shifted edges intersect.
+        points: List[cad.Point2D] = []
+        for idx, e in enumerate(edges):
+            next_edge = edges[(idx + 1) % len(edges)]
+            isect = e.intersect(next_edge)
+            if isect is None:
+                # e and next_edge are parallel.  In this case we just want to use
+                # the ending point from e, which is already shifted along the
+                # shared normal by the clearance.
+                isect = e.p1
+            points.append(isect)
+
+        # By shifting the edges inwards, it is possible that we have now created
+        # non-manifold geometry, where some corners poked through other edges.
+        # This can happen on interior beveled corners, if the beveled edges shrunk
+        # to nothing and need to be removed entirely.
+        #
+        # Walk through the edges and remove ones that shrunk to a negative size.
+        remaining_edges: List[Line2D] = []
+        for idx, orig_edge in enumerate(edges):
+            new_edge = cad.Line2D(points[idx - 1], points[idx])
+            if orig_edge.p0.x == orig_edge.p1.x:
+                orig_cmp = (orig_edge.p0.y, orig_edge.p1.y)
+                new_cmp = (new_edge.p0.y, new_edge.p1.y)
+            else:
+                orig_cmp = (orig_edge.p0.x, orig_edge.p1.x)
+                new_cmp = (new_edge.p0.x, new_edge.p1.x)
+
+            shrunk_to_zero = False
+            if orig_cmp[0] < orig_cmp[1]:
+                if new_cmp[0] >= new_cmp[1]:
+                    shrunk_to_zero = True
+            else:
+                if new_cmp[0] <= new_cmp[1]:
+                    shrunk_to_zero = True
+
+            if not shrunk_to_zero:
+                remaining_edges.append(orig_edge)
+
+        if len(remaining_edges) != len(edges):
+            # Some edges had to be removed.
+            # Repeat the loop with these edges removed
+            edges = remaining_edges
+            continue
+
+        # We are all done if no edges were removed
+        break
 
     return points
 
@@ -379,10 +422,34 @@ def cover_clip() -> bpy.types.Object:
     return CoverClip().gen()
 
 
-def gen_cover(obj: bpy.types.Object) -> bpy.types.Object:
+def gen_cover(
+    obj: bpy.types.Object,
+    clearance: float = 1.0,
+    height: float = 3.0,
+    ground_clearance: float = 2.0,
+) -> bpy.types.Object:
+    """
+    Generate a bottom cover for the specified object.
+
+    The object should have a perimeter of walls that touch the ground plane
+    (z == 0).  The interior of these walls will be detected and a bottom cover
+    will be produced.
+
+    - clearance specifies the desired XY clearance between the walls and the
+      cover.
+    - height specifies the height of the cover
+    - ground_clearance specifies how far off the ground the cover mesh should
+      be raised.
+    """
     bm = bmesh.new()
     bm.from_mesh(obj.data)
     try:
-        gen_cover_impl(bm)
+        cover = gen_cover_impl(bm, clearance=clearance, height=height)
     finally:
         bm.free()
+
+    # Raise the cover off the ground slightly
+    with blender_util.TransformContext(cover) as ctx:
+        ctx.translate(0, 0, ground_clearance)
+
+    return cover

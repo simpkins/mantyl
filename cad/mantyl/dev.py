@@ -89,7 +89,7 @@ def test() -> None:
     # cover.cover_clip()
 
     # kbd_halves.right_full()
-    shell = kbd_halves.right_shell_simple()
+    shell = kbd_halves.right_shell()
     cover.gen_cover(shell)
     # kbd_halves.right_socket_underlay()
     # kbd_halves.right_thumb_underlay()
