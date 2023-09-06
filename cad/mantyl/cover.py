@@ -33,7 +33,7 @@ class CoverClip:
     clip_gap = 4.0
 
     # The dimensions of the triangular protrusion that clips into the wall
-    clip_protrusion = 4.0
+    clip_protrusion = 3.0
     protrusion_h = 8.0
 
     # The gap between the handle and the surrounding floor (on each side)
@@ -428,22 +428,75 @@ def add_stop(
     p1: cad.Point,
     p2: cad.Point,
     x: float = 0.0,
+    ground_clearance: float = 2.0,
+    cover_height: float = 3.0,
 ) -> None:
     """
     Add a block to an object to prevent the cover from being pushed upwards
     into the object interior
     """
-    ground_clearance = 2.0
-    cover_height = 3.0
-
     bottom = ground_clearance + cover_height
     top = bottom + cover_height
 
     stop = blender_util.range_cube(
         (length * -0.5, length * 0.5), (-0.1, 4.0), (bottom, top)
     )
-    blender_util.apply_to_wall(stop, p1, p2, x=x)
+    blender_util.apply_to_wall(stop, p2, p1, x=-x)
     blender_util.union(obj, stop)
+
+
+def generate_clip_hole(
+    clearance: float = 1.0, ground_clearance: float = 2.0
+) -> bpy.types.Object:
+    """
+    Add a slot to an object wall for the cover to clip into.
+    """
+    tolerance = 0.2
+    length = CoverClip.clip_width + 2.0
+
+    bottom_z = ground_clearance - tolerance
+    mid_z = bottom_z + 0.4
+    top_z = ground_clearance + CoverClip.protrusion_h + tolerance
+
+    front_y = clearance
+    back_y = front_y - (CoverClip.clip_protrusion + tolerance)
+
+    mesh = cad.Mesh()
+    bottom = []
+    mid = []
+    top = []
+
+    # Generate the mesh points, to match the clip protrusion
+    mx = length * -0.5
+    my = back_y
+    bottom.append(mesh.add_xyz(mx, my, bottom_z))
+    mid.append(mesh.add_xyz(mx, my, mid_z))
+    top.append(mesh.add_xyz(mx, front_y, top_z))
+
+    mx = length * 0.5
+    bottom.append(mesh.add_xyz(mx, my, bottom_z))
+    mid.append(mesh.add_xyz(mx, my, mid_z))
+    top.append(mesh.add_xyz(mx, front_y, top_z))
+
+    my = front_y + 0.1
+    bottom.append(mesh.add_xyz(mx, my, bottom_z))
+    mid.append(mesh.add_xyz(mx, my, mid_z))
+    top.append(mesh.add_xyz(mx, my, top_z))
+
+    mx = length * -0.5
+    bottom.append(mesh.add_xyz(mx, my, bottom_z))
+    mid.append(mesh.add_xyz(mx, my, mid_z))
+    top.append(mesh.add_xyz(mx, my, top_z))
+
+    # Generate the mesh faces
+    mesh.add_quad(bottom[0], bottom[1], bottom[2], bottom[3])
+    mesh.add_quad(top[3], top[2], top[1], top[0])
+    for idx in range(4):
+        mesh.add_quad(bottom[idx], bottom[idx - 1], mid[idx - 1], mid[idx])
+        mesh.add_quad(mid[idx], mid[idx - 1], top[idx - 1], top[idx])
+
+    bm = blender_util.blender_mesh(f"slot_mesh", mesh)
+    return blender_util.new_mesh_obj("slot", bm)
 
 
 def add_clip_hole(
@@ -451,23 +504,17 @@ def add_clip_hole(
     p1: cad.Point,
     p2: cad.Point,
     x: float = 0.0,
+    # These parameters should match those used for gen_cover()
+    clearance: float = 1.0,
+    ground_clearance: float = 2.0,
 ) -> None:
     """
     Add a slot to an object wall for the cover to clip into.
     """
-    ground_clearance = 2.0
-    cover_height = 3.0
-
-    bottom = ground_clearance
-    top = bottom + cover_height
-
-    length = CoverClip.clip_width + 2.0
-    slot_depth = 2.5
-
-    slot = blender_util.range_cube(
-        (length * -0.5, length * 0.5), (-slot_depth, 0.1), (bottom, top)
+    slot = generate_clip_hole(
+        clearance=clearance, ground_clearance=ground_clearance
     )
-    blender_util.apply_to_wall(slot, p1, p2, x=x)
+    blender_util.apply_to_wall(slot, p2, p1, x=-x)
     blender_util.difference(obj, slot)
 
 
@@ -502,3 +549,137 @@ def gen_cover(
         ctx.translate(0, 0, ground_clearance)
 
     return cover
+
+
+class CoverBuilder:
+    def __init__(
+        self,
+        obj: bpy.types.Object,
+        # The distance between the object walls and the cover
+        clearance: float = 1.0,
+        # The distance between the bottom of the cover and the ground
+        ground_clearance: float = 2.0,
+        # The Z-axis thickness of the cover
+        thickness: float = 3.0,
+    ) -> None:
+        self.obj = obj
+        self.clearance = clearance
+        self.ground_clearance = ground_clearance
+        self.thickness = thickness
+
+        self.clip_transforms: List[cad.Transform] = []
+
+    def add_clip(self, p1: cad.Point, p2: cad.Point, x: float = 0.0) -> None:
+        """Add a clip to the cover.
+
+        This adds a slot for the clip to the object, and a space for the slot
+        to the cover.
+
+        p1 and p2 should be points on the inner wall of the object.
+        The clip will be centered between these two points.  The x parameter
+        can be used to apply an additional offset rather than having the object
+        perfectly centered.
+        """
+        tf = blender_util.apply_to_wall_transform(p2, p1, x=-x)
+        slot = generate_clip_hole(
+            clearance=self.clearance, ground_clearance=self.ground_clearance
+        )
+        with blender_util.TransformContext(slot) as ctx:
+            ctx.transform(tf)
+        blender_util.difference(self.obj, slot)
+
+        # Record this clip location so we can use it when generating the cover
+        self.clip_transforms.append(tf)
+
+    def add_stop(
+        self, length: float, p1: cad.Point, p2: cad.Point, x: float = 0.0
+    ) -> None:
+        add_stop(
+            self.obj,
+            length,
+            p1,
+            p2,
+            x=x,
+            ground_clearance=self.ground_clearance,
+            cover_height=self.thickness,
+        )
+
+    def gen_cover(self) -> bpy.types.Object:
+        cover = gen_cover(
+            self.obj,
+            clearance=self.clearance,
+            height=self.thickness,
+            ground_clearance=self.ground_clearance,
+        )
+
+        for tf in self.clip_transforms:
+            clip_slot = self._gen_cover_clip_slot()
+            with blender_util.TransformContext(clip_slot) as ctx:
+                ctx.transform(tf)
+
+            blender_util.difference(cover, clip_slot)
+
+        return cover
+
+    def _gen_cover_clip_slot(self) -> None:
+        xmax = (CoverClip.clip_width * 0.5) + 3 + 0.1
+        xmin = -xmax
+        zmid = self.ground_clearance + (self.thickness * 0.5)
+        y = (self.clearance + 4)
+        c = blender_util.range_cube((xmin, xmax), (0, y), (0, zmid))
+
+        xmax = (CoverClip.clip_width * 0.5) + 0.1
+        xmin = -xmax
+        y = (self.clearance + 7)
+        c2 = blender_util.range_cube(
+            (xmin, xmax),
+            (0, y),
+            (zmid - 0.1, self.ground_clearance + self.thickness + 1.0),
+        )
+        blender_util.union(c, c2)
+        return c
+
+
+def test() -> None:
+    mesh = cad.Mesh()
+    height = 10.0
+    points = [(-40, 30), (40, 30), (40, -30), (-40, -30)]
+    in_bot = []
+    out_bot = []
+    in_top = []
+    out_top = []
+    for x, y in points:
+        out_x = x * (1 + abs(4 / x))
+        out_y = y * (1 + abs(4 / y))
+        in_bot.append(mesh.add_xyz(x, y, 0.0))
+        out_bot.append(mesh.add_xyz(out_x, out_y, 0.0))
+        in_top.append(mesh.add_xyz(x, y, height))
+        out_top.append(mesh.add_xyz(out_x, out_y, height))
+
+    for idx in range(len(points)):
+        mesh.add_quad(
+            in_bot[idx], out_bot[idx], out_bot[idx - 1], in_bot[idx - 1]
+        )
+        mesh.add_quad(
+            in_top[idx], in_top[idx - 1], out_top[idx - 1], out_top[idx]
+        )
+        mesh.add_quad(
+            in_top[idx], in_bot[idx], in_bot[idx - 1], in_top[idx - 1]
+        )
+        mesh.add_quad(
+            out_top[idx], out_top[idx - 1], out_bot[idx - 1], out_bot[idx]
+        )
+
+    bm = blender_util.blender_mesh(f"walls_mesh", mesh)
+    walls = blender_util.new_mesh_obj("walls", bm)
+
+    cb = CoverBuilder(walls)
+    cb.add_clip(in_bot[0], in_bot[1])
+    cb.add_clip(in_bot[2], in_bot[3])
+
+    cb.add_stop(10, in_bot[0], in_bot[1], -15)
+    cb.add_stop(10, in_bot[0], in_bot[1], 15)
+    cb.add_stop(10, in_bot[2], in_bot[3], -15)
+    cb.add_stop(10, in_bot[2], in_bot[3], 15)
+
+    cover = cb.gen_cover()

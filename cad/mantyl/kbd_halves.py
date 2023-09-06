@@ -112,26 +112,26 @@ def add_bottom_cover_parts(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
     ) -> None:
         cover.add_stop(kbd_obj, length, p1, p2, x=x)
 
-    add_stop(30, kbd.left_wall[-5].in3, kbd.left_wall[-1].in3, x=5)
-    add_stop(50, kbd.right_wall[0].in3, kbd.right_wall[-1].in3)
+    add_stop(30, kbd.left_wall[-1].in3, kbd.left_wall[-5].in3, x=-5)
+    add_stop(50, kbd.right_wall[-1].in3, kbd.right_wall[0].in3)
 
-    front_x_off = 2.75
-    add_stop(10, kbd.fl.in3, kbd.fr.in3, x=front_x_off + 12)
-    add_stop(10, kbd.fl.in3, kbd.fr.in3, x=front_x_off - 12)
+    front_x_off = -2.75
+    add_stop(10, kbd.fr.in3, kbd.fl.in3, x=front_x_off - 12)
+    add_stop(10, kbd.fr.in3, kbd.fl.in3, x=front_x_off + 12)
 
-    add_stop(10, kbd.br.in3, kbd.bl.in3, x=20)
-    add_stop(10, kbd.br.in3, kbd.bl.in3, x=-20)
+    add_stop(10, kbd.bl.in3, kbd.br.in3, x=20)
+    add_stop(10, kbd.bl.in3, kbd.br.in3, x=-20)
 
-    add_stop(15, kbd.thumb_bl.in2.point, kbd.thumb_br.in2.point)
-    add_stop(15, kbd.thumb_tr.in2.point, kbd.thumb_tl.in2.point)
+    add_stop(15, kbd.thumb_br.in2.point, kbd.thumb_bl.in2.point, -10)
+    add_stop(15, kbd.thumb_tl.in2.point, kbd.thumb_tr.in2.point, 5)
 
     # Add some holes for the cover clip to clip into
     def add_clip_hole(p1: cad.Point, p2: cad.Point, x: float = 0.0) -> None:
         cover.add_clip_hole(kbd_obj, p1, p2, x=x)
 
-    add_clip_hole(kbd.fl.in3, kbd.fr.in3, x=front_x_off)
-    add_clip_hole(kbd.br.in3, kbd.bl.in3)
-    add_clip_hole(kbd.thumb_tl.in2, kbd.thumb_bl.in2)
+    add_clip_hole(kbd.fr.in3, kbd.fl.in3, x=front_x_off)
+    add_clip_hole(kbd.bl.in3, kbd.br.in3)
+    add_clip_hole(kbd.thumb_bl.in2, kbd.thumb_tl.in2)
 
 
 def apply_cable_hole(

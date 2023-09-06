@@ -26,7 +26,7 @@ def test_full() -> None:
     show_keycaps = False
     show_controller = True
     show_oled = False
-    show_wrist_rests = False
+    show_wrist_rests = True
 
     rkbd, lkbd, np = kbd_halves.gen_3_sections()
 
@@ -88,8 +88,10 @@ def test() -> None:
     # test_np()
     # cover.cover_clip()
 
+    cover.test()
+
     # kbd_halves.right_full()
-    shell = kbd_halves.right_shell()
+    # shell = kbd_halves.right_shell()
     # cover.gen_cover(shell)
     # kbd_halves.right_socket_underlay()
     # kbd_halves.right_thumb_underlay()
