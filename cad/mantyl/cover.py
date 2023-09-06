@@ -15,133 +15,177 @@ from typing import Dict, List, Tuple
 
 
 class CoverClip:
-    # The thickness of the bottom cover
-    floor_thickness = 3.0
-    floor_tolerance = 0.1
-
-    # The gap between the walls and the floor
-    floor_wall_gap = 2
-
     # The thickness of the "spring" handle
     clip_thickness = 2.0
-    clip_width = 10
-    # The height of the clip, above the floor
-    clip_height = 25
-    # The length that the clip handle extends below the floor
-    handle_len = 2.05
     # The gap between the front and back sides of the clip
     clip_gap = 4.0
-
+    # The height of the clip, above the floor
+    clip_height = 25
     # The dimensions of the triangular protrusion that clips into the wall
     clip_protrusion = 3.0
     protrusion_h = 8.0
 
+    clip_back_y = clip_thickness * 2 + clip_gap
+
+    # Type 1 base parameters
+    # The type 1 base is designed to slot into a simple cut-out in an acrylic
+    # cover.
+    #
     # The gap between the handle and the surrounding floor (on each side)
-    handle_gap = 3.0
-    base_inner_thickness = 2.0
-    base_z_thickness = 2.0
+    t1_handle_gap = 1.0
+    # The thickness of the inner vertical walls in the base
+    t1_wall_thickness = 2.0
+    # How much the clip extends over the floor on each side
+    t1_lip_x = 4
+    t1_lip_y = 4
+    # The Z-axis thickness of the lower type 1 base lip supporting the cover
+    t1_bottom_thickness = 1.5
+    t1_top_thickness = 1.5
 
-    # How much the clip extends over the floor
-    base_lip_x = 4
-    base_lip_y = 4
+    # Type 2 base parameters
+    # The type 2 base is designed to slide into a slot in a 3d-printed cover.
+    t2_wing_width = 3
+    t2_wing_length = 8
+    t2_tail_length = 4
+    # The Z-axis separation between the wings and tail
+    t2_wing_clearance = 0.1
 
-    def __init__(self) -> None:
-        self.total_base_thickness: float = (
-            self.floor_thickness
-            + self.floor_tolerance
-            + (2 * self.base_z_thickness)
-        )
+    def __init__(
+        self,
+        width: float,
+        handle_depth: float = 2.0,
+        cover_thickness: float = 3.0,
+        wall_clearance: float = 1.0,
+    ) -> None:
+        self.clip_width = width
+        self.handle_depth = handle_depth
+        self.cover_thickness = cover_thickness
+        self.wall_clearance = wall_clearance
 
-        # The length of the base (perpendicular to the wall)
-        self.base_len = 40
+    def gen_type1(self, name: str = "clip") -> bpy.types.Object:
+        """Generate a type 1 clip.
 
-        # The very back X coordinate of where the clip attaches to the base
-        # This will be computed later, in _gen_clip()
-        self.clip_back_x = 0.0
-        self.clip_back_xmin = 0.0
-
-        self.protrusion_ymin = (
-            self.floor_thickness + self.floor_tolerance
-        ) * -0.5
-
-    def gen(self, name: str = "clip") -> bpy.types.Object:
-        clip = self._gen_clip()
-        base = self._gen_base(name)
-        blender_util.union(base, clip, dissolve_angle=0.1)
-        return clip
-
-    def _gen_base(self, name: str) -> bpy.types.Object:
-        w = self.handle_gap + self.base_inner_thickness + self.base_lip_x
-        zmax = (
-            (0.5 * self.clip_width)
-            + self.handle_gap
-            + self.base_inner_thickness
-            + self.base_lip_x
-        )
-        zmin = -zmax
-
-        ymax = 0.5 * self.total_base_thickness
-        ymin = -ymax
-
-        xmin = self.floor_wall_gap
+        This is designed to fit into a very simple slot in the cover.
+        """
         xmax = (
-            self.clip_back_xmin + self.base_inner_thickness + self.base_lip_y
+            (0.5 * self.clip_width)
+            + self.t1_handle_gap
+            + self.t1_wall_thickness
+            + self.t1_lip_x
         )
+        xmin = -xmax
+        ymin = self.wall_clearance
+        ymax = self.clip_back_y + self.t1_wall_thickness + self.t1_lip_y
+        zmin = -self.t1_bottom_thickness
+        zmax = self.cover_thickness + self.t1_top_thickness
         base = blender_util.range_cube(
             (xmin, xmax), (ymin, ymax), (zmin, zmax), name=name
         )
-        floor = self._gen_floor()
-        blender_util.difference(base, floor)
 
-        groove_xmax = self.clip_back_xmin - 0.01
-        groove_zmax = (0.5 * self.clip_width) + self.handle_gap
-        groove_zmin = -groove_zmax
+        groove_xmax = (self.clip_width * 0.5) + self.t1_handle_gap
+        groove_xmin = -groove_xmax
+        groove_ymin = ymin - 0.1
+        groove_ymax = self.clip_back_y + 0.01
+        groove_zmin = zmin - 0.1
+        groove_zmax = zmax + 0.1
         groove = blender_util.range_cube(
-            (xmin - 0.1, groove_xmax),
-            (ymin - 0.1, ymax + 0.1),
+            (groove_xmin, groove_xmax),
+            (groove_ymin, groove_ymax),
             (groove_zmin, groove_zmax),
         )
-
         blender_util.difference(base, groove)
+
+        floor = self._gen_floor_t1()
+        blender_util.difference(base, floor)
+
+        handle = self._gen_handle(base_zmin=zmin, base_zmax=zmax)
+        blender_util.union(base, handle)
         return base
 
-    def _gen_floor(self) -> bpy.types.Object:
-        # In reality xmin would be self.floor_wall_gap,
-        # but since we are planning to use this object to subtract from the
-        # base, we want it to extend further rather than lining up exactly with
-        # the edge.
-        xmin = 0
-        ymax = 0.5 * (self.floor_thickness + self.floor_tolerance)
-        ymin = -ymax
-        obj = blender_util.range_cube(
-            (xmin, 1000), (ymin, ymax), (-1000, 1000)
+    def _gen_floor_t1(self) -> bpy.types.Object:
+        floor = blender_util.range_cube(
+            (-40, 40), (0, 40), (0, self.cover_thickness)
         )
 
-        c_xmax = self.clip_back_xmin + self.base_inner_thickness
-        c_zmax = (
+        xmax = (
             (self.clip_width * 0.5)
-            + self.handle_gap
-            + self.base_inner_thickness
+            + self.t1_handle_gap
+            + self.t1_wall_thickness
         )
-        c_zmin = -c_zmax
-        cutout = blender_util.range_cube(
-            (xmin - 0.5, c_xmax), (ymin - 0.5, ymax + 0.5), (c_zmin, c_zmax)
+        xmin = -xmax
+        ymax = self.clip_back_y + self.t1_wall_thickness
+        groove = blender_util.range_cube(
+            (xmin, xmax), (-0.1, ymax), (-0.1, self.cover_thickness + 0.1)
         )
-        blender_util.difference(obj, cutout)
-        return obj
+        blender_util.difference(floor, groove)
+        return floor
 
-    def _gen_clip(self) -> bpy.types.Object:
+    def gen_type2(self, name: str = "clip") -> bpy.types.Object:
+        """Generate a type 2 clip.
+
+        This is lower-profile than the type 1 clip, and the top and bottom are
+        even with the cover itself.  However, it requires a slightly more
+        complicated slot in the cover.
+        """
+        base = blender_util.range_cube(
+            (self.clip_width * -0.5, self.clip_width * 0.5),
+            (self.clip_back_y - 0.01, self.clip_back_y + self.t2_wing_length),
+            (0, self.cover_thickness),
+            name=name,
+        )
+
+        wing_xmax = (self.clip_width * 0.5) + self.t2_wing_width
+        wing_xmin = -wing_xmax
+        wings = blender_util.range_cube(
+            (wing_xmin, wing_xmax),
+            (self.clip_back_y, self.clip_back_y + self.t2_wing_length),
+            (0, (self.cover_thickness - self.t2_wing_clearance) * 0.5),
+        )
+        blender_util.union(base, wings)
+
+        tail = blender_util.range_cube(
+            (self.clip_width * -0.5, self.clip_width * 0.5),
+            (
+                self.clip_back_y,
+                self.clip_back_y + self.t2_wing_length + self.t2_tail_length,
+            ),
+            (
+                (self.cover_thickness + self.t2_wing_clearance) * 0.5,
+                self.cover_thickness,
+            ),
+        )
+        blender_util.union(base, tail)
+
+        handle = self._gen_handle(
+            base_zmin=0.0, base_zmax=self.cover_thickness
+        )
+        blender_util.union(base, handle)
+        return base
+
+    def _gen_handle(
+        self, base_zmin: float, base_zmax: float
+    ) -> bpy.types.Object:
         # Front wall of the clip
         clip_inner_r = self.clip_gap * 0.5
         clip_outer_r = clip_inner_r + self.clip_thickness
-        ymax = self.floor_thickness * 0.5 + self.clip_height - clip_outer_r
+        ztop = self.cover_thickness + self.clip_height - clip_outer_r
         obj = blender_util.range_cube(
-            (0, self.clip_thickness),
-            (self.protrusion_ymin - self.handle_len, ymax + 0.1),
             (self.clip_width * -0.5, self.clip_width * 0.5),
+            (0, self.clip_thickness),
+            (-self.handle_depth, ztop + 0.1),
         )
+
+        # The clip lip
         lip = self._gen_protrusion()
         blender_util.union(obj, lip)
+
+        # A small indentation to make it easier to grab the clip
+        grip_slot = blender_util.range_cube(
+            (self.clip_width * -0.5 - 0.1, self.clip_width * 0.5 + 0.1),
+            (-0.1, 0.3),
+            (-self.handle_depth - 0.1, -0.75),
+        )
+        blender_util.difference(obj, grip_slot)
 
         # Upper radius
         u_outer_c = blender_util.cylinder(
@@ -152,55 +196,69 @@ class CoverClip:
         )
         blender_util.difference(u_outer_c, u_inner_c)
         with blender_util.TransformContext(u_outer_c) as ctx:
-            ctx.rotate(90, "Z")
-            ctx.translate(clip_outer_r, ymax, 0)
+            ctx.rotate(-90, "Y")
+            ctx.translate(0, clip_outer_r, ztop)
 
         blender_util.union(obj, u_outer_c)
 
         # Back wall of clip
-        clip_back_xmax = 2 * clip_outer_r
-        self.clip_back_xmin = clip_back_xmax - self.clip_thickness
-        clip_back_ymin = (self.total_base_thickness * 0.5) - 0.1
+        clip_back_ymax = self.clip_back_y
+        clip_back_ymin = self.clip_back_y - self.clip_thickness
         back = blender_util.range_cube(
-            (self.clip_back_xmin, clip_back_xmax),
-            (clip_back_ymin, ymax + 0.1),
             (self.clip_width * -0.5, self.clip_width * 0.5),
+            (clip_back_ymin, self.clip_back_y),
+            (self.clip_thickness + base_zmin - 0.1, ztop + 0.1),
         )
         blender_util.union(obj, back)
 
-        # Upper radius of back wall
-        lower_inner_r = self.total_base_thickness * 0.5
+        # Lower radius of back wall
+        lower_c = blender_util.cylinder(
+            r=self.clip_thickness, h=self.clip_width, rotation=90.0
+        )
+        with blender_util.TransformContext(lower_c) as ctx:
+            ctx.rotate(180, "Z")
+            ctx.rotate(-90, "Y")
+            ctx.translate(0, self.clip_back_y, self.clip_thickness + base_zmin)
+        blender_util.union(obj, lower_c)
+
+        # Upper radius where the clip handle attaches to the base
+        attach_radius = self._gen_attach_radius(base_zmax)
+        blender_util.union(obj, attach_radius)
+        return obj
+
+    def _gen_attach_radius(self, h: float) -> bpy.types.Object:
+        # Radius attaching the back of the clip to the top of the base
+        attach_radius = 3.0
         block = blender_util.range_cube(
-            (clip_back_xmax - 0.1, clip_back_xmax + lower_inner_r - 0.1),
-            (clip_back_ymin - 0.1, clip_back_ymin + lower_inner_r - 0.1),
+            (0.01, attach_radius),
+            (0.01, attach_radius),
             (self.clip_width * -0.5, self.clip_width * 0.5),
         )
         l_inner_c = blender_util.cylinder(
-            r=lower_inner_r, h=self.clip_width, rotation=90.0
+            r=attach_radius, h=self.clip_width, rotation=90.0
         )
-        with blender_util.TransformContext(l_inner_c) as ctx:
-            ctx.rotate(180, "Z")
-            ctx.translate(
-                clip_back_xmax + lower_inner_r,
-                clip_back_ymin + lower_inner_r,
-                0,
-            )
         blender_util.difference(block, l_inner_c)
-        blender_util.union(obj, block)
-
-        return obj
+        with blender_util.TransformContext(block) as ctx:
+            ctx.rotate(180, "Z")
+            ctx.rotate(-90, "Y")
+            ctx.translate(
+                0,
+                attach_radius + self.clip_back_y - 0.01,
+                attach_radius + h - 0.01,
+            )
+        return block
 
     def _gen_protrusion(self) -> bpy.types.Object:
         lip = cad.Mesh()
-        lip_xy = [
-            (-self.clip_protrusion, self.protrusion_ymin),
-            (0.1, self.protrusion_ymin),
-            (0.1, self.protrusion_ymin + self.protrusion_h),
+        lip_yz = [
+            (-self.clip_protrusion, 0.0),
+            (0.1, 0.0),
+            (0.1, self.protrusion_h),
         ]
         lip_points: List[Tuple[cad.MeshPoint, cad.MeshPoint]] = []
-        for x, y in lip_xy:
-            b = lip.add_xyz(x, y, self.clip_width * -0.5)
-            t = lip.add_xyz(x, y, self.clip_width * 0.5)
+        for y, z in lip_yz:
+            b = lip.add_xyz(self.clip_width * -0.5, y, z)
+            t = lip.add_xyz(self.clip_width * 0.5, y, z)
             lip_points.append((b, t))
 
         lip.add_tri(lip_points[0][0], lip_points[1][0], lip_points[2][0])
@@ -419,7 +477,7 @@ def find_inner_wall_edge_loop(bm: bmesh.types.BMesh) -> List[cad.Point2D]:
 
 
 def cover_clip() -> bpy.types.Object:
-    return CoverClip().gen()
+    return CoverBuilder(None).gen_clip()
 
 
 def add_stop(
@@ -446,13 +504,15 @@ def add_stop(
 
 
 def generate_clip_hole(
-    clearance: float = 1.0, ground_clearance: float = 2.0
+    clip_width: float = 10.0,
+    clearance: float = 1.0,
+    ground_clearance: float = 2.0,
 ) -> bpy.types.Object:
     """
     Add a slot to an object wall for the cover to clip into.
     """
     tolerance = 0.2
-    length = CoverClip.clip_width + 2.0
+    length = clip_width + 2.0
 
     bottom_z = ground_clearance - tolerance
     mid_z = bottom_z + 0.4
@@ -519,10 +579,7 @@ def add_clip_hole(
 
 
 def gen_cover(
-    obj: bpy.types.Object,
-    clearance: float = 1.0,
-    height: float = 3.0,
-    ground_clearance: float = 2.0,
+    obj: bpy.types.Object, clearance: float = 1.0, height: float = 3.0
 ) -> bpy.types.Object:
     """
     Generate a bottom cover for the specified object.
@@ -534,21 +591,16 @@ def gen_cover(
     - clearance specifies the desired XY clearance between the walls and the
       cover.
     - height specifies the height of the cover
-    - ground_clearance specifies how far off the ground the cover mesh should
-      be raised.
+
+    The cover object returned will have its bottom at Z == 0, and its top at
+    z == height.
     """
     bm = bmesh.new()
     bm.from_mesh(obj.data)
     try:
-        cover = gen_cover_impl(bm, clearance=clearance, height=height)
+        return gen_cover_impl(bm, clearance=clearance, height=height)
     finally:
         bm.free()
-
-    # Raise the cover off the ground slightly
-    with blender_util.TransformContext(cover) as ctx:
-        ctx.translate(0, 0, ground_clearance)
-
-    return cover
 
 
 class CoverBuilder:
@@ -566,6 +618,7 @@ class CoverBuilder:
         self.clearance = clearance
         self.ground_clearance = ground_clearance
         self.thickness = thickness
+        self.clip_width = 10.0
 
         self.clip_transforms: List[cad.Transform] = []
 
@@ -582,7 +635,9 @@ class CoverBuilder:
         """
         tf = blender_util.apply_to_wall_transform(p2, p1, x=-x)
         slot = generate_clip_hole(
-            clearance=self.clearance, ground_clearance=self.ground_clearance
+            clip_width=self.clip_width,
+            clearance=self.clearance,
+            ground_clearance=self.ground_clearance,
         )
         with blender_util.TransformContext(slot) as ctx:
             ctx.transform(tf)
@@ -606,38 +661,65 @@ class CoverBuilder:
 
     def gen_cover(self) -> bpy.types.Object:
         cover = gen_cover(
-            self.obj,
-            clearance=self.clearance,
-            height=self.thickness,
-            ground_clearance=self.ground_clearance,
+            self.obj, clearance=self.clearance, height=self.thickness
         )
 
         for tf in self.clip_transforms:
-            clip_slot = self._gen_cover_clip_slot()
+            clip_slot = self._gen_cover_clip_slot(self.clip_width)
             with blender_util.TransformContext(clip_slot) as ctx:
                 ctx.transform(tf)
 
             blender_util.difference(cover, clip_slot)
 
+        with blender_util.TransformContext(cover) as ctx:
+            ctx.translate(0, 0, self.ground_clearance)
+
         return cover
 
-    def _gen_cover_clip_slot(self) -> None:
-        xmax = (CoverClip.clip_width * 0.5) + 3 + 0.1
-        xmin = -xmax
-        zmid = self.ground_clearance + (self.thickness * 0.5)
-        y = (self.clearance + 4)
-        c = blender_util.range_cube((xmin, xmax), (0, y), (0, zmid))
+    def _gen_cover_clip_slot(self, width: float) -> None:
+        y_tolerance = 0.2
+        x_tolerance = 0.1
 
-        xmax = (CoverClip.clip_width * 0.5) + 0.1
-        xmin = -xmax
-        y = (self.clearance + 7)
-        c2 = blender_util.range_cube(
-            (xmin, xmax),
-            (0, y),
-            (zmid - 0.1, self.ground_clearance + self.thickness + 1.0),
+        wings_xmax = (
+            (self.clip_width + x_tolerance) * 0.5
+        ) + CoverClip.t2_wing_width
+        wings_xmin = -wings_xmax
+        zmid = self.thickness * 0.5
+        wings_y = (
+            CoverClip.clip_back_y + CoverClip.t2_wing_length + y_tolerance
         )
-        blender_util.union(c, c2)
-        return c
+        wings = blender_util.range_cube(
+            (wings_xmin, wings_xmax), (0, wings_y), (-0.1, zmid)
+        )
+
+        tail_xmax = (self.clip_width + x_tolerance) * 0.5
+        tail_xmin = -tail_xmax
+        tail_y = wings_y + CoverClip.t2_tail_length
+        tail = blender_util.range_cube(
+            (tail_xmin, tail_xmax), (0.0, tail_y), (zmid, self.thickness + 0.1)
+        )
+        blender_util.union(wings, tail)
+
+        entry_y = CoverClip.clip_back_y + y_tolerance
+        entry = blender_util.range_cube(
+            (wings_xmin, wings_xmax),
+            (0.0, entry_y),
+            (-0.1, self.thickness + 0.1),
+        )
+        blender_util.union(wings, entry)
+        return wings
+
+    def gen_clip(self, width: Optional[float] = None) -> None:
+        if width is None:
+            width = self.clip_width
+        handle_depth = self.ground_clearance * 0.75
+        c = CoverClip(
+            width=width,
+            handle_depth=handle_depth,
+            wall_clearance=self.clearance,
+            cover_thickness=self.thickness,
+        )
+        return c.gen_type2()
 
 
 def test() -> None:
