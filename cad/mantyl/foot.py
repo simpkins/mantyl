@@ -8,7 +8,7 @@ from __future__ import annotations
 import bpy
 
 import math
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from bpycad import blender_util
 from bpycad import cad
@@ -39,15 +39,15 @@ class Foot:
 
         self.mesh = cad.Mesh()
 
-        self.wall_dist = (
+        self.wall_dist: float = (
             self.outer_r - (self.outer_r - self.inner_r) - wall_recess
         )
 
         zunit = cad.Point(0.0, 0.0, 1.0)
         self.rwall = cad.Plane(wall_center, wall_right + zunit, wall_right)
         self.lwall = cad.Plane(wall_center, wall_left, wall_left + zunit)
-        self.rnorm = self.rwall.normal()
-        self.lnorm = self.lwall.normal()
+        self.rnorm: cad.Point = self.rwall.normal()
+        self.lnorm: cad.Point = self.lwall.normal()
 
         # The center should be wall_dist distance away from both the left and
         # right walls.
@@ -56,12 +56,16 @@ class Foot:
         centerp = rcenter_plane.intersect_line(
             lcenter_plane.p0, lcenter_plane.p1
         )
-        assert centerp is not None, "walls are parallel"
-        self.center = self.mesh.add_point(centerp)
-        self.top = self.mesh.add_xyz(wall_center.x, wall_center.y, self.top_h)
+        if centerp is None:
+            # The left and right walls are parallel
+            centerp = wall_center + self.rnorm * self.wall_dist
+        self.center: cad.MeshPoint = self.mesh.add_point(centerp)
+        self.top: cad.MeshPoint = self.mesh.add_xyz(
+            wall_center.x, wall_center.y, self.top_h
+        )
 
-        self.rvec = (wall_right - wall_center).unit()
-        self.lvec = (wall_left - wall_center).unit()
+        self.rvec: cad.Point = (wall_right - wall_center).unit()
+        self.lvec: cad.Point = (wall_left - wall_center).unit()
 
         # Move our foot wall slightly into the user's specified wall,
         # just to ensure that blender sees them overlapping when it performs
@@ -69,19 +73,26 @@ class Foot:
         self.overlap = 0.1
         wc_r = self.rwall.shifted_along_normal(-self.overlap)
         wc_l = self.lwall.shifted_along_normal(-self.overlap)
-        self.wall_center = wc_r.intersect_line(wc_l.p0, wc_l.p1)
+        wc = wc_r.intersect_line(wc_l.p0, wc_l.p1)
+        if wc is None:
+            # The left and right walls are parallel
+            self.wall_center: cad.Point = (
+                wall_center + self.rnorm * -self.overlap
+            )
+        else:
+            self.wall_center = wc
 
-        self.neg_mesh = cad.cylinder(
+        self.neg_mesh: cad.Mesh = cad.cylinder(
             r=self.inner_r, h=self.recess_h * 2, fn=self.fn
         )
         self.neg_mesh.translate(centerp.x, centerp.y, 0.0)
         self._gen()
 
-        self.pos = new_mesh_obj(f"foot.pos", self.mesh)
-        self.neg = new_mesh_obj(f"foot.neg", self.neg_mesh)
+        self.pos: bpy.types.Object = new_mesh_obj(f"foot.pos", self.mesh)
+        self.neg: bpy.types.Object = new_mesh_obj(f"foot.neg", self.neg_mesh)
 
     def _gen(self) -> None:
-        layers: List[cad.MeshPoint] = []
+        layers: List[List[cad.MeshPoint]] = []
         # The base layer is at 100%
         layers.append(self._gen_layer(0.0, 1.0))
 
@@ -194,7 +205,7 @@ def add_foot(
     center: cad.MeshPoint,
     left: cad.MeshPoint,
     right: cad.MeshPoint,
-    wall_recess=2.0,
+    wall_recess: float = 2.0,
 ) -> None:
     """Add a foot to an object.
 
@@ -217,6 +228,7 @@ def add_feet(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
         kbd.right_wall[-2].in3,
         wall_recess=2.1,
     )
+    return
 
     # Back left foot
     add_foot(kbd_obj, kbd.bl.in3, kbd.left_wall[0].in3, kbd.back_wall[-2].in3)
