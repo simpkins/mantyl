@@ -37,7 +37,6 @@ def test_full() -> None:
 
     if show_numpad:
         np.gen_object_simple()
-        np.print_key_positions()
 
     if show_controller:
         pcb = soc.numpad_pcb()

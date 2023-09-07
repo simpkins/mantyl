@@ -75,8 +75,6 @@ class NumpadSection:
         kh = KeyHole(self.mesh, Transform().translate(x_off_mm, y_off_mm, 0.0))
         kh.inner_walls()
 
-        kh.numpad_x = x_off_mm
-        kh.numpad_y = y_off_mm
         return kh
 
     def gen_mesh(self, rkbd: Keyboard, lkbd: Keyboard) -> None:
@@ -682,27 +680,3 @@ class NumpadSection:
         self._add_feet(obj)
 
         return obj
-
-    def print_key_positions(self) -> None:
-        keys = [
-            ("KP_Extra", self.kp_extra),
-            ("KP_Slash", self.kp_slash),
-            ("KP_Star", self.kp_star),
-            ("KP_Minus", self.kp_minus),
-            ("KP1", self.kp1),
-            ("KP2", self.kp2),
-            ("KP3", self.kp3),
-            ("KP4", self.kp4),
-            ("KP5", self.kp5),
-            ("KP6", self.kp6),
-            ("KP7", self.kp7),
-            ("KP8", self.kp8),
-            ("KP9", self.kp9),
-            ("KP0", self.kp0),
-            ("KP_Dot", self.kp_dot),
-            ("KP_Plus", self.kp_plus),
-            ("KP_Enter", self.kp_enter),
-        ]
-        print("Numpad key positions:")
-        for name, k in keys:
-            print(f"- {name}: {k.numpad_x}, {k.numpad_y}")
