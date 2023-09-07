@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from bpycad import cad
 from bpycad import blender_util
+from bpycad.export_stl import ObjectGenerator
 
 import bmesh
 import bpy
@@ -671,9 +672,6 @@ class CoverBuilder:
 
             blender_util.difference(cover, clip_slot)
 
-        with blender_util.TransformContext(cover) as ctx:
-            ctx.translate(0, 0, self.ground_clearance)
-
         return cover
 
     def _gen_cover_clip_slot(self, width: float) -> None:
@@ -722,46 +720,91 @@ class CoverBuilder:
         return c.gen_type2()
 
 
+class TestObjects(ObjectGenerator):
+    object_names = ("test_cover_clip", "test_cover_walls", "test_cover")
+
+    def generate_objects(self) -> Dict[str, bpy.types.Object]:
+        self.generate()
+        return {
+            "test_cover_clip": self.clip,
+            "test_cover_walls": self.walls,
+            "test_cover": self.cover,
+        }
+
+    def generate(self) -> None:
+        print("Generating cover test objects...")
+        self.x = 40
+        self.y = 40
+
+        mesh = cad.Mesh()
+        height = 10.0
+        points = [
+            (-self.x, self.y),
+            (self.x, self.y),
+            (self.x, -self.y),
+            (-self.x, -self.y),
+        ]
+        in_bot = []
+        out_bot = []
+        in_top = []
+        out_top = []
+        for x, y in points:
+            out_x = x * (1 + abs(4 / x))
+            out_y = y * (1 + abs(4 / y))
+            in_bot.append(mesh.add_xyz(x, y, 0.0))
+            out_bot.append(mesh.add_xyz(out_x, out_y, 0.0))
+            in_top.append(mesh.add_xyz(x, y, height))
+            out_top.append(mesh.add_xyz(out_x, out_y, height))
+
+        for idx in range(len(points)):
+            mesh.add_quad(
+                in_bot[idx], out_bot[idx], out_bot[idx - 1], in_bot[idx - 1]
+            )
+            mesh.add_quad(
+                in_top[idx], in_top[idx - 1], out_top[idx - 1], out_top[idx]
+            )
+            mesh.add_quad(
+                in_top[idx], in_bot[idx], in_bot[idx - 1], in_top[idx - 1]
+            )
+            mesh.add_quad(
+                out_top[idx], out_top[idx - 1], out_bot[idx - 1], out_bot[idx]
+            )
+
+        bm = blender_util.blender_mesh(f"walls_mesh", mesh)
+        self.walls = blender_util.new_mesh_obj("walls", bm)
+
+        self.cb = CoverBuilder(self.walls)
+        self.cb.add_clip(in_bot[0], in_bot[1])
+        self.cb.add_clip(in_bot[2], in_bot[3])
+
+        self.cb.add_stop(10, in_bot[0], in_bot[1], -15)
+        self.cb.add_stop(10, in_bot[0], in_bot[1], 15)
+        self.cb.add_stop(10, in_bot[2], in_bot[3], -15)
+        self.cb.add_stop(10, in_bot[2], in_bot[3], 15)
+
+        self.cover = self.cb.gen_cover()
+        self.clip = self.cb.gen_clip()
+
+        # Lay the clip on its side for printing
+        with blender_util.TransformContext(self.clip) as ctx:
+            ctx.rotate(90, "Y")
+
+
 def test() -> None:
-    mesh = cad.Mesh()
-    height = 10.0
-    points = [(-40, 30), (40, 30), (40, -30), (-40, -30)]
-    in_bot = []
-    out_bot = []
-    in_top = []
-    out_top = []
-    for x, y in points:
-        out_x = x * (1 + abs(4 / x))
-        out_y = y * (1 + abs(4 / y))
-        in_bot.append(mesh.add_xyz(x, y, 0.0))
-        out_bot.append(mesh.add_xyz(out_x, out_y, 0.0))
-        in_top.append(mesh.add_xyz(x, y, height))
-        out_top.append(mesh.add_xyz(out_x, out_y, height))
+    from mathutils import Euler
+    import math
 
-    for idx in range(len(points)):
-        mesh.add_quad(
-            in_bot[idx], out_bot[idx], out_bot[idx - 1], in_bot[idx - 1]
-        )
-        mesh.add_quad(
-            in_top[idx], in_top[idx - 1], out_top[idx - 1], out_top[idx]
-        )
-        mesh.add_quad(
-            in_top[idx], in_bot[idx], in_bot[idx - 1], in_top[idx - 1]
-        )
-        mesh.add_quad(
-            out_top[idx], out_top[idx - 1], out_bot[idx - 1], out_bot[idx]
-        )
+    test_objects = TestObjects()
+    test_objects.generate()
 
-    bm = blender_util.blender_mesh(f"walls_mesh", mesh)
-    walls = blender_util.new_mesh_obj("walls", bm)
+    cb = test_objects.cb
 
-    cb = CoverBuilder(walls)
-    cb.add_clip(in_bot[0], in_bot[1])
-    cb.add_clip(in_bot[2], in_bot[3])
+    test_objects.cover.location = (0, 0, cb.ground_clearance)
 
-    cb.add_stop(10, in_bot[0], in_bot[1], -15)
-    cb.add_stop(10, in_bot[0], in_bot[1], 15)
-    cb.add_stop(10, in_bot[2], in_bot[3], -15)
-    cb.add_stop(10, in_bot[2], in_bot[3], 15)
+    clip2 = bpy.data.objects.new("clip2", test_objects.clip.data)
+    bpy.context.collection.objects.link(clip2)
+    clip2.rotation_euler = Euler((0, math.pi * -0.5, math.pi), "XYZ")
+    clip2.location = (0.0, test_objects.y, cb.ground_clearance)
 
-    cover = cb.gen_cover()
+    test_objects.clip.location = (0.0, -test_objects.y, cb.ground_clearance)
+    test_objects.clip.rotation_euler = Euler((0, math.pi * -0.5, 0), "XYZ")

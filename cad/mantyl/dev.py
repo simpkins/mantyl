@@ -88,9 +88,6 @@ def test() -> None:
     # test_np()
 
     cover.test()
-    clip = cover.cover_clip()
-    with blender_util.TransformContext(clip) as ctx:
-        ctx.translate(0, -30, 2.0)
 
     # kbd_halves.right_full()
     # shell = kbd_halves.right_shell()

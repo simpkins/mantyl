@@ -44,5 +44,6 @@ models: export_stl.ModelDict = {
     "right_kbd_test": keyboard.main_keys_test,
     "cover_clip": cover.cover_clip,
 }
+generators = [cover.TestObjects()]
 
-export_stl.main(models)
+export_stl.main(models, generators=generators)
