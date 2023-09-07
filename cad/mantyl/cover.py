@@ -23,8 +23,8 @@ class CoverClip:
     # The height of the clip, above the floor
     clip_height = 25
     # The dimensions of the triangular protrusion that clips into the wall
-    clip_protrusion = 3.0
-    protrusion_h = 8.0
+    clip_protrusion = 2.5
+    protrusion_h = 6.5
 
     clip_back_y: float = clip_thickness * 2 + clip_gap
 
@@ -54,12 +54,10 @@ class CoverClip:
     def __init__(
         self,
         width: float,
-        handle_depth: float = 2.0,
         cover_thickness: float = 3.0,
         wall_clearance: float = 1.0,
     ) -> None:
         self.clip_width = width
-        self.handle_depth = handle_depth
         self.cover_thickness = cover_thickness
         self.wall_clearance = wall_clearance
 
@@ -172,8 +170,8 @@ class CoverClip:
         ztop = self.cover_thickness + self.clip_height - clip_outer_r
         obj = blender_util.range_cube(
             (self.clip_width * -0.5, self.clip_width * 0.5),
-            (0, self.clip_thickness),
-            (-self.handle_depth, ztop + 0.1),
+            (0.0, self.clip_thickness),
+            (0.0, ztop + 0.1),
         )
 
         # The clip lip
@@ -183,10 +181,16 @@ class CoverClip:
         # A small indentation to make it easier to grab the clip
         grip_slot = blender_util.range_cube(
             (self.clip_width * -0.5 - 0.1, self.clip_width * 0.5 + 0.1),
-            (-0.1, 0.3),
-            (-self.handle_depth - 0.1, -0.75),
+            (-0.1, 0.8),
+            (0.6, 1.6),
         )
         blender_util.difference(obj, grip_slot)
+        grip_slot2 = blender_util.range_cube(
+            (self.clip_width * -0.5 - 0.1, self.clip_width * 0.5 + 0.1),
+            (-0.1, 0.4),
+            (-0.1, 1.4),
+        )
+        blender_util.difference(obj, grip_slot2)
 
         # Upper radius
         u_outer_c = blender_util.cylinder(
@@ -250,11 +254,14 @@ class CoverClip:
         return block
 
     def _gen_protrusion(self) -> bpy.types.Object:
+        # Make the lip bottom even with the top of the cover.
+        zmin = self.cover_thickness
+
         lip = cad.Mesh()
         lip_yz = [
-            (-self.clip_protrusion, 0.0),
-            (0.1, 0.0),
-            (0.1, self.protrusion_h),
+            (-self.clip_protrusion, zmin),
+            (0.1, zmin),
+            (0.1, zmin + self.protrusion_h),
         ]
         lip_points: List[Tuple[cad.MeshPoint, cad.MeshPoint]] = []
         for y, z in lip_yz:
@@ -509,20 +516,22 @@ def add_stop(
 
 def generate_clip_hole(
     clip_width: float = 10.0,
-    clearance: float = 1.0,
     ground_clearance: float = 2.0,
+    cover_thickness: float = 3.0,
 ) -> bpy.types.Object:
     """
     Add a slot to an object wall for the cover to clip into.
     """
     tolerance = 0.2
-    length = clip_width + 2.0
+    length = clip_width + 1.0
 
-    bottom_z = ground_clearance - tolerance
+    bottom_z = (ground_clearance + cover_thickness) - tolerance
     mid_z = bottom_z + 0.4
-    top_z = ground_clearance + CoverClip.protrusion_h + tolerance
+    top_z = (
+        ground_clearance + cover_thickness + CoverClip.protrusion_h + tolerance
+    )
 
-    front_y = clearance
+    front_y = 0.0
     back_y = front_y - (CoverClip.clip_protrusion + tolerance)
 
     mesh = cad.Mesh()
@@ -569,14 +578,14 @@ def add_clip_hole(
     p2: cad.Point,
     x: float = 0.0,
     # These parameters should match those used for gen_cover()
-    clearance: float = 1.0,
     ground_clearance: float = 2.0,
+    cover_thickness: float = 3.0,
 ) -> None:
     """
     Add a slot to an object wall for the cover to clip into.
     """
     slot = generate_clip_hole(
-        clearance=clearance, ground_clearance=ground_clearance
+        ground_clearance=ground_clearance, cover_thickness=cover_thickness
     )
     blender_util.apply_to_wall(slot, p2, p1, x=-x)
     blender_util.difference(obj, slot)
@@ -641,7 +650,7 @@ class CoverBuilder:
         tf = blender_util.apply_to_wall_transform(p2, p1, x=-x)
         slot = generate_clip_hole(
             clip_width=self.clip_width,
-            clearance=self.clearance,
+            cover_thickness=self.thickness,
             ground_clearance=self.ground_clearance,
         )
         with blender_util.TransformContext(slot) as ctx:
@@ -691,14 +700,14 @@ class CoverBuilder:
             CoverClip.clip_back_y + CoverClip.t2_wing_length + y_tolerance
         )
         wings = blender_util.range_cube(
-            (wings_xmin, wings_xmax), (0, wings_y), (-0.1, zmid)
+            (wings_xmin, wings_xmax), (0, wings_y), (-0.1, zmid + 0.1)
         )
 
         tail_xmax = (self.clip_width + x_tolerance) * 0.5
         tail_xmin = -tail_xmax
         tail_y = wings_y + CoverClip.t2_tail_length
         tail = blender_util.range_cube(
-            (tail_xmin, tail_xmax), (0.0, tail_y), (zmid, self.thickness + 0.1)
+            (tail_xmin, tail_xmax), (0.0, tail_y), (zmid - 0.1, self.thickness + 0.1)
         )
         blender_util.union(wings, tail)
 
@@ -714,10 +723,8 @@ class CoverBuilder:
     def gen_clip(self, width: Optional[float] = None) -> bpy.types.Object:
         if width is None:
             width = self.clip_width
-        handle_depth = self.ground_clearance * 0.75
         c = CoverClip(
             width=width,
-            handle_depth=handle_depth,
             wall_clearance=self.clearance,
             cover_thickness=self.thickness,
         )
@@ -743,7 +750,7 @@ class TestObjects:
         self.y = 40
 
         mesh = cad.Mesh()
-        height = 10.0
+        height = 30.0
         points = [
             (-self.x, self.y),
             (self.x, self.y),
@@ -783,10 +790,10 @@ class TestObjects:
         self.cb.add_clip(in_bot[0], in_bot[1])
         self.cb.add_clip(in_bot[2], in_bot[3])
 
-        self.cb.add_stop(10, in_bot[0], in_bot[1], -15)
-        self.cb.add_stop(10, in_bot[0], in_bot[1], 15)
-        self.cb.add_stop(10, in_bot[2], in_bot[3], -15)
-        self.cb.add_stop(10, in_bot[2], in_bot[3], 15)
+        self.cb.add_stop(10, in_bot[0], in_bot[1], -20)
+        self.cb.add_stop(10, in_bot[0], in_bot[1], 20)
+        self.cb.add_stop(10, in_bot[2], in_bot[3], -20)
+        self.cb.add_stop(10, in_bot[2], in_bot[3], 20)
 
         self.cover: bpy.types.Object = self.cb.gen_cover()
         self.clip: bpy.types.Object = self.cb.gen_clip()
