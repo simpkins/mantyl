@@ -26,12 +26,13 @@ def test_full() -> None:
     show_keycaps = False
     show_controller = True
     show_oled = False
-    show_wrist_rests = True
+    show_wrist_rests = False
 
     rkbd, lkbd, np = kbd_halves.gen_3_sections()
 
     if show_halves:
-        keyboard.gen_keyboard(rkbd, "keyboard.R")
+        kbd_halves.right_shell_obj(rkbd, "keyboard.R")
+        #keyboard.gen_keyboard(rkbd, "keyboard.R")
         keyboard.gen_keyboard(lkbd, "keyboard.L")
         #kbd_halves.right_full(rkbd)
 
@@ -70,26 +71,15 @@ def test_full() -> None:
             ctx.translate(0, -41.5, 62.1)
 
 
-def test_np() -> None:
-    rkbd, lkbd, np = kbd_halves.gen_3_sections()
-    np.gen_object()
-
-    pcb = soc.numpad_pcb()
-    with blender_util.TransformContext(pcb) as ctx:
-        ctx.rotate(180, "Y")
-        ctx.translate(0, 0, -0.5)
-        ctx.transform(np.plate_tf)
-
-
 def test() -> None:
-    # soc.numpad_pcb()
-    # test_full()
+    test_full()
     # test_np()
 
     # cover.test()
 
+    # soc.numpad_pcb()
     # kbd_halves.right_full()
-    shell = kbd_halves.right_shell()
+    # shell = kbd_halves.right_shell()
     # cover.gen_cover(shell)
     # kbd_halves.right_socket_underlay()
     # kbd_halves.right_thumb_underlay()

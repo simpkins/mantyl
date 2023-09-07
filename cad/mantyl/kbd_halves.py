@@ -92,15 +92,13 @@ def right_shell_obj(
     kbd: Keyboard, name: str = "keyboard.R"
 ) -> bpy.types.Object:
     kbd_obj = gen_keyboard(kbd, name=name)
+
     add_feet(kbd, kbd_obj)
-
     add_bottom_cover_parts(kbd, kbd_obj)
-
     add_screw_holes(kbd, kbd_obj)
 
-    # apply_cable_hole(
-    #    kbd_obj, kbd.left_wall[-5].in3, kbd.left_wall[-2].in3, x=5.0, z=20.0
-    # )
+    hole = get_rkbd_cable_hole(kbd)
+    blender_util.difference(kbd_obj, hole)
     return kbd_obj
 
 
@@ -130,36 +128,43 @@ def add_bottom_cover_parts(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
         c.location = (0, 0, 2)
 
 
-def apply_cable_hole(
-    wall: bpy.types.Object,
-    p1: cad.Point,
-    p2: cad.Point,
-    x: float = 0.0,
-    z: float = 0.0,
-) -> None:
+def get_rkbd_cable_hole(kbd: Keyboard) -> bpy.types.Object:
+    return get_cable_hole(
+        kbd.left_wall[-6].in3, kbd.left_wall[-5].in3, x=2, z=45.0
+    )
+
+
+def get_cable_hole(
+    p1: cad.Point, p2: cad.Point, x: float = 0.0, z: float = 0.0
+) -> bpy.types.Object:
     """
     Add a hole to fit a ribbon cable between each keyboard half and the center
     numpad section.
     """
-    r = 10
-    bottom = 28
-    top = 38
-    h = Keyboard.wall_thickness + 1
-    hole = blender_util.cylinder(r=r, h=h)
+    width = 10
+    height = 40
+
+    r = width * 0.5
+    thickness = Keyboard.wall_thickness * 5
+    bottom = 20
+    top = 40
+    hole = blender_util.cylinder(r=r, h=thickness)
+    hole2 = blender_util.cylinder(r=r, h=thickness)
     with blender_util.TransformContext(hole) as ctx:
-        ctx.translate(0, 0, Keyboard.wall_thickness * 0.5)
-        ctx.rotate(90, "X")
-        ctx.translate(0, 0, top)
-    hole2 = blender_util.cylinder(r=r, h=h)
+        ctx.translate(0, height * 0.5 - r, 0)
     with blender_util.TransformContext(hole2) as ctx:
-        ctx.translate(0, 0, Keyboard.wall_thickness * 0.5)
-        ctx.rotate(90, "X")
-        ctx.translate(0, 0, bottom)
-    hole3 = blender_util.range_cube((-r, r), (-h, 1.0), (bottom, top))
+        ctx.translate(0, height * -0.5 + r, 0)
+    hole3 = blender_util.cube(width, height - 2 * r, thickness)
     blender_util.union(hole, hole2)
     blender_util.union(hole, hole3)
+
+    with blender_util.TransformContext(hole) as ctx:
+        ctx.translate(0, 0, thickness * 0.5 - 4.0)
+        ctx.rotate(90, "X")
+        ctx.rotate(20, "Z")
+
     blender_util.apply_to_wall(hole, p1, p2, x, z)
-    blender_util.difference(wall, hole)
+    return hole
 
 
 def left_shell() -> bpy.types.Object:

@@ -59,6 +59,8 @@ class NumpadSection:
     global_y_offset: float = 12.0
 
     def __init__(self, rkbd: Keyboard, lkbd: Keyboard) -> None:
+        self.rkbd = rkbd
+        self.lkbd = lkbd
         self.mesh = Mesh()
         self._beveler = blender_util.Beveler()
         self.gen_mesh(rkbd, lkbd)
@@ -639,6 +641,10 @@ class NumpadSection:
         obj = blender_util.new_mesh_obj(name, bmesh)
         if bevel:
             self.apply_bevels(obj)
+
+        from . import kbd_halves
+        hole = kbd_halves.get_rkbd_cable_hole(self.rkbd)
+        blender_util.difference(obj, hole)
 
         return obj
 
