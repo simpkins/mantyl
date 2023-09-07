@@ -228,7 +228,6 @@ def add_feet(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
         kbd.right_wall[-2].in3,
         wall_recess=2.1,
     )
-    return
 
     # Back left foot
     add_foot(kbd_obj, kbd.bl.in3, kbd.left_wall[0].in3, kbd.back_wall[-2].in3)

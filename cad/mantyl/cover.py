@@ -21,7 +21,7 @@ class CoverClip:
     # The gap between the front and back sides of the clip
     clip_gap = 4.0
     # The height of the clip, above the floor
-    clip_height = 25
+    clip_height = 20
     # The dimensions of the triangular protrusion that clips into the wall
     clip_protrusion = 2.5
     protrusion_h = 6.5
@@ -55,7 +55,7 @@ class CoverClip:
         self,
         width: float,
         cover_thickness: float = 3.0,
-        wall_clearance: float = 1.0,
+        wall_clearance: float = 0.5,
     ) -> None:
         self.clip_width = width
         self.cover_thickness = cover_thickness
@@ -622,7 +622,7 @@ class CoverBuilder:
         self,
         obj: bpy.types.Object,
         # The distance between the object walls and the cover
-        clearance: float = 1.0,
+        clearance: float = 0.5,
         # The distance between the bottom of the cover and the ground
         ground_clearance: float = 2.0,
         # The Z-axis thickness of the cover
