@@ -12,7 +12,7 @@ from bpycad.export_stl import ObjectGenerator
 import bmesh
 import bpy
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 class CoverClip:
@@ -26,7 +26,7 @@ class CoverClip:
     clip_protrusion = 3.0
     protrusion_h = 8.0
 
-    clip_back_y = clip_thickness * 2 + clip_gap
+    clip_back_y: float = clip_thickness * 2 + clip_gap
 
     # Type 1 base parameters
     # The type 1 base is designed to slot into a simple cut-out in an acrylic
@@ -288,6 +288,7 @@ class CoverClip:
 
 
 def is_on_ground(face: bmesh.types.BMFace) -> bool:
+    # pyre-fixme[16]: blender type stubs are inaccurate
     for v in face.verts:
         if v.co.z >= 1e-14:
             return False
@@ -304,8 +305,8 @@ def gen_cover_impl(
     mesh = cad.Mesh()
     bottom_points = [mesh.add_xyz(p.x, p.y, 0.0) for p in shrunk]
     top_points = [mesh.add_xyz(p.x, p.y, height) for p in shrunk]
-    mesh.faces.append([p.index for p in reversed(bottom_points)])
-    mesh.faces.append([p.index for p in top_points])
+    mesh.add_face(reversed(bottom_points))
+    mesh.add_face(top_points)
     for idx in range(len(bottom_points)):
         mesh.add_quad(
             bottom_points[idx],
@@ -338,7 +339,7 @@ def shrink_edge_loop(
     loop: List[cad.Point2D], clearance: float
 ) -> List[cad.Point2D]:
     # Shift all of the edges inwards by the specified clearance amount
-    edges: List[Line2D] = []
+    edges: List[cad.Line2D] = []
     for idx, p in enumerate(loop):
         prev = loop[idx - 1]
         edge = cad.Line2D(prev, p)
@@ -367,7 +368,7 @@ def shrink_edge_loop(
         # to nothing and need to be removed entirely.
         #
         # Walk through the edges and remove ones that shrunk to a negative size.
-        remaining_edges: List[Line2D] = []
+        remaining_edges: List[cad.Line2D] = []
         for idx, orig_edge in enumerate(edges):
             new_edge = cad.Line2D(points[idx - 1], points[idx])
             if orig_edge.p0.x == orig_edge.p1.x:
@@ -405,6 +406,7 @@ def find_inner_wall_edge_loop(bm: bmesh.types.BMesh) -> List[cad.Point2D]:
     # the ground to a face not on the ground.
     ground_faces = []
     ground_loop_edges = {}
+    # pyre-fixme[16]: blender type stubs are incomplete
     for f in bm.faces:
         if not is_on_ground(f):
             continue
@@ -478,7 +480,8 @@ def find_inner_wall_edge_loop(bm: bmesh.types.BMesh) -> List[cad.Point2D]:
 
 
 def cover_clip() -> bpy.types.Object:
-    return CoverBuilder(None).gen_clip()
+    c = CoverClip(width=10)
+    return c.gen_type2()
 
 
 def add_stop(
@@ -596,6 +599,7 @@ def gen_cover(
     The cover object returned will have its bottom at Z == 0, and its top at
     z == height.
     """
+    # pyre-fixme[20]: blender type stubs are inaccurate
     bm = bmesh.new()
     bm.from_mesh(obj.data)
     try:
@@ -674,7 +678,7 @@ class CoverBuilder:
 
         return cover
 
-    def _gen_cover_clip_slot(self, width: float) -> None:
+    def _gen_cover_clip_slot(self, width: float) -> bpy.types.Object:
         y_tolerance = 0.2
         x_tolerance = 0.1
 
@@ -707,7 +711,7 @@ class CoverBuilder:
         blender_util.union(wings, entry)
         return wings
 
-    def gen_clip(self, width: Optional[float] = None) -> None:
+    def gen_clip(self, width: Optional[float] = None) -> bpy.types.Object:
         if width is None:
             width = self.clip_width
         handle_depth = self.ground_clearance * 0.75
@@ -720,18 +724,20 @@ class CoverBuilder:
         return c.gen_type2()
 
 
-class TestObjects(ObjectGenerator):
-    object_names = ("test_cover_clip", "test_cover_walls", "test_cover")
+class TestObjectsGenerator(ObjectGenerator):
+    object_names = ["test_cover_clip", "test_cover_walls", "test_cover"]
 
     def generate_objects(self) -> Dict[str, bpy.types.Object]:
-        self.generate()
+        objects = TestObjects()
         return {
-            "test_cover_clip": self.clip,
-            "test_cover_walls": self.walls,
-            "test_cover": self.cover,
+            "test_cover_clip": objects.clip,
+            "test_cover_walls": objects.walls,
+            "test_cover": objects.cover,
         }
 
-    def generate(self) -> None:
+
+class TestObjects:
+    def __init__(self) -> None:
         print("Generating cover test objects...")
         self.x = 40
         self.y = 40
@@ -771,7 +777,7 @@ class TestObjects(ObjectGenerator):
             )
 
         bm = blender_util.blender_mesh(f"walls_mesh", mesh)
-        self.walls = blender_util.new_mesh_obj("walls", bm)
+        self.walls: bpy.types.Object = blender_util.new_mesh_obj("walls", bm)
 
         self.cb = CoverBuilder(self.walls)
         self.cb.add_clip(in_bot[0], in_bot[1])
@@ -782,8 +788,8 @@ class TestObjects(ObjectGenerator):
         self.cb.add_stop(10, in_bot[2], in_bot[3], -15)
         self.cb.add_stop(10, in_bot[2], in_bot[3], 15)
 
-        self.cover = self.cb.gen_cover()
-        self.clip = self.cb.gen_clip()
+        self.cover: bpy.types.Object = self.cb.gen_cover()
+        self.clip: bpy.types.Object = self.cb.gen_clip()
 
         # Lay the clip on its side for printing
         with blender_util.TransformContext(self.clip) as ctx:
@@ -795,16 +801,18 @@ def test() -> None:
     import math
 
     test_objects = TestObjects()
-    test_objects.generate()
-
     cb = test_objects.cb
 
     test_objects.cover.location = (0, 0, cb.ground_clearance)
 
+    # pyre-fixme[16]: blender type stubs are incomplete
     clip2 = bpy.data.objects.new("clip2", test_objects.clip.data)
+    # pyre-fixme[16]: blender type stubs are incomplete
     bpy.context.collection.objects.link(clip2)
+    # pyre-fixme[6]: blender type stubs are incomplete
     clip2.rotation_euler = Euler((0, math.pi * -0.5, math.pi), "XYZ")
     clip2.location = (0.0, test_objects.y, cb.ground_clearance)
 
     test_objects.clip.location = (0.0, -test_objects.y, cb.ground_clearance)
+    # pyre-fixme[6, 8]: blender type stubs are incomplete
     test_objects.clip.rotation_euler = Euler((0, math.pi * -0.5, 0), "XYZ")
