@@ -915,6 +915,7 @@ class SocketHolderBuilder:
         tol = 0.00001
         with blender_util.TransformContext(obj) as ctx:
             ctx.triangulate()
+            # pyre-fixme[16]: blender type stubs are incomplete
             for v in ctx.bmesh.verts:
                 self.points.append(cad.Point(v.co.x, v.co.y, v.co.z))
 
@@ -927,6 +928,7 @@ class SocketHolderBuilder:
                 if math.isclose(v.co.x, params.x_right, abs_tol=tol):
                     right_point_set.add(v.index)
 
+            # pyre-fixme[16]: blender type stubs are incomplete
             for f in ctx.bmesh.faces:
                 assert len(f.verts) == 3
                 # BMesh faces list the vertices in counter-clockwise order,

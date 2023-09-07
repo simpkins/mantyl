@@ -484,7 +484,7 @@ class PadHolder:
             fr.point,
             cad.Point(fr.x, fr.y - right_edge_run, fr.z - right_edge_rise),
         )
-        self.inner_ceiling_plane = self.top_plane.shifted_along_normal(
+        self.inner_ceiling_plane: cad.Plane = self.top_plane.shifted_along_normal(
             -PadSegment.bottom_thickness
         )
 

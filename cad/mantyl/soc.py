@@ -81,8 +81,8 @@ class NumpadPcb:
     pcb_thickness = 1.6
 
     def __init__(self) -> None:
-        self.mesh = self._gen_mesh()
-        self.object = self._gen_object()
+        self.mesh: cad.Mesh = self._gen_mesh()
+        self.object: bpy.types.Object = self._gen_object()
 
     def _gen_mesh(self) -> cad.Mesh:
         mesh = cad.Mesh()
@@ -102,14 +102,8 @@ class NumpadPcb:
             b = mesh.add_xyz(x, y, 0)
             perim.append((t, b))
 
-        top_face_indices = [t.index for t, b in reversed(perim)]
-        # pyre-fixme[6]: we are letting blender deal with a polygon face here,
-        #     but we did not declare typing in cad.Mesh to allow polygon faces
-        mesh.faces.append(top_face_indices)
-        bottom_face_indices = [b.index for t, b in perim]
-        # pyre-fixme[6]: we are letting blender deal with a polygon face here,
-        #     but we did not declare typing in cad.Mesh to allow polygon faces
-        mesh.faces.append(bottom_face_indices)
+        mesh.add_face(t for t, b in reversed(perim))
+        mesh.add_face(b for t, b in perim)
 
         for idx in range(len(perim)):
             mesh.add_quad(

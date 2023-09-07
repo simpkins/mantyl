@@ -188,9 +188,11 @@ def gen_cross_wall() -> bpy.types.Object:
     import bmesh
     for idx in 0, 1:
         with blender_util.TransformContext(cyls[idx]) as ctx:
+            # pyre-fixme[16]: blender type stubs are incomplete
             old_faces = ctx.bmesh.faces[:]
             ret = bmesh.ops.convex_hull(
                 ctx.bmesh,
+                # pyre-fixme[6]: blender type stubs are incomplete
                 input=ctx.bmesh.verts,
                 use_existing_faces=True,
             )
