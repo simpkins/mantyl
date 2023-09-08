@@ -182,7 +182,6 @@ def right_shell_obj(
 ) -> Tuple[bpy.types.Object, cover.CoverBuilder]:
     kbd_obj = gen_keyboard(kbd, name=name)
 
-    add_feet(kbd, kbd_obj)
     cover_builder = add_bottom_cover_parts(kbd, kbd_obj)
     add_wrist_rest_screw_holes(kbd, kbd_obj)
 
@@ -191,6 +190,8 @@ def right_shell_obj(
 
     hole = get_rkbd_cable_hole(kbd)
     blender_util.difference(kbd_obj, hole)
+
+    add_feet(kbd, kbd_obj)
     return kbd_obj, cover_builder
 
 

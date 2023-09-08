@@ -30,10 +30,10 @@ def test() -> None:
     # settings.show_keycaps = True
     # settings.show_controller = True
 
-    kbd_halves.generate_all(settings)
-
-    # test_full()
-    # test_np()
+    # kbd_halves.generate_all(settings)
+    kbd = keyboard.Keyboard()
+    kbd.gen_mesh()
+    kbd_halves.right_shell_obj(kbd)
 
     # cover.test()
 
