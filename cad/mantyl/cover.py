@@ -303,7 +303,7 @@ def is_on_ground(face: bmesh.types.BMFace) -> bool:
 
 
 def gen_cover_impl(
-    bm: bmesh.types.BMesh, clearance: float, height: float
+    bm: bmesh.types.BMesh, clearance: float, height: float, name: str = "cover"
 ) -> bpy.types.Object:
     loop = find_inner_wall_edge_loop(bm)
     ensure_edge_loop_direction(loop)
@@ -321,8 +321,8 @@ def gen_cover_impl(
             top_points[idx - 1],
             bottom_points[idx - 1],
         )
-    blend_mesh = blender_util.blender_mesh(f"cover_mesh", mesh)
-    return blender_util.new_mesh_obj("cover", blend_mesh)
+    blend_mesh = blender_util.blender_mesh(f"{name}_mesh", mesh)
+    return blender_util.new_mesh_obj(name, blend_mesh)
 
 
 def ensure_edge_loop_direction(loop: List[cad.Point2D]) -> None:
@@ -592,7 +592,10 @@ def add_clip_hole(
 
 
 def gen_cover(
-    obj: bpy.types.Object, clearance: float = 1.0, height: float = 3.0
+    obj: bpy.types.Object,
+    name: str = "cover",
+    clearance: float = 1.0,
+    height: float = 3.0,
 ) -> bpy.types.Object:
     """
     Generate a bottom cover for the specified object.
@@ -612,7 +615,9 @@ def gen_cover(
     bm = bmesh.new()
     bm.from_mesh(obj.data)
     try:
-        return gen_cover_impl(bm, clearance=clearance, height=height)
+        return gen_cover_impl(
+            bm, name=name, clearance=clearance, height=height
+        )
     finally:
         bm.free()
 
@@ -673,9 +678,12 @@ class CoverBuilder:
             cover_height=self.thickness,
         )
 
-    def gen_cover(self) -> bpy.types.Object:
+    def gen_cover(self, name: str = "cover") -> bpy.types.Object:
         cover = gen_cover(
-            self.obj, clearance=self.clearance, height=self.thickness
+            self.obj,
+            name=name,
+            clearance=self.clearance,
+            height=self.thickness,
         )
 
         for tf in self.clip_transforms:
@@ -707,7 +715,9 @@ class CoverBuilder:
         tail_xmin = -tail_xmax
         tail_y = wings_y + CoverClip.t2_tail_length
         tail = blender_util.range_cube(
-            (tail_xmin, tail_xmax), (0.0, tail_y), (zmid - 0.1, self.thickness + 0.1)
+            (tail_xmin, tail_xmax),
+            (0.0, tail_y),
+            (zmid - 0.1, self.thickness + 0.1),
         )
         blender_util.union(wings, tail)
 

@@ -356,14 +356,16 @@ def right_simple() -> bpy.types.Object:
     return WristRestSimple(kbd).gen()
 
 
-def right(kbd: Optional[Keyboard] = None) -> bpy.types.Object:
+def right(
+    name: str = "wrist_rest.R", kbd: Optional[Keyboard] = None
+) -> bpy.types.Object:
     if kbd is None:
         kbd = Keyboard()
         kbd.gen_mesh()
 
     holder = PadHolder(kbd)
-    blend_mesh = blender_util.blender_mesh("wrist_rest_mesh", holder.mesh)
-    obj = blender_util.new_mesh_obj("wrist_rest", blend_mesh)
+    blend_mesh = blender_util.blender_mesh(f"{name}_mesh", holder.mesh)
+    obj = blender_util.new_mesh_obj(name, blend_mesh)
 
     holder.finalize_object(obj)
 
@@ -371,7 +373,7 @@ def right(kbd: Optional[Keyboard] = None) -> bpy.types.Object:
 
 
 def left() -> bpy.types.Object:
-    obj = right()
+    obj = right(name="wrist_rest.L")
     with blender_util.TransformContext(obj) as ctx:
         ctx.mirror_x()
     return obj

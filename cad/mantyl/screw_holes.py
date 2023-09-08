@@ -96,28 +96,3 @@ def gen_screw_hole(wall_thickness: float) -> bpy.types.Object:
         mesh.add_quad(prev_f, prev_b, back_points[idx], fp)
 
     return blender_util.new_mesh_obj("screw_hole", mesh)
-
-
-def add_screw_hole(
-    kbd: Keyboard, kbd_obj: bpy.types.Object, x: float, z: float
-) -> None:
-    screw_hole = gen_screw_hole(kbd.wall_thickness)
-    blender_util.apply_to_wall(screw_hole, kbd.fl.out2, kbd.fr.out2, x=x, z=z)
-    blender_util.difference(kbd_obj, screw_hole)
-
-
-def add_screw_holes(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
-    x_spacing = 45
-    x_offset = 0
-    add_screw_hole(kbd, kbd_obj, x=x_offset - (x_spacing * 0.5), z=8)
-    add_screw_hole(kbd, kbd_obj, x=x_offset + (x_spacing * 0.5), z=8)
-    add_screw_hole(kbd, kbd_obj, x=x_offset - (x_spacing * 0.5), z=22)
-    add_screw_hole(kbd, kbd_obj, x=x_offset + (x_spacing * 0.5), z=22)
-
-    # An extra screw hole on the thumb section
-    if False:
-        screw_hole = gen_screw_hole(kbd.wall_thickness)
-        blender_util.apply_to_wall(
-            screw_hole, kbd.thumb_bl.out2, kbd.thumb_br_connect, x=30, z=10
-        )
-        blender_util.difference(kbd_obj, screw_hole)

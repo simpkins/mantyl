@@ -6,6 +6,8 @@
 from __future__ import annotations
 
 import bpy
+import copy
+from dataclasses import dataclass
 from typing import cast, List, Optional, Tuple
 
 from bpycad import blender_util
@@ -15,30 +17,125 @@ from .i2c_conn import add_i2c_connector
 from .keyboard import Grid2D, Keyboard, KeyHole, gen_keyboard
 from .key_socket_holder import SocketHolder, SocketHolderBuilder, SocketType
 from .numpad import NumpadSection
-from .screw_holes import add_screw_holes
+from .screw_holes import gen_screw_hole
 from . import cover
 from . import oled_holder
 from . import numpad
 from . import sx1509_holder
 from . import usb_cutout
-
-
-def right_shell_simple(name: str = "right_keyboard") -> bpy.types.Object:
-    kbd = Keyboard()
-    kbd.gen_mesh()
-    return gen_keyboard(kbd, name=name)
-
-
-def left_shell_simple(name: str = "left_keyboard") -> bpy.types.Object:
-    kbd_obj = right_shell_simple(name=name)
-    with blender_util.TransformContext(kbd_obj) as ctx:
-        ctx.mirror_x()
-    return kbd_obj
+from . import wrist_rest
 
 
 # The distance between the closest point of the two keyboard halves,
 # along the X axis at their closest point (at the tip of the thumb sections).
 X_SEPARATION = 35
+
+
+@dataclass
+class GenSettings:
+    show_numpad: bool = True
+    show_right: bool = True
+    show_left: bool = True
+    simple_shells: bool = False
+    show_wrist_rests: bool = True
+    show_cover: bool = True
+    show_keycaps: bool = False
+    show_controller: bool = False
+    show_underlay: bool = True
+
+
+def generate_all(settings: GenSettings) -> None:
+    rkbd = Keyboard()
+    rkbd.gen_mesh()
+
+    x_offset = get_x_offset(rkbd)
+
+    right_tf = cad.Transform().translate(x_offset, 0.0, 0.0)
+    left_tf = cad.Transform().mirror_x().translate(-x_offset, 0.0, 0.0)
+
+    lkbd = copy.deepcopy(rkbd)
+    rkbd.transform(right_tf)
+    lkbd.transform(left_tf)
+
+    np = numpad.NumpadSection(rkbd, lkbd)
+
+    if settings.show_numpad:
+        if settings.simple_shells:
+            np.gen_object_simple()
+        else:
+            np.gen_object()
+
+        if settings.show_controller:
+            from . import soc
+
+            pcb = soc.numpad_pcb()
+            with blender_util.TransformContext(pcb) as ctx:
+                ctx.rotate(180, "Y")
+                ctx.translate(0, 0, -0.5)
+                ctx.transform(np.plate_tf)
+
+        if settings.show_keycaps:
+            np.gen_keycaps()
+
+    if settings.show_right:
+        if settings.simple_shells:
+            gen_keyboard(rkbd, name="keyboard.R")
+        else:
+            right_shell, right_cover_builder = right_shell_obj(rkbd)
+            if settings.show_cover:
+                right_cover = right_cover_builder.gen_cover("cover.R")
+                right_cover.location = (
+                    0,
+                    0,
+                    right_cover_builder.ground_clearance,
+                )
+
+        if settings.show_underlay:
+            socket_underlay(rkbd, mirror=False, name="underlay.R")
+            thumb_underlay(rkbd, mirror=False, name="thumb_underlay.R")
+
+        if settings.show_wrist_rests:
+            rwr = wrist_rest.right()
+            with blender_util.TransformContext(rwr) as ctx:
+                ctx.translate(x_offset, 0, 0)
+
+        if settings.show_keycaps:
+            rkbd.gen_keycaps()
+
+    if settings.show_left:
+        if settings.simple_shells:
+            gen_keyboard(lkbd, name="keyboard.L")
+        else:
+            left_shell, left_cover_builder = right_shell_obj(
+                rkbd, name="keyboard.L"
+            )
+
+            if settings.show_cover:
+                left_cover = left_cover_builder.gen_cover("cover.L")
+                with blender_util.TransformContext(left_cover) as ctx:
+                    ctx.mirror_x()
+                left_cover.location = (
+                    0,
+                    0,
+                    left_cover_builder.ground_clearance,
+                )
+
+            with blender_util.TransformContext(left_shell) as ctx:
+                ctx.mirror_x()
+
+        if settings.show_underlay:
+            socket_underlay(rkbd, mirror=True, name="underlay.L")
+            thumb_underlay(rkbd, mirror=True, name="thumb_underlay.L")
+
+        if settings.show_wrist_rests:
+            rwr = wrist_rest.left()
+            with blender_util.TransformContext(rwr) as ctx:
+                ctx.translate(-x_offset, 0, 0)
+
+        if settings.show_keycaps:
+            lkbd.gen_keycaps()
+
+    return
 
 
 def get_x_offset(kbd: Keyboard) -> float:
@@ -71,10 +168,8 @@ def gen_3_sections() -> Tuple[Keyboard, Keyboard, NumpadSection]:
     right_tf = cad.Transform().translate(x_offset, 0.0, 0.0)
     left_tf = cad.Transform().mirror_x().translate(-x_offset, 0.0, 0.0)
 
+    lkbd = copy.deepcopy(rkbd)
     rkbd.transform(right_tf)
-
-    lkbd = Keyboard()
-    lkbd.gen_mesh()
     lkbd.transform(left_tf)
 
     np = numpad.NumpadSection(rkbd, lkbd)
@@ -82,27 +177,26 @@ def gen_3_sections() -> Tuple[Keyboard, Keyboard, NumpadSection]:
     return rkbd, lkbd, np
 
 
-def right_shell() -> bpy.types.Object:
-    kbd = Keyboard()
-    kbd.gen_mesh()
-    return right_shell_obj(kbd)
-
-
 def right_shell_obj(
     kbd: Keyboard, name: str = "keyboard.R"
-) -> bpy.types.Object:
+) -> Tuple[bpy.types.Object, cover.CoverBuilder]:
     kbd_obj = gen_keyboard(kbd, name=name)
 
     add_feet(kbd, kbd_obj)
-    add_bottom_cover_parts(kbd, kbd_obj)
-    add_screw_holes(kbd, kbd_obj)
+    cover_builder = add_bottom_cover_parts(kbd, kbd_obj)
+    add_wrist_rest_screw_holes(kbd, kbd_obj)
+
+    holes = get_numpad_screw_holes(kbd)
+    blender_util.difference(kbd_obj, holes)
 
     hole = get_rkbd_cable_hole(kbd)
     blender_util.difference(kbd_obj, hole)
-    return kbd_obj
+    return kbd_obj, cover_builder
 
 
-def add_bottom_cover_parts(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
+def add_bottom_cover_parts(
+    kbd: Keyboard, kbd_obj: bpy.types.Object
+) -> cover.CoverBuilder:
     cb = cover.CoverBuilder(kbd_obj)
 
     cb.add_stop(30, kbd.left_wall[-1].in3, kbd.left_wall[-5].in3, x=-5)
@@ -121,11 +215,48 @@ def add_bottom_cover_parts(kbd: Keyboard, kbd_obj: bpy.types.Object) -> None:
     cb.add_stop(15, kbd.thumb_br.in2.point, kbd.thumb_bl.in2.point, -10)
     cb.add_stop(15, kbd.thumb_tl.in2.point, kbd.thumb_tr.in2.point, 5)
 
-    if False:
-        clip = cb.gen_clip()
-        clip.location = (19.5, -56.36, 2)
-        c = cb.gen_cover()
-        c.location = (0, 0, 2)
+    return cb
+
+
+def add_wrist_rest_screw_holes(
+    kbd: Keyboard, kbd_obj: bpy.types.Object
+) -> None:
+    def add_screw_hole(x: float, z: float) -> None:
+        screw_hole = gen_screw_hole(kbd.wall_thickness)
+        blender_util.apply_to_wall(
+            screw_hole, kbd.fl.out2, kbd.fr.out2, x=x, z=z
+        )
+        blender_util.difference(kbd_obj, screw_hole)
+
+    x_spacing = 45
+    x_offset = 0
+    add_screw_hole(x=x_offset - (x_spacing * 0.5), z=8)
+    add_screw_hole(x=x_offset + (x_spacing * 0.5), z=8)
+    add_screw_hole(x=x_offset - (x_spacing * 0.5), z=22)
+    add_screw_hole(x=x_offset + (x_spacing * 0.5), z=22)
+
+
+def get_numpad_screw_holes(kbd: Keyboard) -> None:
+    p0 = kbd.left_wall[-1].in3
+    p1 = kbd.left_wall[-5].in3
+    x_off = -5
+    h1 = gen_screw_hole(kbd.wall_thickness * 3)
+    blender_util.apply_to_wall(h1, p0, p1, x=x_off - 12.5, z=40)
+    h2 = gen_screw_hole(kbd.wall_thickness * 3)
+    blender_util.apply_to_wall(h2, p0, p1, x=x_off + 12.5, z=40)
+    h3 = gen_screw_hole(kbd.wall_thickness * 3)
+    blender_util.apply_to_wall(h3, p0, p1, x=x_off, z=20)
+
+    h4 = gen_screw_hole(kbd.wall_thickness * 3)
+    blender_util.apply_to_wall(
+        h4, kbd.thumb_tl.in2.point, kbd.thumb_tr.in2.point, x=5, z=20
+    )
+
+    blender_util.union(h1, h2)
+    blender_util.union(h1, h3)
+    blender_util.union(h1, h4)
+
+    return h1
 
 
 def get_rkbd_cable_hole(kbd: Keyboard) -> bpy.types.Object:
@@ -167,13 +298,16 @@ def get_cable_hole(
     return hole
 
 
-def left_shell() -> bpy.types.Object:
-    kbd = Keyboard()
-    kbd.gen_mesh()
-    return left_shell_obj(kbd)
-
-
 def left_shell_obj(
+    kbd: Keyboard, name: str = "keyboard.L"
+) -> bpy.types.Object:
+    obj = right_shell_obj(kbd)
+    with blender_util.TransformContext(obj) as ctx:
+        ctx.mirror_x()
+    return obj
+
+
+def left_shell_obj_v1(
     kbd: Keyboard, name: str = "keyboard.L"
 ) -> bpy.types.Object:
     kbd_obj = gen_keyboard(kbd, name=name)
@@ -198,7 +332,7 @@ def left_shell_obj(
     )
     add_feet(kbd, kbd_obj)
     add_i2c_connector(kbd, kbd_obj)
-    add_screw_holes(kbd, kbd_obj)
+    add_wrist_rest_screw_holes(kbd, kbd_obj)
 
     with blender_util.TransformContext(kbd_obj) as ctx:
         ctx.mirror_x()
@@ -235,7 +369,9 @@ def right_keyboard_grid() -> bpy.types.Object:
     return blender_util.new_mesh_obj("keyboard2", mesh)
 
 
-def socket_underlay(kbd: Keyboard, mirror: bool = False) -> bpy.types.Object:
+def socket_underlay(
+    kbd: Keyboard, mirror: bool = False, name: str = "underlay"
+) -> bpy.types.Object:
     builder = SocketHolderBuilder(mirror=mirror)
     top_builder = SocketHolderBuilder(SocketType.TOP, mirror=mirror)
     mesh = cad.Mesh()
@@ -300,14 +436,16 @@ def socket_underlay(kbd: Keyboard, mirror: bool = False) -> bpy.types.Object:
     for col in range(1, 7):
         holders[col][0].close_top_face()
 
-    obj = blender_util.new_mesh_obj("underlay", mesh)
+    obj = blender_util.new_mesh_obj(name, mesh)
     if mirror:
         with blender_util.TransformContext(obj) as ctx:
             ctx.mirror_x()
     return obj
 
 
-def thumb_underlay(kbd: Keyboard, mirror: bool = False) -> bpy.types.Object:
+def thumb_underlay(
+    kbd: Keyboard, mirror: bool = False, name: str = "thumb_underlay"
+) -> bpy.types.Object:
     builder: SocketHolderBuilder = SocketHolderBuilder(mirror=mirror)
     mesh: cad.Mesh = cad.Mesh()
 
@@ -381,7 +519,7 @@ def thumb_underlay(kbd: Keyboard, mirror: bool = False) -> bpy.types.Object:
         h20.top_points[1][0],
     )
 
-    obj = blender_util.new_mesh_obj("thumb_underlay", mesh)
+    obj = blender_util.new_mesh_obj(name, mesh)
     if mirror:
         with blender_util.TransformContext(obj) as ctx:
             ctx.mirror_x()

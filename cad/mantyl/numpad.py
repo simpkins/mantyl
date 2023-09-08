@@ -12,6 +12,7 @@ from typing import List, Tuple
 
 from bpycad import blender_util
 from bpycad.cad import Mesh, MeshPoint, Plane, Point, Transform
+from . import kbd_halves
 from .keyboard import Keyboard, KeyHole
 from .foot import add_foot
 
@@ -642,10 +643,6 @@ class NumpadSection:
         if bevel:
             self.apply_bevels(obj)
 
-        from . import kbd_halves
-        hole = kbd_halves.get_rkbd_cable_hole(self.rkbd)
-        blender_util.difference(obj, hole)
-
         return obj
 
     def _add_feet(self, obj: bpy.types.Object) -> None:
@@ -681,8 +678,26 @@ class NumpadSection:
             self.perim_floor[-3][1],
         )
 
+    def _add_holes(self, obj: bpy.types.Object) -> None:
+        # Cable holes between the keyboard sections
+        rhole = kbd_halves.get_rkbd_cable_hole(self.rkbd)
+        blender_util.difference(obj, rhole)
+        lhole = kbd_halves.get_rkbd_cable_hole(self.rkbd)
+        with blender_util.TransformContext(lhole) as ctx:
+            ctx.mirror_x()
+        blender_util.difference(obj, lhole)
+
+        # Screw holes between the keyboard sections
+        rholes = kbd_halves.get_numpad_screw_holes(self.rkbd)
+        blender_util.difference(obj, rholes)
+        lholes = kbd_halves.get_numpad_screw_holes(self.rkbd)
+        with blender_util.TransformContext(lholes) as ctx:
+            ctx.mirror_x()
+        blender_util.difference(obj, lholes)
+
     def gen_object(self, name: str = "numpad") -> bpy.types.Object:
         obj = self.gen_object_simple(name=name)
         self._add_feet(obj)
+        self._add_holes(obj)
 
         return obj

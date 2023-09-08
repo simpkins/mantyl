@@ -20,59 +20,19 @@ from bpycad import blender_util
 import bpy
 
 
-def test_full() -> None:
-    show_halves = True
-    show_numpad = True
-    show_keycaps = False
-    show_controller = True
-    show_oled = False
-    show_wrist_rests = False
-
-    rkbd, lkbd, np = kbd_halves.gen_3_sections()
-
-    if show_halves:
-        kbd_halves.right_shell_obj(rkbd, "keyboard.R")
-        #keyboard.gen_keyboard(rkbd, "keyboard.R")
-        keyboard.gen_keyboard(lkbd, "keyboard.L")
-        #kbd_halves.right_full(rkbd)
-
-    if show_numpad:
-        np.gen_object_simple()
-
-    if show_controller:
-        pcb = soc.numpad_pcb()
-        with blender_util.TransformContext(pcb) as ctx:
-            ctx.rotate(180, "Y")
-            ctx.translate(0, 0, -0.5)
-            ctx.transform(np.plate_tf)
-
-    if show_wrist_rests:
-        rwr = wrist_rest.right()
-        orig_kbd = keyboard.Keyboard()
-        orig_kbd.gen_mesh()
-        x_offset = kbd_halves.get_x_offset(orig_kbd)
-        with blender_util.TransformContext(rwr) as ctx:
-            ctx.translate(x_offset, 0, 0)
-        lwr = wrist_rest.left()
-        with blender_util.TransformContext(lwr) as ctx:
-            ctx.translate(-x_offset, 0, 0)
-
-    if show_keycaps:
-        rkbd.gen_keycaps()
-        lkbd.gen_keycaps()
-        np.gen_keycaps()
-
-    if show_oled:
-        # Possible display panel:
-        # https://www.dfrobot.com/product-2019.html
-        oled = blender_util.range_cube((-20.5, 20.5), (-6, 6), (-2.0, 2.0))
-        with blender_util.TransformContext(oled) as ctx:
-            ctx.rotate(-1.0, "X")
-            ctx.translate(0, -41.5, 62.1)
-
-
 def test() -> None:
-    test_full()
+    settings = kbd_halves.GenSettings()
+    # settings.simple_shells = True
+    # settings.show_right = False
+    # settings.show_left = False
+    # settings.show_cover = False
+    # settings.show_wrist_rests = False
+    # settings.show_keycaps = True
+    # settings.show_controller = True
+
+    kbd_halves.generate_all(settings)
+
+    # test_full()
     # test_np()
 
     # cover.test()

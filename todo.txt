@@ -7,16 +7,6 @@
     - OLED display hole
     - controller screw standoffs
     - USB connector / hole
-    - cable holes to left & right
-    - screw holes to left & right
-
-  - Left / Right:
-    - bottom cover
-    - cable holes to numpad
-    - screw holes to numpad
-
-  - Wrist Rests:
-    - test supports
 
 
 # Controller PCB
